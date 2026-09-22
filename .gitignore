@@ -1,0 +1,44 @@
+# Node / React / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ASP.NET Core / .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.userosscache
+*.sln.docstates
+appsettings.Development.json
+*.db
+*.db-shm
+*.db-wal
+
+# IDE / Editor
+.vs/
+.vscode/
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svclog
+.idea/
+
+# OS Artifacts
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+
+# Temporary scratch
+*.tmp
+*.log
