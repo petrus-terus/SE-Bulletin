@@ -94,6 +94,7 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
 ## 4. Tech Stack & Architecture
 
 - **Frontend**: React + Vite PWA (Mobile-first 393x852 iPhone baseline) with Service Worker (Cache API + IndexedDB) for offline feed browsing and Web Push notifications.
+- **Styling**: Pure modern CSS / CSS Variables / CSS Modules. Do NOT install or use Tailwind CSS (avoids class clutter and ensures fine-grained control over Apple HIG spring animations).
 - **Backend**: ASP.NET Core 8 Web API (C#) aligned with internal SESB enterprise standards.
 - **Real-Time**: SignalR Hub (`/hubs/bulletin`) for live reactions, online presence dots, real-time comment counts, and emergency safety broadcasts.
 - **Database**: SQL Server / PostgreSQL with Entity Framework Core.
