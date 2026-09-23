@@ -26,8 +26,7 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
       setProgress((prev) => {
         const next = prev + (INTERVAL_MS / DURATION_MS) * 100;
         if (next >= 100) {
-          handleNext();
-          return 0;
+          return 100;
         }
         return next;
       });
@@ -37,6 +36,13 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     };
   }, [currentIndex, isPaused]);
+
+  // Auto-advance story when progress bar reaches 100%
+  useEffect(() => {
+    if (progress >= 100) {
+      handleNext();
+    }
+  }, [progress]);
 
   // Keyboard navigation & Escape key
   useEffect(() => {
