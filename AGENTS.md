@@ -20,7 +20,7 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
    - **Target Component / Screen**: What element is being built or modified.
    - **Design & Layout Intent**: Chunking, 16–20px spacing, 12px corner radius (`rounded-xl`), elimination of visual clutter ("anti-slop").
    - **Color & Contrast Token Mapping**: `#1A7A5A` (Forest Green), `#0055A4` (Deep Blue), `#10B981` (CTA Accent with `#0B0F17` dark ink text for 10.8:1 WCAG AAA contrast).
-   - **Animation & Motion Choreography**: Trigger events, timing curves (e.g., Apple spring `cubic-bezier(0.16, 1, 0.3, 1)`), duration (150–250ms), tactile compression (`active:scale-[0.98]`), and state transitions.
+   - **Animation & Motion Choreography**: Trigger events, timing curves (e.g., exponential ease-out `cubic-bezier(0.16, 1, 0.3, 1)`), duration (150–250ms), tactile compression (`active:scale-[0.98]`), and state transitions.
    - **Instrumentation Craft**: `font-mono tabular-nums` for counters, timers, and timestamps.
    - **States**: Default, hover/active, loading shimmer skeleton, empty state, and error handling.
 
@@ -28,6 +28,13 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
    - **DO NOT write code immediately.**
    - Present the structured UI/UX & motion proposal clearly to the user.
    - Ask for the user's review and approval before beginning implementation.
+
+4. **Mandatory Post-Implementation Impeccable Gate (Run Before Declaring Done)**:
+   - Immediately upon completing code for any screen or component, run the mechanical defect scanner:
+     `cmd /c ".\.agents\skills\impeccable\scripts\impeccable.cmd detect --json <targets>"`
+   - Resolve all anti-patterns (layout transitions, easing issues, contrast flaws) in a single batch.
+   - Perform a visual and interaction audit pass (`impeccable polish`) verifying 44px touch targets, tabular numerals, and responsive behavior.
+   - Verify visually via the browser subagent in 393×852 mobile viewport before considering the task finished.
 
 ---
 
