@@ -8,7 +8,7 @@ export const CURRENT_USER: Employee = {
   designation: 'Digital Transformation Lead',
   department: 'Information Technology',
   email: 'irfan@sesb.com.my',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+  avatarUrl: '/user_face.png',
   officeLocation: 'Wisma SESB, Level 7, Kota Kinabalu',
   phoneExtension: 'ext. 4412',
   role: 'DepartmentAdmin',
