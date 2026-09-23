@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="sesbBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0055A4" />
+      <stop offset="100%" stop-color="#003E7A" />
+    </linearGradient>
+    <linearGradient id="sesbGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A7A5A" />
+      <stop offset="100%" stop-color="#006C4D" />
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="#F5F7FA" />
+  <!-- Kinabalu Blue Peak -->
+  <polygon points="10,36 24,14 30,24 22,36" fill="url(#sesbBlue)" />
+  <!-- Kinabalu Green Peak -->
+  <polygon points="22,36 32,18 40,36" fill="url(#sesbGreen)" />
+  <!-- Electric Energy Dot -->
+  <circle cx="24" cy="14" r="2.5" fill="#10B981" />
+</svg>

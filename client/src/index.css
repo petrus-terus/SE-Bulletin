@@ -1,0 +1,227 @@
+/* ===================================================================
+   Sabah Electricity Sdn. Bhd. (SESB) — Internal Bulletin App
+   Design Tokens & Foundational Craft System (Pure Modern CSS)
+   =================================================================== */
+
+:root {
+  /* Brand Core (Kinabalu Mountain & Coastal Utility) */
+  --color-primary: #003E7A;             /* Deep Blue Navy */
+  --color-primary-container: #0055A4;   /* Sabah Electricity Corporate Blue */
+  --color-primary-hover: #004485;       /* Pressed Blue */
+  --color-primary-light: #EBF3FB;       /* Subtle Tint */
+  --color-forest-green: #1A7A5A;        /* Kinabalu Peak Green */
+  --color-forest-hover: #146348;        /* Pressed Forest Green */
+  --color-forest-light: #E6F5EF;        /* Subtle Green Tint */
+  --color-accent-green: #10B981;        /* CTA Accent (Always with #0B0F17 text) */
+  --color-accent-hover: #0EA271;        /* Pressed CTA */
+  --color-dark-ink: #0B0F17;            /* Strict High-Contrast Ink (10.8:1 on #10B981) */
+
+  /* Surfaces & Canvas */
+  --color-surface-base: #F5F7FA;        /* Canvas Background */
+  --color-surface-card: #FFFFFF;        /* Card & Modal Surface */
+  --color-surface-alt: #E8EDF2;         /* Chip background / alt surface */
+  --color-surface-hover: #F8FAFC;       /* Hover state */
+  --color-border-subtle: #E2E8F0;       /* Hairline card & input borders */
+  --color-border-focus: #0055A4;        /* Focused ring */
+
+  /* Typography */
+  --color-text-main: #111C2D;           /* High contrast heading text */
+  --color-text-body: #334155;           /* Readable body copy (7.5:1 on white) */
+  --color-text-muted: #64748B;          /* Timestamps, designations (4.7:1 on white) */
+
+  /* Semantic Alerts */
+  --color-safety-orange: #D97706;       /* HSE warnings */
+  --color-safety-orange-bg: #FEF3C7;    /* HSE alert pill */
+  --color-alert-red: #BA1A1A;           /* Critical alert / unread red */
+  --color-alert-red-bg: #FFDAD6;        /* Critical container */
+
+  /* Elevation & Depth */
+  --shadow-card: 0 1px 3px rgba(17, 28, 45, 0.05), 0 1px 2px rgba(17, 28, 45, 0.03);
+  --shadow-card-elevated: 0 4px 12px -2px rgba(17, 28, 45, 0.08), 0 2px 6px -1px rgba(17, 28, 45, 0.04);
+  --shadow-fab: 0 8px 20px -3px rgba(16, 185, 129, 0.38), 0 4px 8px -2px rgba(16, 185, 129, 0.2);
+  --shadow-popover: 0 12px 32px -4px rgba(17, 28, 45, 0.16);
+
+  /* Geometry & Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-card: 12px;                  /* Strict e-bidding standard: rounded-xl */
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* Typography Scale (Strict Floor: 12px minimum, NO micro-text) */
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  --font-size-xs: 12px;                 /* Strict floor: minimum allowed size */
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 26px;
+
+  /* Animation & Easing Timing (Exponential Ease-out) */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-expo);
+  --transition-normal: 240ms var(--ease-expo);
+  --transition-smooth: 350ms var(--ease-expo);
+
+  /* iOS Safe Areas */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ===================================================================
+   Baseline Resets
+   =================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--color-surface-base);
+  color: var(--color-text-main);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Selection and Caret Theming */
+::selection {
+  background-color: rgba(0, 85, 164, 0.18);
+  color: var(--color-primary);
+}
+
+input, textarea, select {
+  font-family: inherit;
+  caret-color: var(--color-primary-container);
+}
+
+/* ===================================================================
+   Instrumentation Utilities
+   =================================================================== */
+
+/* Mandatory for all counters, timers, timestamps & employee IDs */
+.tabular-nums, .font-mono {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Material Symbols alignment helper */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.4);
+}
+
+/* Hide scrollbar for clean horizontal snap strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tactile interactive micro-interaction */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled), .interactive-press:active {
+  transform: scale(0.98);
+  transition: transform 100ms var(--ease-expo);
+}
+
+/* ===================================================================
+   Strict WCAG AAA Accent Button
+   =================================================================== */
+
+.btn-accent {
+  background-color: var(--color-accent-green);
+  color: var(--color-dark-ink) !important;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-accent:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.btn-accent:active {
+  transform: scale(0.96);
+}
+
+/* Primary Button (Deep Blue) */
+.btn-primary {
+  background-color: var(--color-primary-container);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}

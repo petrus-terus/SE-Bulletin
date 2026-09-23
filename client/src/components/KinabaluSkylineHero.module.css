@@ -1,0 +1,249 @@
+.heroContainer {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-subtle);
+  transition: background 500ms var(--ease-expo), border-color 500ms var(--ease-expo);
+}
+
+/* Time of Day Sky Backgrounds */
+.themeDay {
+  background: linear-gradient(180deg, #EBF3FC 0%, #F5F9FD 60%, #FFFFFF 100%);
+  border-color: #DDE7F2;
+}
+
+.themeDusk {
+  background: linear-gradient(180deg, #1E3A5F 0%, #463B57 45%, #7B4B52 75%, #F4A261 100%);
+  border-color: #554460;
+  color: #FFFFFF;
+}
+
+.themeNight {
+  background: linear-gradient(180deg, #07101E 0%, #0F1D33 50%, #162A4A 100%);
+  border-color: #1F3354;
+  color: #FFFFFF;
+}
+
+/* SVG Stage */
+.svgStage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Clouds Animation */
+.cloudLayerOne {
+  animation: driftClouds 32s linear infinite;
+  will-change: transform;
+}
+
+.cloudLayerTwo {
+  animation: driftClouds 48s linear infinite reverse;
+  will-change: transform;
+}
+
+@keyframes driftClouds {
+  0% {
+    transform: translate3d(-150px, 0, 0);
+  }
+  100% {
+    transform: translate3d(550px, 0, 0);
+  }
+}
+
+/* Grid Energy Pulse Animation */
+.energyPulse {
+  animation: pulseAlongLine 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes pulseAlongLine {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(360px, 12px, 0);
+    opacity: 0;
+  }
+}
+
+/* Content Overlay */
+.contentOverlay {
+  position: relative;
+  z-index: 2;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 142px;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.badgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--transition-normal);
+}
+
+.livePillDay {
+  background: rgba(26, 122, 90, 0.12);
+  color: #0E5C41;
+  border: 1px solid rgba(26, 122, 90, 0.2);
+}
+
+.livePillDusk, .livePillNight {
+  background: rgba(16, 185, 129, 0.2);
+  color: #A7F3D0;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.pulseDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-green);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+  animation: pulseScale 2s infinite ease-in-out;
+}
+
+@keyframes pulseScale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.6;
+  }
+}
+
+/* Time of Day Control Buttons */
+.timeToggleGroup {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  gap: 2px;
+}
+
+.timeToggleGroupDark {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.timeButton {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.timeButton:hover {
+  color: var(--color-text-main);
+}
+
+.timeButtonActiveDay {
+  background: var(--color-surface-card);
+  color: #0055A4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeButtonActiveDark {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* Greeting Block */
+.greetingSection {
+  margin-top: 14px;
+}
+
+.greetingTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin-bottom: 2px;
+  transition: color 300ms var(--ease-expo);
+}
+
+.textDay {
+  color: #111C2D;
+}
+
+.textNight {
+  color: #F8FAFC;
+}
+
+.greetingSub {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subTextDay {
+  color: #475569;
+}
+
+.subTextNight {
+  color: #94A3B8;
+}
+
+.dividerDot {
+  opacity: 0.5;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .cloudLayerOne,
+  .cloudLayerTwo,
+  .energyPulse,
+  .pulseDot {
+    animation: none !important;
+  }
+}

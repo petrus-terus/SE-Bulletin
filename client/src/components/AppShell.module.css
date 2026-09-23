@@ -1,0 +1,17 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-base);
+  position: relative;
+}
+
+.mainContent {
+  flex: 1;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 14px 16px 84px 16px;
+  display: flex;
+  flex-direction: column;
+}
