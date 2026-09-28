@@ -53,6 +53,9 @@ export const StoriesBar: React.FC<Props> = ({ currentUser, stories, onAddStoryCl
                 <img
                   src={story.imageUrl}
                   alt={story.departmentName}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/sesb_logo.png';
+                  }}
                   className={styles.avatarImg}
                 />
               </div>

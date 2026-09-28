@@ -5,58 +5,53 @@ import styles from './TopAppBar.module.css';
 interface Props {
   currentUser: Employee;
   unreadCount?: number;
-  onNotificationClick: () => void;
+  onNotificationClick?: () => void;
   onProfileClick: () => void;
 }
 
 export const TopAppBar: React.FC<Props> = ({
   currentUser,
-  unreadCount = 3,
-  onNotificationClick,
   onProfileClick,
 }) => {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        {/* Brand Logo & Wordmark */}
-        <div className={styles.brandGroup} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <img src="/sesb_logo.png" alt="Sabah Electricity Logo" className={styles.logoIcon} />
-          <div className={styles.brandText}>
-            <span className={styles.brandTitle}>Sabah Electricity</span>
-            <span className={styles.brandSubtitle}>Internal Bulletin</span>
-          </div>
+        {/* Official Sabah Electricity Brand Logo + App Title */}
+        <div
+          className={styles.brandGroup}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          role="button"
+          tabIndex={0}
+          aria-label="Sabah Electricity Home"
+        >
+          <img
+            src="/sabah_electricity_logo.png"
+            alt="Sabah Electricity"
+            className={styles.brandLogoImg}
+            onError={(e) => {
+              e.currentTarget.src = '/sesb_logo.png';
+            }}
+          />
+          <span className={styles.brandTitle}>SE Bulletin</span>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls: Profile Avatar Only */}
         <div className={styles.actionsGroup}>
-          <div className={styles.syncBadge} title="Connected to SESB Corporate Grid Network">
-            <span className={styles.syncDot} />
-            <span className="tabular-nums">Live</span>
-          </div>
-
-          <button
-            type="button"
-            className={styles.iconButton}
-            onClick={onNotificationClick}
-            aria-label="View notifications"
-          >
-            <span className="material-symbols-outlined">notifications</span>
-            {unreadCount > 0 && (
-              <span className={`${styles.notifBadge} tabular-nums font-mono`}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
           <div
             className={styles.avatarWrapper}
             onClick={onProfileClick}
             title={`${currentUser.name} (${currentUser.department})`}
+            role="button"
+            tabIndex={0}
+            aria-label="View user profile"
           >
             <img
               src={currentUser.avatarUrl}
-              alt={currentUser.name}
+              alt=""
               className={styles.avatarImg}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
             {currentUser.isOnline && <span className={styles.onlineDot} />}
           </div>
@@ -65,3 +60,4 @@ export const TopAppBar: React.FC<Props> = ({
     </header>
   );
 };
+

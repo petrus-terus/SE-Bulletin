@@ -20,6 +20,8 @@ export interface Department {
   code: string;
   name: string;
   color: string;
+  colorBg?: string;
+  colorText?: string;
   icon: string;
   followerCount: number;
 }
@@ -72,6 +74,20 @@ export interface Post {
   departmentName?: string;
   departmentColor?: string;
   previewComment?: Comment | null;
+  officialNotice?: boolean;
+}
+
+export interface CreatePostPayload {
+  title: string;
+  content: string;
+  authorName?: string;
+  department?: string;
+  departmentId?: string;
+  avatarUrl?: string;
+  isPinned?: boolean;
+  mediaUrls?: string[];
+  imageUrl?: string;
+  officialNotice?: boolean;
 }
 
 export type TimeAmbiance = 'day' | 'dusk' | 'night';

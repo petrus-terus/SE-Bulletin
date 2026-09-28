@@ -8,11 +8,18 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  transition: box-shadow var(--transition-normal);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow var(--transition-normal);
 }
 
 .card:hover {
   box-shadow: var(--shadow-card-elevated);
+}
+
+.card:active {
+  transform: scale(0.99);
 }
 
 /* Header Row */
@@ -96,17 +103,27 @@
   color: #FFFFFF;
 }
 
+.cardPinned {
+  border-top: 3.5px solid #D97706;
+  background: linear-gradient(180deg, #FFFDF8 0%, #FFFFFF 64px);
+  border-color: #FDE68A;
+}
+
+.cardPinned:hover {
+  border-color: #F59E0B;
+}
+
 .pinnedPill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  background: #EFF6FF;
-  color: #1D4ED8;
-  border: 1px solid #DBEAFE;
+  background: #FEF3C7;
+  color: #0F172A;
+  border: 1px solid #FDE68A;
 }
 
 .authorMetaSub {
@@ -159,22 +176,25 @@
   white-space: pre-line;
 }
 
-/* Post Image Preview */
+/* Post Image Preview - Fuller Uncropped Framing */
 .imageWrapper {
   position: relative;
   width: 100%;
-  max-height: 360px;
+  max-height: 520px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--color-surface-alt);
+  background: #0B0F17;
   border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .postImage {
   width: 100%;
   height: auto;
-  max-height: 360px;
-  object-fit: cover;
+  max-height: 520px;
+  object-fit: contain;
   display: block;
 }
 

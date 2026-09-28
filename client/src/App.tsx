@@ -10,8 +10,15 @@ import { FeedCard } from './components/FeedCard';
 import { BottomNav } from './components/BottomNav';
 import type { TabKey } from './components/BottomNav';
 import { CommentDrawer } from './components/CommentDrawer';
-import { CreatePostModal } from './components/CreatePostModal';
+import { CreateBulletinPage } from './components/CreateBulletinPage';
+import { TrendingSection } from './components/TrendingSection';
+import { SearchDirectoryPage } from './components/SearchDirectoryPage';
+import { ProfilePage } from './components/ProfilePage';
+import { DesktopSidebar } from './components/DesktopSidebar';
+import { DesktopWidgetsRail } from './components/DesktopWidgetsRail';
 import { Toast } from './components/Toast';
+import { PostDetailView } from './components/PostDetailView';
+import { ImageViewerModal } from './components/ImageViewerModal';
 
 export function App() {
   const [currentUser] = useState(CURRENT_USER);
@@ -25,6 +32,12 @@ export function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
+  const [selectedPostForDetail, setSelectedPostForDetail] = useState<Post | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{
+    url: string;
+    title?: string;
+    location?: string | null;
+  } | null>(null);
 
   // Threaded comments database mock
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
@@ -194,18 +207,79 @@ export function App() {
         onProfileClick={() => setActiveTab('profile')}
       />
 
-      {/* Main Container Shell (Fluid up to 680px per Decision 5B) */}
-      <AppShell>
-        {activeTab === 'home' && (
+      {/* Main Container Shell with Multi-Screen Responsive Layout */}
+      <AppShell
+        sidebar={
+          <DesktopSidebar
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setSelectedPostForDetail(null);
+              setActiveTab(tab);
+            }}
+            onCreateClick={() => setIsCreateOpen(true)}
+            currentUser={currentUser}
+            unreadCount={unreadCount}
+          />
+        }
+        rightRail={<DesktopWidgetsRail />}
+      >
+        {selectedPostForDetail ? (
+          <PostDetailView
+            post={selectedPostForDetail}
+            onBack={() => setSelectedPostForDetail(null)}
+            onLikeToggle={(postId) => {
+              handleLikeToggle(postId);
+              setSelectedPostForDetail((prev) =>
+                prev && prev.id === postId
+                  ? {
+                      ...prev,
+                      isLiked: !prev.isLiked,
+                      likesCount: !prev.isLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
+                    }
+                  : prev
+              );
+            }}
+            onBookmarkToggle={(postId) => {
+              handleBookmarkToggle(postId);
+              setSelectedPostForDetail((prev) =>
+                prev && prev.id === postId ? { ...prev, isBookmarked: !prev.isBookmarked } : prev
+              );
+            }}
+            onShareClick={handleShare}
+            onImageClick={(imageUrl, title, location) => {
+              setLightboxImage({ url: imageUrl, title, location });
+            }}
+            onAddComment={(postId, text) => {
+              handleAddComment(postId, text);
+              setSelectedPostForDetail((prev) =>
+                prev && prev.id === postId
+                  ? { ...prev, commentsCount: prev.commentsCount + 1 }
+                  : prev
+              );
+            }}
+          />
+        ) : (
           <>
-            {/* 1. Animated City & Mount Kinabalu Illustration Hero Card */}
+            {activeTab === 'home' && (
+          <>
+            {/* 1. Revamped Corporate Executive Morning Hero Card */}
             <KinabaluSkylineHero
               userName={currentUser.name}
               department={currentUser.department}
               employeeId={currentUser.employeeId}
+              onOpenCreate={() => setIsCreateOpen(true)}
+              onNavigateDirectory={() => setActiveTab('explore')}
+              onFilterCategory={(deptId) => setSelectedDeptId(deptId)}
             />
 
-            {/* 2. 24-Hour Department Stories Carousel */}
+            {/* 2. Trending Across SESB Section */}
+            <TrendingSection
+              posts={posts}
+              onSelectPost={(post) => setSelectedPostForDetail(post)}
+              onOpenComments={(post) => setActiveCommentPost(post)}
+            />
+
+            {/* 3. 24-Hour Department Stories Carousel */}
             <StoriesBar
               currentUser={currentUser}
               stories={stories}
@@ -249,6 +323,7 @@ export function App() {
                     onCommentClick={(p) => setActiveCommentPost(p)}
                     onShareClick={handleShare}
                     onBookmarkToggle={handleBookmarkToggle}
+                    onPostClick={(p) => setSelectedPostForDetail(p)}
                   />
                 ))
               )}
@@ -256,106 +331,16 @@ export function App() {
           </>
         )}
 
-        {/* Explore Tab View */}
+        {/* Explore & Directory Tab View (Stitch Inspired) */}
         {activeTab === 'explore' && (
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: 'var(--radius-card)',
-                padding: '20px',
-                border: '1px solid var(--color-border-subtle)',
-              }}
-            >
-              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '8px' }}>
-                Explore Sabah Electricity Directory
-              </h2>
-              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-                Search staff members, regional power stations, and department circulars across Sabah & Labuan.
-              </p>
-              <div style={{ position: 'relative' }}>
-                <span
-                  className="material-symbols-outlined"
-                  style={{ position: 'absolute', left: '12px', top: '11px', color: '#94A3B8' }}
-                >
-                  search
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by staff name, ID (e.g. SESB-1001), or station..."
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    paddingLeft: '40px',
-                    paddingRight: '14px',
-                    borderRadius: 'var(--radius-pill)',
-                    border: '1px solid var(--color-border-subtle)',
-                    background: '#F8FAFC',
-                    fontSize: 'var(--font-size-sm)',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Department Directory List */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: 'var(--radius-card)',
-                padding: '20px',
-                border: '1px solid var(--color-border-subtle)',
-              }}
-            >
-              <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, marginBottom: '14px' }}>
-                Regional Divisions & Departments
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {DEPARTMENTS.filter((d) => d.id !== 'dept-all').map((dept) => (
-                  <div
-                    key={dept.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: '#F8FAFC',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="material-symbols-outlined" style={{ color: dept.color }}>
-                        {dept.icon}
-                      </span>
-                      <div>
-                        <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>{dept.name}</div>
-                        <div className="tabular-nums font-mono" style={{ fontSize: 'var(--font-size-xs)', color: '#64748B' }}>
-                          {dept.followerCount} staff members
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      style={{
-                        padding: '5px 12px',
-                        borderRadius: 'var(--radius-pill)',
-                        border: '1px solid var(--color-border-subtle)',
-                        background: '#FFFFFF',
-                        fontSize: 'var(--font-size-xs)',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => {
-                        setToast({ message: `Followed ${dept.name}`, icon: 'check' });
-                      }}
-                    >
-                      Follow
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+          <SearchDirectoryPage
+            posts={posts}
+            departments={DEPARTMENTS}
+            onLikeToggle={handleLikeToggle}
+            onOpenComments={(post) => setActiveCommentPost(post)}
+            onShare={handleShare}
+            onPostClick={(post) => setSelectedPostForDetail(post)}
+          />
         )}
 
         {/* Notifications Tab View */}
@@ -420,82 +405,19 @@ export function App() {
           </section>
         )}
 
-        {/* Profile Tab View */}
+        {/* Facebook-Style Profile Tab View */}
         {activeTab === 'profile' && (
-          <section
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 'var(--radius-card)',
-              padding: '24px',
-              border: '1px solid var(--color-border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ position: 'relative', width: '80px', height: '80px', marginBottom: '12px' }}>
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.name}
-                style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-pill)', objectFit: 'cover', border: '3px solid var(--color-primary-container)' }}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: 'var(--radius-pill)',
-                  backgroundColor: 'var(--color-accent-green)',
-                  border: '2px solid #FFFFFF',
-                }}
-              />
-            </div>
-            <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-text-main)' }}>{currentUser.fullName}</h2>
-            <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-primary-container)', marginTop: '2px' }}>
-              {currentUser.designation}
-            </div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-              {currentUser.department} • <span className="tabular-nums font-mono">{currentUser.employeeId}</span>
-            </div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              {currentUser.officeLocation} • <span className="tabular-nums font-mono">{currentUser.phoneExtension}</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '20px', width: '100%' }}>
-              <button
-                type="button"
-                className="btn-primary"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setToast({ message: 'Offline cache cleared and re-synced', icon: 'sync' });
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span>
-                <span>Sync Cache</span>
-              </button>
-              <button
-                type="button"
-                style={{
-                  flex: 1,
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: '1px solid var(--color-border-subtle)',
-                  background: '#FFFFFF',
-                  fontWeight: 600,
-                  fontSize: 'var(--font-size-xs)',
-                  cursor: 'pointer',
-                }}
-                onClick={() => {
-                  setToast({ message: 'Settings panel coming in next sprint', icon: 'settings' });
-                }}
-              >
-                Settings
-              </button>
-            </div>
-          </section>
+          <ProfilePage
+            posts={posts}
+            onLikeToggle={handleLikeToggle}
+            onOpenComments={(post) => setActiveCommentPost(post)}
+            onShare={handleShare}
+            onOpenCreate={() => setIsCreateOpen(true)}
+            onPostClick={(post) => setSelectedPostForDetail(post)}
+            onImageClick={(url, title) => setLightboxImage({ url, title })}
+          />
+        )}
+          </>
         )}
       </AppShell>
 
@@ -511,22 +433,65 @@ export function App() {
         />
       )}
 
-      {/* Bottom Sheet for Creating Posts (Decision 4A) */}
-      <CreatePostModal
-        currentUser={currentUser}
-        departments={DEPARTMENTS}
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onPublish={handlePublishPost}
-      />
+      {/* Dedicated Full Page for Creating Bulletins (Stitch Inspired) */}
+      {isCreateOpen && (
+        <CreateBulletinPage
+          departments={DEPARTMENTS}
+          onClose={() => setIsCreateOpen(false)}
+          onSubmit={(newPostData) => {
+            const newPost: Post = {
+              id: `post-${Date.now()}`,
+              author: {
+                id: currentUser.id,
+                name: currentUser.name,
+                designation: currentUser.designation,
+                department: newPostData.department || currentUser.department,
+                avatarUrl: currentUser.avatarUrl,
+                isVerified: currentUser.isVerified ?? true,
+              },
+              timestamp: 'Just now',
+              title: newPostData.title || '',
+              content: newPostData.content || '',
+              location: 'Wisma SESB HQ',
+              imageUrl: newPostData.mediaUrls?.[0] || newPostData.imageUrl || null,
+              isPinned: newPostData.isPinned || false,
+              officialNotice: newPostData.officialNotice || false,
+              commentsEnabled: true,
+              likesCount: 0,
+              commentsCount: 0,
+              sharesCount: 0,
+              isLiked: false,
+              isBookmarked: false,
+              departmentId: newPostData.departmentId || 'dept-ops',
+              departmentName: newPostData.department || 'Operations & Engineering',
+              departmentColor: '#0055A4',
+            };
+            handlePublishPost(newPost);
+            setIsCreateOpen(false);
+          }}
+        />
+      )}
 
       {/* Sticky Bottom Navigation Bar with Elevated Center FAB */}
       <BottomNav
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab)}
+        onTabChange={(tab) => {
+          setSelectedPostForDetail(null);
+          setActiveTab(tab);
+        }}
         onCreateClick={() => setIsCreateOpen(true)}
         unreadCount={unreadCount}
       />
+
+      {/* Fullscreen Gesture-Only Lightbox Image Viewer */}
+      {lightboxImage && (
+        <ImageViewerModal
+          imageUrl={lightboxImage.url}
+          title={lightboxImage.title}
+          location={lightboxImage.location}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
 
       {/* Apple HIG Spring Toast Feedback */}
       {toast && (

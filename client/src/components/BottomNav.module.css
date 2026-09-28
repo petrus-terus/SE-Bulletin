@@ -12,6 +12,12 @@
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
 }
 
+@media (min-width: 1024px) {
+  .navContainer {
+    display: none !important;
+  }
+}
+
 .inner {
   height: 60px;
   max-width: 680px;

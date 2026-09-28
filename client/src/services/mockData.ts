@@ -121,62 +121,202 @@ export const INITIAL_STORIES: Story[] = [
 
 export const INITIAL_POSTS: Post[] = [
   {
-    id: 'post-101',
+    id: 'post-career-day-warning',
+    author: {
+      id: 'user-hr-corp',
+      name: 'Human Resources Division',
+      designation: 'Talent Acquisition & Corporate Governance',
+      department: 'Human Resources',
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
+      isVerified: true,
+    },
+    timestamp: '30m ago',
+    title: 'PERINGATAN KEPADA SEMUA WARGA KERJA SABAH ELECTRICITY ⚠️',
+    content: `Assalamualaikum dan salam sejahtera,
+
+Untuk makluman, terdapat draf poster Career Day Sabah Electricity yang telah tersebar melalui WhatsApp.
+
+Program ini masih belum disahkan secara rasmi. Mohon kerjasama semua warga kerja untuk tidak menyebarkan poster tersebut dan memadam sebarang perkongsian yang telah dibuat, termasuk di status WhatsApp dan media sosial.
+
+Sekiranya terdapat pertanyaan, mohon maklumkan bahawa program masih belum disahkan dan sebarang pengumuman rasmi akan dimaklumkan melalui saluran syarikat.
+
+Mesej ini adalah untuk makluman dalaman sahaja dan tidak perlu dipanjangkan kepada pihak luar.
+
+Terima kasih atas kerjasama semua.`,
+    location: 'Wisma SESB HQ (Internal Broadcast Only)',
+    imageUrl: '/mock-images/image4.png',
+    isPinned: true,
+    commentsEnabled: true,
+    likesCount: 215,
+    commentsCount: 19,
+    sharesCount: 8,
+    isLiked: false,
+    isBookmarked: true,
+    departmentId: 'dept-hr',
+    departmentName: 'Human Resources',
+    departmentColor: '#006C4D',
+    previewComment: {
+      id: 'c-warn-1',
+      authorName: 'Mohd Irfan',
+      department: 'IT',
+      avatarInitials: 'MI',
+      text: 'Noted. IT security has also flagged circulating unverified social links.',
+      timestamp: '15m ago',
+      likesCount: 9,
+    },
+  },
+  {
+    id: 'post-our-brand',
+    author: {
+      id: 'user-irfan',
+      name: 'Mohd Irfan',
+      designation: 'Digital Transformation Lead',
+      department: 'Information Technology',
+      avatarUrl: '/user_face.png',
+      isVerified: true,
+    },
+    timestamp: '2h ago',
+    title: 'OUR BRAND, OUR JOURNEY — Memperkasa Identiti Jenama Sabah Electricity 📘',
+    content: `Jenama kita bukan sekadar logo. Setiap elemen, warna dan bentuk yang digunakan membawa makna serta mencerminkan identiti Sabah Electricity.
+
+Menerusi siri Our Brand, Our Journey, kita akan mengenali dengan lebih dekat identiti jenama Sabah Electricity. Daripada maksud di sebalik logo, elemen visual hingga cara penggunaannya yang betul dan konsisten.
+
+Untuk siri pertama, kenali maksud di sebalik identiti logo kita dan bagaimana setiap elemennya membentuk Sabah Electricity yang kita kenali hari ini.
+
+📘 Ketahui lebih lanjut dengan memuat turun Brand Playbook Sabah Electricity melalui:
+MyPortal > Corporate Communication > Rebranding Documents
+
+#OurBrandOurJourney #EnergisingOurFuture`,
+    location: 'Digital Experience Hub, Wisma SESB',
+    imageUrl: '/mock-images/image2.png',
+    isPinned: false,
+    commentsEnabled: true,
+    likesCount: 194,
+    commentsCount: 43,
+    sharesCount: 35,
+    isLiked: true,
+    isBookmarked: true,
+    departmentId: 'dept-it',
+    departmentName: 'Information Technology',
+    departmentColor: '#003E7A',
+    previewComment: {
+      id: 'c-brand-1',
+      authorName: 'Siti Aminah',
+      department: 'Corp Comms',
+      avatarInitials: 'SA',
+      text: 'Brand Playbook guidelines are crystal clear. Great rollout team!',
+      timestamp: '1h ago',
+      likesCount: 16,
+    },
+  },
+  {
+    id: 'post-madani-link',
     author: {
       id: 'user-azman',
-      name: 'Azman B. Abdullah',
+      name: 'Ir. Azman B. Abdullah',
       designation: 'Senior Grid Engineer, Transmission',
       department: 'Operations & Engineering',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
       isVerified: true,
     },
-    timestamp: '2 hours ago',
-    title: 'Commissioning of New Substation Grid Tie in Tenom Completed Ahead of Schedule! ⚡',
-    content: 'Proud to announce our Southern Grid team has successfully completed the 132kV transformer energization at Tenom Main Intake today. Big kudos to the line crews, electrical technicians, and safety supervisors for zero lost-time incidents during the 48-hour shut-in window.',
-    location: 'Tenom Main Intake Substation',
-    imageUrl: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1200&q=80',
-    isPinned: true,
+    timestamp: '5h ago',
+    title: 'Sabah Southern MADANI Link | Bekalan Lebih Kukuh untuk Rakyat ⚡🇲🇾',
+    content: `Projek transmisi strategik Sabah Southern MADANI Link memperkukuh kestabilan grid kuasa wilayah pantai barat dan selatan Sabah untuk kemakmuran rakyat.
+
+Tahniah kepada semua pasukan teknikal, perancangan grid, dan kontraktor yang bertungkus-lumus memastikan kesinambungan grid voltan tinggi ini beroperasi dengan piawaian keselamatan tertinggi.
+
+Ikuti sorotan video dan laporan tapak di media sosial rasmi SESB!`,
+    location: 'Southern Grid Transmission Corridor',
+    imageUrl: '/mock-images/image7.jpeg',
+    isPinned: false,
     commentsEnabled: true,
-    likesCount: 148,
-    commentsCount: 32,
-    sharesCount: 15,
-    isLiked: false,
+    likesCount: 289,
+    commentsCount: 56,
+    sharesCount: 64,
+    isLiked: true,
     isBookmarked: false,
     departmentId: 'dept-ops',
     departmentName: 'Operations & Engineering',
     departmentColor: '#0055A4',
     previewComment: {
-      id: 'comment-p1',
-      authorName: 'Siti Aminah',
-      department: 'HR',
-      avatarInitials: 'SA',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
-      text: 'Congratulations team! Exemplary execution and strict safety compliance.',
-      timestamp: '1 hour ago',
-      likesCount: 14,
+      id: 'c-madani-1',
+      authorName: 'Ir. Raymond Chin',
+      department: 'OPS',
+      avatarInitials: 'RC',
+      text: 'Major milestone for Sabah grid resiliency. Bravo team!',
+      timestamp: '3h ago',
+      likesCount: 24,
     },
   },
   {
-    id: 'post-102',
+    id: 'post-esg-challenge',
     author: {
-      id: 'user-hse',
-      name: 'Safety & Health Division',
-      designation: 'HSE Directorate',
-      department: 'Safety & Health (HSE)',
-      avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
+      id: 'user-esg',
+      name: 'Siti Aminah Bt. Mansur',
+      designation: 'ESG & Sustainability Lead',
+      department: 'Corporate Communications',
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&q=80',
       isVerified: true,
     },
-    timestamp: '4 hours ago',
-    title: 'Mandatory Safety Directive: Live Substation Work Protocol Updates (SOP-2026-04)',
-    content: 'All field engineers, linesmen, and contractor personnel must review the revised Golden Safety Rules effective October 1st. Mandatory verification drills will take place across all regional districts (Kota Kinabalu, Sandakan, and Tawau). Please coordinate with your designated safety officer.',
-    location: 'Wisma SESB HQ & Regional Depots',
-    imageUrl: null,
+    timestamp: '8h ago',
+    title: 'Cabaran 5 Minit ESG — Sesi Akhir & Peluang Mengumpul Markah! 🌱',
+    content: `Kita telah hampir sampai ke penghujung Cabaran 5 Minit ESG. Sesi ringkas ini dibawa khas untuk seluruh rakan sekerja untuk mengukur pengetahuan am berkenaan ESG di Sabah Electricity, Sabah dan Malaysia. Dan, dalam mengukur pengetahuan kita ini, ia tidak kosong. Pemenang akan membawa pulang hadiah istimewa.
+
+Kepada rakan-rakan yang masih belum pernah menyertai cabaran ini yang telah kita lalui 3 sesi sebelumnya, jangan kecewa, sesi terakhir ini masih boleh disertai dan berkemungkinan masih mampu mengejar markah rakan-rakan yang mendahului 😊... Walau pun kita tidak menduduki carta tetapi masih mampu mendahului carta ilmu sebelum menyertainya.
+
+Jangan lupa, blok kalendar ya... bersama kita mencabar dan menambah pengetahuan baharu.`,
+    location: 'Wisma SESB HQ & Online ESG Portal',
+    imageUrl: '/mock-images/image1.png',
     isPinned: false,
     commentsEnabled: true,
-    likesCount: 94,
-    commentsCount: 11,
-    sharesCount: 42,
-    isLiked: true,
+    likesCount: 112,
+    commentsCount: 28,
+    sharesCount: 19,
+    isLiked: false,
+    isBookmarked: false,
+    departmentId: 'dept-comm',
+    departmentName: 'Corporate Communications',
+    departmentColor: '#0055A4',
+    previewComment: {
+      id: 'c-esg-1',
+      authorName: 'Zulhilmi Rahman',
+      department: 'HR',
+      avatarInitials: 'ZR',
+      text: 'Already completed the quiz! Great initiative for staff sustainability awareness.',
+      timestamp: '4h ago',
+      likesCount: 11,
+    },
+  },
+  {
+    id: 'post-hse-sembang',
+    author: {
+      id: 'user-asrin',
+      name: 'En. Asrin @ Rudiman bin Badri',
+      designation: 'Pengurus Besar Kesihatan, Keselamatan & Alam Sekitar',
+      department: 'Safety & Health (HSE)',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
+      isVerified: true,
+    },
+    timestamp: '1d ago',
+    title: 'Keselamatan Elektrik Tanggungjawab Bersama | Sembang Ekspresi RTM Sabah 📻',
+    content: `Keselamatan elektrik bukan hanya mengenai penggunaan peralatan dengan betul, tetapi juga tentang melindungi diri, keluarga dan komuniti daripada risiko yang boleh dielakkan.
+
+Ikuti perkongsian En. Asrin @ Rudiman bin Badri, Pengurus Besar Kesihatan, Keselamatan & Alam Sekitar, Sabah Electricity dalam Sembang Ekspresi, RTM Sabah, yang akan membincangkan langkah keselamatan elektrik serta kepentingan meningkatkan kesedaran dalam kalangan masyarakat.
+
+📅 21 September 2026 (Isnin)
+⏰ 10.30 pagi
+📻 RTM Sabah | Sembang Ekspresi
+
+Jadikan keselamatan satu amalan, bukan sekadar peringatan.
+Lindungi diri. Lindungi keluarga. Lindungi komuniti.`,
+    location: 'RTM Sabah & Wisma SESB HSE Media Center',
+    imageUrl: '/mock-images/image5.png',
+    isPinned: false,
+    commentsEnabled: true,
+    likesCount: 167,
+    commentsCount: 31,
+    sharesCount: 48,
+    isLiked: false,
     isBookmarked: true,
     departmentId: 'dept-hse',
     departmentName: 'Safety & Health (HSE)',
@@ -184,38 +324,125 @@ export const INITIAL_POSTS: Post[] = [
     previewComment: null,
   },
   {
-    id: 'post-103',
+    id: 'post-ewaste-recycle',
     author: {
-      id: 'user-hr',
-      name: 'Zulhilmi bin Rahman',
-      designation: 'Staff Welfare & Sports Club Officer',
-      department: 'Human Resources',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
+      id: 'user-brondon',
+      name: 'En. Brondon Ceristoper',
+      designation: 'Pegawai Program Alam Sekitar & Komuniti HSE',
+      department: 'Safety & Health (HSE)',
+      avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=256&q=80',
       isVerified: true,
     },
-    timestamp: '6 hours ago',
-    title: 'Annual Health Screening & Kinabalu Eco-Run 2026 Registration Open 🏔️',
-    content: 'Early bird registration is officially open for all Sabah Electricity staff and immediate family members. Goodie bags include the newly released SESB Kinabalu dri-fit performance jersey and commemorative sports medal. Limited slots available for the 10km category!',
-    location: 'Wisma SESB Sports Arena, KK',
-    imageUrl: 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1200&q=80',
+    timestamp: '2d ago',
+    title: '📢 JOM KITAR SEMULA! Program Pengumpulan E-Waste di Stadium Likas 🌱♻️',
+    content: `Jom bersama-sama menyokong Program Pengumpulan Sisa Elektrik dan Elektronik (E-Waste)! 🌱♻️
+
+📅 Tarikh: 10.10.2026 (Sabtu)
+⏰ Masa: 8.00 pagi – 5.00 petang
+📍 Lokasi: Stadium Likas – Volleyball & Basketball Court
+
+🔌 Bawa E-Waste anda seperti telefon, tablet, komputer, laptop, monitor, printer dan barangan elektronik terpilih untuk dikitar semula dengan cara yang betul.
+
+🎁 Bawa E-Waste, Dapat Hadiah Istimewa!
+
+🌿 Jom kita sama-sama jadikan amalan kitar semula sebahagian daripada budaya kita! ♻️💚
+
+Jika terdapat sebarang pertanyaan sila berhubung dengan En. Brondon Ceristoper di talian 011-2663 6319.`,
+    location: 'Stadium Likas, Kota Kinabalu',
+    imageUrl: '/mock-images/image8.png',
     isPinned: false,
     commentsEnabled: true,
-    likesCount: 89,
-    commentsCount: 19,
-    sharesCount: 7,
+    likesCount: 175,
+    commentsCount: 39,
+    sharesCount: 51,
+    isLiked: true,
+    isBookmarked: false,
+    departmentId: 'dept-hse',
+    departmentName: 'Safety & Health (HSE)',
+    departmentColor: '#BA1A1A',
+    previewComment: {
+      id: 'c-ewaste-1',
+      authorName: 'Dayang Norazimah',
+      department: 'FIN',
+      avatarInitials: 'DN',
+      text: 'Great weekend program! Preparing our department obsolete cables & printers.',
+      timestamp: '1d ago',
+      likesCount: 7,
+    },
+  },
+  {
+    id: 'post-finance-pulse',
+    author: {
+      id: 'user-finance',
+      name: 'Finance & Accounts Division',
+      designation: 'CFO / Strategic Management & Governance (SMG)',
+      department: 'Finance & Accounts',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+      isVerified: true,
+    },
+    timestamp: '2d ago',
+    title: '📚 FINANCE PULSE | EDUCATION SERIES 6: Statement of Financial Position 📊',
+    content: `Salam warga SE! 👋
+
+Pernah dengar “Statement of Financial Position” a.k.a. “Balance Sheet” tapi masih tertanya-tanya apa sebenarnya? 🤔📊
+
+Jom kenali Bahasa Kewangan dengan cara yang lebih ringkas, mudah & cepat difahami! 💡✨
+
+Luangkan seminit untuk baca — mana tahu lepas ni bila Finance sebut Assets, Liabilities & Equity, terus faham! 😉📖
+
+Knowledge shared is knowledge gained.
+Jom Belajar Bersama!
+
+Finance Division
+CFO / Strategic Management & Governance (SMG)`,
+    location: 'Wisma SESB HQ Level 8',
+    imageUrl: '/mock-images/image6.png',
+    isPinned: false,
+    commentsEnabled: true,
+    likesCount: 142,
+    commentsCount: 25,
+    sharesCount: 33,
     isLiked: false,
     isBookmarked: false,
-    departmentId: 'dept-hr',
-    departmentName: 'Human Resources',
-    departmentColor: '#006C4D',
-    previewComment: {
-      id: 'comment-p3',
-      authorName: 'Ir. Raymond Chin',
-      department: 'OPS',
-      avatarInitials: 'RC',
-      text: 'Engineering team has formed 4 relay groups. Looking forward to it!',
-      timestamp: '3 hours ago',
-      likesCount: 8,
+    departmentId: 'dept-fin',
+    departmentName: 'Finance & Accounts',
+    departmentColor: '#1A7A5A',
+    previewComment: null,
+  },
+  {
+    id: 'post-tariff-info',
+    author: {
+      id: 'user-customercare',
+      name: 'Customer Care & Commercial Division',
+      designation: 'Regulatory & Corporate Affairs',
+      department: 'Corporate Communications',
+      avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
+      isVerified: true,
     },
+    timestamp: '3d ago',
+    title: 'Maklumat Rasmi Berkenaan Jadual Baharu Tarif Elektrik ⚡',
+    content: `Anda ingin mendapatkan maklumat berkenaan tarif elektrik?
+
+Dapatkan maklumat lanjut mengenai jadual baharu tarif elektrik dengan melayari laman web Sabah Electricity di www.sesb.com.my/tariff.
+
+Untuk sebarang pertanyaan berkaitan tarif, sila hubungi SESB Careline di 15444 (Tekan 2).
+
+Kekal terhubung dengan kami melalui saluran rasmi syarikat:
+• Facebook: facebook.com/sabahelectricity
+• Instagram: @sabahelectricity
+• TikTok: @sabahelectricity`,
+    location: 'SESB Customer Service Touchpoints Statewide',
+    imageUrl: null,
+    isPinned: false,
+    commentsEnabled: true,
+    likesCount: 87,
+    commentsCount: 14,
+    sharesCount: 22,
+    isLiked: false,
+    isBookmarked: false,
+    departmentId: 'dept-comm',
+    departmentName: 'Corporate Communications',
+    departmentColor: '#0055A4',
+    previewComment: null,
   },
 ];

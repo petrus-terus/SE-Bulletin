@@ -1,34 +1,40 @@
-.heroContainer {
+/* Executive Morning Hero Card */
+.heroCard {
   position: relative;
   width: 100%;
   border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: var(--shadow-card);
-  margin-bottom: 16px;
-  border: 1px solid var(--color-border-subtle);
-  transition: background 500ms var(--ease-expo), border-color 500ms var(--ease-expo);
+  box-shadow: 0 4px 20px -2px rgba(0, 85, 164, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 20px;
+  border: 1px solid rgba(0, 85, 164, 0.12);
+  transition: background 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Time of Day Sky Backgrounds */
+/* Day Mode: Clean Corporate Executive Morning Atmosphere */
 .themeDay {
-  background: linear-gradient(180deg, #EBF3FC 0%, #F5F9FD 60%, #FFFFFF 100%);
-  border-color: #DDE7F2;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 45%, #EFF6FF 100%);
+  border-color: rgba(0, 85, 164, 0.14);
+  color: var(--color-on-surface);
 }
 
+/* Dusk Mode */
 .themeDusk {
-  background: linear-gradient(180deg, #1E3A5F 0%, #463B57 45%, #7B4B52 75%, #F4A261 100%);
-  border-color: #554460;
+  background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%);
+  border-color: rgba(255, 255, 255, 0.12);
   color: #FFFFFF;
 }
 
+/* Night Mode */
 .themeNight {
-  background: linear-gradient(180deg, #07101E 0%, #0F1D33 50%, #162A4A 100%);
-  border-color: #1F3354;
+  background: linear-gradient(135deg, #0B0F17 0%, #111827 50%, #1E293B 100%);
+  border-color: rgba(56, 189, 248, 0.2);
   color: #FFFFFF;
 }
 
-/* SVG Stage */
-.svgStage {
+/* Watermark SVG Silhouette */
+.watermarkSvg {
   position: absolute;
   top: 0;
   left: 0;
@@ -36,214 +42,656 @@
   height: 100%;
   pointer-events: none;
   z-index: 1;
+  overflow: hidden;
 }
 
-/* Clouds Animation */
-.cloudLayerOne {
-  animation: driftClouds 32s linear infinite;
-  will-change: transform;
+/* 1. Luminous Atmospheric Sky Glow (Breathing Opacity) */
+.skyAura {
+  animation: auraBreathe 8s ease-in-out infinite;
+  will-change: opacity;
 }
 
-.cloudLayerTwo {
-  animation: driftClouds 48s linear infinite reverse;
-  will-change: transform;
-}
-
-@keyframes driftClouds {
-  0% {
-    transform: translate3d(-150px, 0, 0);
+@keyframes auraBreathe {
+  0%, 100% {
+    opacity: 0.65;
   }
-  100% {
-    transform: translate3d(550px, 0, 0);
+  50% {
+    opacity: 1;
   }
 }
 
-/* Grid Energy Pulse Animation */
-.energyPulse {
-  animation: pulseAlongLine 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+/* 2. Drifting Valley Mist Animation */
+.driftingMist {
+  animation: mistDrift 14s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
   will-change: transform, opacity;
 }
 
-@keyframes pulseAlongLine {
+@keyframes mistDrift {
   0% {
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(-30px, 0, 0);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(40px, 0, 0);
+    opacity: 1;
+  }
+}
+
+/* 3. Grid Traveling Pulses (GPU accelerated translate3d) */
+.pulseTrack1 {
+  animation: energyTravel1 6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes energyTravel1 {
+  0% {
+    transform: translate3d(-170px, -15px, 0);
     opacity: 0;
   }
   15% {
-    opacity: 1;
+    opacity: 0.95;
   }
   85% {
-    opacity: 1;
+    opacity: 0.95;
   }
   100% {
-    transform: translate3d(360px, 12px, 0);
+    transform: translate3d(270px, -18px, 0);
     opacity: 0;
   }
 }
 
-/* Content Overlay */
-.contentOverlay {
-  position: relative;
-  z-index: 2;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 142px;
+.pulseTrack2 {
+  animation: energyTravel2 7.5s cubic-bezier(0.16, 1, 0.3, 1) infinite 1.8s;
+  will-change: transform, opacity;
 }
 
-.topRow {
+@keyframes energyTravel2 {
+  0% {
+    transform: translate3d(-240px, 10px, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(220px, -6px, 0);
+    opacity: 0;
+  }
+}
+
+/* Card Content Overlay */
+.cardContent {
+  position: relative;
+  z-index: 2;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Meta / Status Row */
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.telemetryGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 85, 164, 0.06);
+  color: var(--color-primary-container);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border: 1px solid rgba(0, 85, 164, 0.1);
+}
+
+.themeDusk .dateBadge,
+.themeNight .dateBadge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #93C5FD;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.gridStatusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.themeDusk .gridStatusPill,
+.themeNight .gridStatusPill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.liveIndicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: livePing 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes livePing {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+.gridStatusLabel {
+  font-weight: 500;
+}
+
+/* Ambiance Group */
+.ambianceGroup {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.themeDusk .ambianceGroup,
+.themeNight .ambianceGroup {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.ambianceBtn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background 150ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ambianceBtn:active {
+  transform: scale(0.96);
+}
+
+.ambianceBtnActive {
+  background: #FFFFFF;
+  color: var(--color-primary-container);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.themeDusk .ambianceBtnActive,
+.themeNight .ambianceBtnActive {
+  background: #1E293B;
+  color: #38BDF8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Greeting Section */
+.greetingBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.greetingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.greetingTitle {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.highlightName {
+  color: var(--color-primary-container);
+}
+
+.themeDusk .highlightName,
+.themeNight .highlightName {
+  color: #38BDF8;
+}
+
+.wismaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: #64748B;
+  font-weight: 500;
+}
+
+.themeDusk .wismaBadge,
+.themeNight .wismaBadge {
+  color: #94A3B8;
+}
+
+.empMetadata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  color: #475569;
+}
+
+.themeDusk .empMetadata,
+.themeNight .empMetadata {
+  color: #CBD5E1;
+}
+
+.deptText {
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.themeDusk .deptText,
+.themeNight .deptText {
+  color: #F1F5F9;
+}
+
+.metaDivider {
+  color: #CBD5E1;
+  font-weight: 300;
+}
+
+.shiftLabel {
+  color: #64748B;
+}
+
+.themeDusk .shiftLabel,
+.themeNight .shiftLabel {
+  color: #94A3B8;
+}
+
+/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Market Card */
+.sharesWidget {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 85, 164, 0.14);
+  border-radius: var(--radius-card);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 12px rgba(0, 85, 164, 0.06);
+  margin-top: 4px;
+  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.themeDusk .sharesWidget,
+.themeNight .sharesWidget {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Top Row: Brand & Live Market Indicator */
+.sharesTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sharesBrandGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tnbLogoBadge {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 85, 164, 0.12);
+  border-radius: 7px;
+  padding: 3px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  height: 30px;
+  width: 50px;
+}
+
+.themeDusk .tnbLogoBadge,
+.themeNight .tnbLogoBadge {
+  background: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.tnbLogoImg {
+  height: 20px;
+  width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.brandTextContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sharesTickerName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.companyTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.themeDusk .companyTitle,
+.themeNight .companyTitle {
+  color: #F8FAFC;
+}
+
+.sharesExchangeSub {
+  font-size: var(--font-size-xs);
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.themeDusk .sharesExchangeSub,
+.themeNight .sharesExchangeSub {
+  color: #94A3B8;
+}
+
+/* Market Status & Scrubbing Indicators */
+.statusIndicatorBlock {
+  display: flex;
+  align-items: center;
+}
+
+.liveMarketPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: var(--font-size-xs);
+  color: #065F46;
+  font-weight: 600;
+}
+
+.themeDusk .liveMarketPill,
+.themeNight .liveMarketPill {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34D399;
+}
+
+.liveMarketDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+  animation: pulseLive 2s infinite ease-in-out;
+}
+
+@keyframes pulseLive {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.scrubbingStatusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 85, 164, 0.1);
+  border: 1px solid rgba(0, 85, 164, 0.25);
+  font-size: var(--font-size-xs);
+  color: #0055A4;
+  font-weight: 600;
+  animation: scrubGlow 1.5s infinite alternate ease-in-out;
+}
+
+.themeDusk .scrubbingStatusPill,
+.themeNight .scrubbingStatusPill {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+@keyframes scrubGlow {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Main Price Row */
+.sharesPriceRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 2px 0;
 }
 
-.badgeGroup {
+.priceContainer {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.livePill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
+.priceMain {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.currencyPrefix {
   font-size: var(--font-size-xs);
   font-weight: 600;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all var(--transition-normal);
+  color: #64748B;
 }
 
-.livePillDay {
-  background: rgba(26, 122, 90, 0.12);
-  color: #0E5C41;
-  border: 1px solid rgba(26, 122, 90, 0.2);
-}
-
-.livePillDusk, .livePillNight {
-  background: rgba(16, 185, 129, 0.2);
-  color: #A7F3D0;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-}
-
-.pulseDot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--radius-pill);
-  background: var(--color-accent-green);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
-  animation: pulseScale 2s infinite ease-in-out;
-}
-
-@keyframes pulseScale {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0.6;
-  }
-}
-
-/* Time of Day Control Buttons */
-.timeToggleGroup {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-  padding: 2px;
-  gap: 2px;
-}
-
-.timeToggleGroupDark {
-  background: rgba(15, 23, 42, 0.6);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.timeButton {
-  background: transparent;
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  transition: all var(--transition-fast);
-}
-
-.timeButton:hover {
-  color: var(--color-text-main);
-}
-
-.timeButtonActiveDay {
-  background: var(--color-surface-card);
-  color: #0055A4;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.timeButtonActiveDark {
-  background: rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
-}
-
-/* Greeting Block */
-.greetingSection {
-  margin-top: 14px;
-}
-
-.greetingTitle {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  margin-bottom: 2px;
-  transition: color 300ms var(--ease-expo);
-}
-
-.textDay {
-  color: #111C2D;
-}
-
-.textNight {
-  color: #F8FAFC;
-}
-
-.greetingSub {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.subTextDay {
-  color: #475569;
-}
-
-.subTextNight {
+.themeDusk .currencyPrefix,
+.themeNight .currencyPrefix {
   color: #94A3B8;
 }
 
-.dividerDot {
-  opacity: 0.5;
+.priceNumber {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+  transition: color 250ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Reduced Motion Override */
+.themeDusk .priceNumber,
+.themeNight .priceNumber {
+  color: #F8FAFC;
+}
+
+.gainPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: #D1FAE5;
+  color: #065F46; /* 9.4:1 contrast WCAG AAA */
+  border: 1px solid #A7F3D0;
+  font-size: var(--font-size-xs);
+}
+
+.themeDusk .gainPill,
+.themeNight .gainPill {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.lossPill {
+  background: #FEE2E2 !important;
+  color: #991B1B !important;
+  border-color: #FECACA !important;
+}
+
+.themeDusk .lossPill,
+.themeNight .lossPill {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #F87171 !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.timeSnapshot {
+  display: flex;
+  align-items: center;
+  text-align: right;
+}
+
+.sparklineLabel {
+  font-size: var(--font-size-xs);
+  color: #64748B;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.themeDusk .sparklineLabel,
+.themeNight .sparklineLabel {
+  color: #94A3B8;
+}
+
+/* Full-Width Interactive Chart Canvas */
+.chartCanvasContainer {
+  width: 100%;
+  position: relative;
+  margin-top: 4px;
+}
+
+.interactiveChartSvg {
+  width: 100%;
+  height: 76px;
+  overflow: visible;
+  touch-action: pan-y;
+  cursor: crosshair;
+  -webkit-tap-highlight-color: transparent;
+  display: block;
+}
+
+.terminalLiveDot {
+  animation: pulseLive 2s infinite ease-in-out;
+}
+
+.chartFooterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: var(--font-size-xs);
+}
+
+.chartLegend {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.themeDusk .chartLegend,
+.themeNight .chartLegend {
+  color: #64748B;
+}
+
+.chartHint {
+  color: var(--color-forest-green);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}
+
+.themeDusk .chartHint,
+.themeNight .chartHint {
+  color: #34D399;
+}
+
+/* Accessibility: prefers-reduced-motion (emil-design-eng & animate) */
 @media (prefers-reduced-motion: reduce) {
-  .cloudLayerOne,
-  .cloudLayerTwo,
-  .energyPulse,
-  .pulseDot {
-    animation: none !important;
+  .skyAura,
+  .driftingMist,
+  .pulseTrack1,
+  .pulseTrack2,
+  .liveMarketDot,
+  .terminalLiveDot,
+  .scrubbingStatusPill {
+    animation: none;
+    transform: none;
   }
 }
+
+/* Hover gating for touch devices (mobile-native) */
+@media (hover: hover) and (pointer: fine) {
+  .sharesWidget:hover {
+    box-shadow: 0 4px 16px rgba(0, 85, 164, 0.1);
+  }
+}
+

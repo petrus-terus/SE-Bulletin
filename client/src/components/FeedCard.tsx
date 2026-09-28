@@ -8,6 +8,7 @@ interface Props {
   onCommentClick: (post: Post) => void;
   onShareClick: (post: Post) => void;
   onBookmarkToggle: (postId: string) => void;
+  onPostClick?: (post: Post) => void;
 }
 
 export const FeedCard: React.FC<Props> = ({
@@ -16,10 +17,13 @@ export const FeedCard: React.FC<Props> = ({
   onCommentClick,
   onShareClick,
   onBookmarkToggle,
+  onPostClick,
 }) => {
   const [justLiked, setJustLiked] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const handleLike = () => {
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setJustLiked(true);
     onLikeToggle(post.id);
     setTimeout(() => setJustLiked(false), 400);
@@ -41,7 +45,10 @@ export const FeedCard: React.FC<Props> = ({
   };
 
   return (
-    <article className={styles.card}>
+    <article
+      className={`${styles.card} ${post.isPinned ? styles.cardPinned : ''}`}
+      onClick={() => onPostClick?.(post)}
+    >
       {/* Header Row: Author details, Department tag & options */}
       <header className={styles.headerRow}>
         <div className={styles.authorBlock}>
@@ -73,10 +80,10 @@ export const FeedCard: React.FC<Props> = ({
               )}
               {post.isPinned && (
                 <span className={styles.pinnedPill}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '13px', color: '#D97706', fontVariationSettings: "'FILL' 1" }}>
                     push_pin
                   </span>
-                  <span>Pinned</span>
+                  <span>Official Alert • Pinned</span>
                 </span>
               )}
             </div>
@@ -88,7 +95,12 @@ export const FeedCard: React.FC<Props> = ({
           </div>
         </div>
 
-        <button type="button" className={styles.optionsButton} aria-label="Post options">
+        <button
+          type="button"
+          className={styles.optionsButton}
+          aria-label="Post options"
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="material-symbols-outlined">more_horiz</span>
         </button>
       </header>
@@ -100,9 +112,14 @@ export const FeedCard: React.FC<Props> = ({
       </div>
 
       {/* Optional High-Res Imagery */}
-      {post.imageUrl && (
+      {post.imageUrl && !imageError && (
         <div className={styles.imageWrapper}>
-          <img src={post.imageUrl} alt={post.title} className={styles.postImage} />
+          <img
+            src={post.imageUrl}
+            alt=""
+            onError={() => setImageError(true)}
+            className={styles.postImage}
+          />
           {post.location && (
             <div className={styles.locationChip}>
               <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
@@ -114,7 +131,17 @@ export const FeedCard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Engagement Actions Row (Decision 1A: Spring bounce + instant tabular count) */}
+      {/* Fallback Location Tag when no image or image load error */}
+      {post.location && (!post.imageUrl || imageError) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '8px', padding: '0 16px', fontWeight: 500 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--color-primary)' }}>
+            location_on
+          </span>
+          <span>{post.location}</span>
+        </div>
+      )}
+
+      {/* Engagement Actions Row */}
       <div className={styles.engagementBar}>
         <div className={styles.leftActions}>
           {/* Like Button */}
@@ -141,7 +168,10 @@ export const FeedCard: React.FC<Props> = ({
           <button
             type="button"
             className={styles.actionButton}
-            onClick={() => onCommentClick(post)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCommentClick(post);
+            }}
             aria-label="View comments"
           >
             <span className="material-symbols-outlined">chat_bubble</span>
@@ -152,7 +182,10 @@ export const FeedCard: React.FC<Props> = ({
           <button
             type="button"
             className={styles.actionButton}
-            onClick={() => onShareClick(post)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShareClick(post);
+            }}
             aria-label="Share bulletin post"
           >
             <span className="material-symbols-outlined">share</span>
@@ -164,7 +197,10 @@ export const FeedCard: React.FC<Props> = ({
         <button
           type="button"
           className={`${styles.actionButton} ${post.isBookmarked ? styles.bookmarkActive : ''}`}
-          onClick={() => onBookmarkToggle(post.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onBookmarkToggle(post.id);
+          }}
           aria-label="Bookmark post"
         >
           <span
@@ -178,11 +214,14 @@ export const FeedCard: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Nested Preview Comment (Stitch-inspired) */}
+      {/* Nested Preview Comment */}
       {post.previewComment && (
         <div
           className={styles.previewCommentBlock}
-          onClick={() => onCommentClick(post)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPostClick ? onPostClick(post) : onCommentClick(post);
+          }}
           style={{ cursor: 'pointer' }}
           title="Click to view all comments"
         >
