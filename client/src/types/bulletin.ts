@@ -13,6 +13,7 @@ export interface Employee {
   adminDepartments?: string[];
   isVerified?: boolean;
   isOnline?: boolean;
+  bio?: string;
 }
 
 export interface Department {
@@ -63,6 +64,7 @@ export interface Post {
   content: string;
   location?: string | null;
   imageUrl?: string | null;
+  mediaUrls?: string[];
   isPinned: boolean;
   commentsEnabled: boolean;
   likesCount: number;

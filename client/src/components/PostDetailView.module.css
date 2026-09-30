@@ -472,3 +472,152 @@
 .sendBtn:not(:disabled):active {
   transform: scale(0.92);
 }
+
+.deleteIconButton {
+  color: #DC2626;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .deleteIconButton:hover {
+    background: #FEE2E2;
+    border-color: #FECACA;
+  }
+}
+
+.deleteIconButton:active {
+  background: #FCA5A5;
+}
+
+/* Two-Step Post Deletion Confirmation Modal */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: backdropFadeIn 180ms ease-out forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirmDialog {
+  width: 100%;
+  max-width: 380px;
+  background: #FFFFFF;
+  border-radius: var(--radius-card);
+  padding: 24px 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: dialogScaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dialogScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modalBackdrop,
+  .confirmDialog {
+    animation: none;
+  }
+}
+
+.dialogIconWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #FEE2E2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.dialogTitle {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 8px 0;
+}
+
+.dialogDesc {
+  font-size: var(--font-size-xs);
+  color: #64748B;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+
+.dialogActions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cancelDialogBtn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 16px;
+  background: #F1F5F9;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: #334155;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cancelDialogBtn:active {
+  transform: scale(0.97);
+  background: #E2E8F0;
+}
+
+.confirmDeleteBtn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 16px;
+  background: #DC2626;
+  border: none;
+  border-radius: var(--radius-md);
+  color: #FFFFFF;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.confirmDeleteBtn:active {
+  transform: scale(0.97);
+  background: #B91C1C;
+}

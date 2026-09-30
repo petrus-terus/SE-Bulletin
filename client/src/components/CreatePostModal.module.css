@@ -37,6 +37,14 @@
   to { transform: translateY(0); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modalSheet {
+    animation: none;
+    transform: none;
+  }
+}
+
 .handleBar {
   padding: 10px 0 4px 0;
   display: flex;
@@ -67,19 +75,23 @@
 .closeButton {
   background: transparent;
   border: none;
-  width: 32px;
-  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-pill);
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.closeButton:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text-main);
+@media (hover: hover) and (pointer: fine) {
+  .closeButton:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text-main);
+  }
 }
 
 .scrollArea {
@@ -111,9 +123,11 @@
   transition: all var(--transition-fast);
 }
 
-.archetypeCard:hover {
-  background: #F1F5F9;
-  border-color: #CBD5E1;
+@media (hover: hover) and (pointer: fine) {
+  .archetypeCard:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+  }
 }
 
 .archetypeActive {
@@ -245,6 +259,8 @@
   cursor: pointer;
 }
 
-.cancelBtn:hover {
-  background: var(--color-surface-alt);
+@media (hover: hover) and (pointer: fine) {
+  .cancelBtn:hover {
+    background: var(--color-surface-alt);
+  }
 }

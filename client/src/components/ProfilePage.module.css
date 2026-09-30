@@ -152,6 +152,28 @@
   transform: scale(0.96);
 }
 
+.logoutBtn {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  color: #BE123C;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+}
+
+.logoutBtn:active {
+  transform: scale(0.96);
+  background: #FFE4E6;
+}
+
 /* Identity & Details */
 .identityDetails {
   display: flex;
@@ -303,6 +325,8 @@
   scroll-snap-type: x mandatory;
   padding-bottom: 4px;
   scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .photoCarousel::-webkit-scrollbar {
@@ -317,12 +341,16 @@
   position: relative;
   scroll-snap-align: start;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  user-select: none;
 }
 
 .photoImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  user-drag: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .photoCaptionWrap {
@@ -578,4 +606,89 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Colleague View Actions & Navigation */
+.backNavBtn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 5;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .backNavBtn:hover {
+    background: rgba(15, 23, 42, 0.9);
+  }
+}
+
+.backNavBtn:active {
+  transform: scale(0.96);
+}
+
+.contactActionBtn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  color: #0055A4;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .contactActionBtn:hover {
+    background: #DBEAFE;
+  }
+}
+
+.contactActionBtn:active {
+  transform: scale(0.96);
+}
+
+.callExtBtn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: #F0FDF4;
+  border: 1px solid #DCFCE7;
+  color: #15803D;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .callExtBtn:hover {
+    background: #DCFCE7;
+  }
+}
+
+.callExtBtn:active {
+  transform: scale(0.96);
 }

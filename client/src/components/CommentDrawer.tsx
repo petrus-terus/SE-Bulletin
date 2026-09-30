@@ -9,6 +9,7 @@ interface Props {
   onClose: () => void;
   onAddComment: (postId: string, commentText: string) => void;
   comments: Comment[];
+  onAuthorClick?: (authorName: string, authorDepartment?: string) => void;
 }
 
 export const CommentDrawer: React.FC<Props> = ({
@@ -18,6 +19,7 @@ export const CommentDrawer: React.FC<Props> = ({
   onClose,
   onAddComment,
   comments,
+  onAuthorClick,
 }) => {
   const [inputText, setInputText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -90,14 +92,25 @@ export const CommentDrawer: React.FC<Props> = ({
           ) : (
             comments.map((comment) => (
               <div key={comment.id} className={styles.commentItem}>
-                {comment.avatarUrl ? (
-                  <img src={comment.avatarUrl} alt={comment.authorName} className={styles.avatar} />
-                ) : (
-                  <div className={styles.avatarInitials}>{comment.avatarInitials}</div>
-                )}
+                <div
+                  onClick={() => onAuthorClick?.(comment.authorName, comment.department)}
+                  style={onAuthorClick ? { cursor: 'pointer' } : undefined}
+                  title={onAuthorClick ? `View ${comment.authorName}'s profile` : undefined}
+                >
+                  {comment.avatarUrl ? (
+                    <img src={comment.avatarUrl} alt={comment.authorName} className={styles.avatar} />
+                  ) : (
+                    <div className={styles.avatarInitials}>{comment.avatarInitials}</div>
+                  )}
+                </div>
                 <div className={styles.commentContent}>
                   <div className={styles.commentAuthorRow}>
-                    <div className={styles.authorNameBadge}>
+                    <div
+                      className={styles.authorNameBadge}
+                      onClick={() => onAuthorClick?.(comment.authorName, comment.department)}
+                      style={onAuthorClick ? { cursor: 'pointer' } : undefined}
+                      title={onAuthorClick ? `View ${comment.authorName}'s profile` : undefined}
+                    >
                       <span className={styles.authorName}>{comment.authorName}</span>
                       <span className={styles.deptTag}>{comment.department}</span>
                     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Department } from '../types/bulletin';
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import styles from './DepartmentFilters.module.css';
 
 interface Props {
@@ -15,8 +16,10 @@ export const DepartmentFilters: React.FC<Props> = ({
   onSelectDepartment,
   postCounts,
 }) => {
+  const navScrollRef = useHorizontalScroll<HTMLElement>();
+
   return (
-    <nav className={`${styles.filtersContainer} no-scrollbar`} aria-label="Filter bulletin by department">
+    <nav ref={navScrollRef} className={`${styles.filtersContainer} no-scrollbar`} aria-label="Filter bulletin by Bahagian">
       {departments.map((dept) => {
         const isActive = dept.id === selectedDepartmentId;
         const count = postCounts[dept.id] ?? (dept.id === 'dept-all' ? postCounts['total'] ?? 0 : 0);

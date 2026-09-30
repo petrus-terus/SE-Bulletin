@@ -5,6 +5,8 @@
   overflow-x: auto;
   padding: 4px 2px 14px 2px;
   margin-bottom: 8px;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .filterPill {
@@ -24,12 +26,17 @@
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all var(--transition-fast);
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.filterPill:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text-main);
-  border-color: #CBD5E1;
+@media (hover: hover) and (pointer: fine) {
+  .filterPill:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text-main);
+    border-color: #CBD5E1;
+  }
 }
 
 .filterPillActive {

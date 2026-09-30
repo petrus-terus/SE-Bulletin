@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import type { Department, Post } from '../types/bulletin';
+import { ALL_EMPLOYEES } from '../services/mockData';
 import { FeedCard } from './FeedCard';
+import { Toast } from './Toast';
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import styles from './SearchDirectoryPage.module.css';
 
 interface EmployeeRecord {
@@ -16,68 +19,18 @@ interface EmployeeRecord {
   isOnline: boolean;
 }
 
-const MOCK_EMPLOYEES: EmployeeRecord[] = [
-  {
-    id: 'emp-1',
-    name: 'Mohd Irfan B. Zainal',
-    designation: 'Senior Grid Automation Engineer',
-    department: 'IT & Grid Automation',
-    departmentId: 'dept-it',
-    staffId: 'SESB-1001',
-    extension: 'Ext. 4102',
-    email: 'mohd.irfan@sesb.com.my',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
-    isOnline: true,
-  },
-  {
-    id: 'emp-2',
-    name: 'Ir. Raymond Chin',
-    designation: 'Principal Operations Manager',
-    department: 'Operations & Engineering',
-    departmentId: 'dept-ops',
-    staffId: 'SESB-2044',
-    extension: 'Ext. 3201',
-    email: 'raymond.chin@sesb.com.my',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
-    isOnline: true,
-  },
-  {
-    id: 'emp-3',
-    name: 'Siti Aminah Bt. Mansur',
-    designation: 'HSE Compliance Lead',
-    department: 'Safety & Health (HSE)',
-    departmentId: 'dept-hse',
-    staffId: 'SESB-3012',
-    extension: 'Ext. 5504',
-    email: 'siti.aminah@sesb.com.my',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
-    isOnline: false,
-  },
-  {
-    id: 'emp-4',
-    name: 'Dayang Norhafizah',
-    designation: 'Head of Corporate Communications',
-    department: 'Corporate Communications',
-    departmentId: 'dept-comm',
-    staffId: 'SESB-4089',
-    extension: 'Ext. 6100',
-    email: 'dayang.norhafizah@sesb.com.my',
-    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&q=80',
-    isOnline: true,
-  },
-  {
-    id: 'emp-5',
-    name: 'Kevin Liew',
-    designation: 'Senior Hydro Maintenance Engineer',
-    department: 'Tenom Pangi Hydro',
-    departmentId: 'dept-ops',
-    staffId: 'SESB-5120',
-    extension: 'Ext. 7701',
-    email: 'kevin.liew@sesb.com.my',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
-    isOnline: false,
-  },
-];
+const MOCK_EMPLOYEES: EmployeeRecord[] = ALL_EMPLOYEES.map((emp) => ({
+  id: emp.id,
+  name: emp.name,
+  designation: emp.designation,
+  department: emp.department,
+  departmentId: emp.adminDepartments?.[0] || 'dept-ops',
+  staffId: emp.employeeId,
+  extension: emp.phoneExtension || 'Ext. 4100',
+  email: emp.email,
+  avatarUrl: emp.avatarUrl,
+  isOnline: Boolean(emp.isOnline),
+}));
 
 const TRENDING_QUERIES = [
   '#SOP2026',
@@ -91,23 +44,35 @@ const TRENDING_QUERIES = [
 interface Props {
   posts: Post[];
   departments: Department[];
+  currentUserId?: string;
+  currentUserName?: string;
+  currentUserRole?: string;
   onLikeToggle: (id: string) => void;
   onOpenComments: (post: Post) => void;
-  onShare: (post: Post) => void;
+  onDeletePost?: (postId: string) => void;
   onPostClick?: (post: Post) => void;
+  onViewProfile?: (employee: { id: string; name: string; avatarUrl: string; designation: string; department: string; email: string; extension?: string; staffId?: string }) => void;
 }
 
 export const SearchDirectoryPage: React.FC<Props> = ({
   posts,
   departments,
+  currentUserId,
+  currentUserName,
+  currentUserRole,
   onLikeToggle,
   onOpenComments,
-  onShare,
+  onDeletePost,
   onPostClick,
+  onViewProfile,
 }) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | 'staff' | 'circulars' | 'departments'>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const scopeChipsRef = useHorizontalScroll<HTMLDivElement>();
+  const trendingTagsRef = useHorizontalScroll<HTMLDivElement>();
 
   const effectiveQuery = (selectedTag || query).trim().toLowerCase();
 
@@ -185,7 +150,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
         </div>
 
         {/* Category Scope Chips */}
-        <div className={styles.scopeChipsBar}>
+        <div ref={scopeChipsRef} className={styles.scopeChipsBar}>
           <button
             type="button"
             className={`${styles.scopeChip} ${activeCategory === 'all' ? styles.scopeChipActive : ''}`}
@@ -217,7 +182,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
         </div>
 
         {/* Trending Searches Row */}
-        <div className={styles.trendingRow}>
+        <div ref={trendingTagsRef} className={styles.trendingRow}>
           <span className={styles.trendingLabel}>Trending:</span>
           <div className={styles.trendingTagsList}>
             {TRENDING_QUERIES.map((tag) => (
@@ -261,9 +226,21 @@ export const SearchDirectoryPage: React.FC<Props> = ({
             <div className={styles.staffGrid}>
               {filteredEmployees.map((emp) => (
                 <div key={emp.id} className={styles.employeeCard}>
-                  <div className={styles.empHeader}>
+                  <div
+                    className={styles.empHeader}
+                    onClick={() => onViewProfile?.(emp)}
+                    style={onViewProfile ? { cursor: 'pointer' } : undefined}
+                    title={onViewProfile ? `View ${emp.name}'s profile` : undefined}
+                  >
                     <div className={styles.avatarHolder}>
-                      <img src={emp.avatarUrl} alt={emp.name} className={styles.empAvatar} />
+                      <img
+                        src={emp.avatarUrl}
+                        alt={emp.name}
+                        className={styles.empAvatar}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                        }}
+                      />
                       {emp.isOnline && <span className={styles.onlineBadge} title="Available online"></span>}
                     </div>
 
@@ -303,7 +280,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                     <button
                       type="button"
                       className={styles.callExtBtn}
-                      onClick={() => alert(`Dialing ${emp.name} at ${emp.extension}...`)}
+                      onClick={() => setToastMessage(`Calling ${emp.name} (${emp.extension})...`)}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                         phone_in_talk
@@ -372,10 +349,13 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                 <FeedCard
                   key={post.id}
                   post={post}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  currentUserRole={currentUserRole}
                   onLikeToggle={onLikeToggle}
                   onCommentClick={onOpenComments}
-                  onShareClick={onShare}
                   onBookmarkToggle={() => {}}
+                  onDeletePost={onDeletePost}
                   onPostClick={onPostClick}
                 />
               ))}
@@ -398,6 +378,14 @@ export const SearchDirectoryPage: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          icon="phone_in_talk"
+          onDismiss={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 };

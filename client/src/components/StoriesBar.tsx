@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Employee, Story } from '../types/bulletin';
 import { StoryViewerModal } from './StoryViewerModal';
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import styles from './StoriesBar.module.css';
 
 interface Props {
@@ -11,10 +12,11 @@ interface Props {
 
 export const StoriesBar: React.FC<Props> = ({ currentUser, stories, onAddStoryClick }) => {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const storiesScrollRef = useHorizontalScroll<HTMLDivElement>();
 
   return (
     <section className={styles.storiesContainer} aria-label="Department Stories">
-      <div className={`${styles.storiesTrack} no-scrollbar`}>
+      <div ref={storiesScrollRef} className={`${styles.storiesTrack} no-scrollbar`}>
         {/* User Story / Create Story Circle */}
         <button
           type="button"

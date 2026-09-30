@@ -43,10 +43,18 @@
   gap: 3px;
   transition: all var(--transition-fast);
   position: relative;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.tabItem:hover {
-  color: var(--color-primary-container);
+.tabItem:active {
+  transform: scale(0.95);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tabItem:hover {
+    color: var(--color-primary-container);
+  }
 }
 
 .tabActive {
@@ -65,17 +73,19 @@
 
 .tabBadge {
   position: absolute;
-  top: 6px;
-  right: calc(50% - 18px);
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
+  top: 4px;
+  right: calc(50% - 20px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: var(--radius-pill);
   background: var(--color-alert-red);
   color: #FFFFFF;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
-  line-height: 15px;
+  line-height: 16px;
   text-align: center;
   border: 1.5px solid var(--color-surface-card);
 }
@@ -103,12 +113,16 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: transform var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.centerFab:hover {
-  background-color: var(--color-accent-hover);
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .centerFab:hover {
+    background-color: var(--color-accent-hover);
+    transform: translateY(-2px);
+  }
 }
 
 .centerFab:active {

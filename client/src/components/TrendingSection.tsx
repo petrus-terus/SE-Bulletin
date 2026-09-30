@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Post } from '../types/bulletin';
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import styles from './TrendingSection.module.css';
 
 interface Props {
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export const TrendingSection: React.FC<Props> = ({ posts, onSelectPost, onOpenComments }) => {
+  const scrollRef = useHorizontalScroll<HTMLDivElement>();
+
   // Take top posts sorted by likesCount + commentsCount
   const trendingPosts = [...posts]
     .sort((a, b) => b.likesCount + b.commentsCount - (a.likesCount + a.commentsCount))
@@ -24,12 +27,11 @@ export const TrendingSection: React.FC<Props> = ({ posts, onSelectPost, onOpenCo
             </span>
             <span>Trending Across SESB</span>
           </span>
-          <span className={styles.livePulseDot} title="Live Real-time updates"></span>
         </div>
         <span className={styles.subtext}>Most discussed updates statewide</span>
       </div>
 
-      <div className={styles.scrollTrack}>
+      <div ref={scrollRef} className={styles.scrollTrack}>
         {trendingPosts.map((post, idx) => (
           <div
             key={post.id}

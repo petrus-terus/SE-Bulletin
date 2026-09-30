@@ -23,6 +23,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .fullPageContainer {
+    animation: none;
+  }
+}
+
 /* Header Bar */
 .headerBar {
   position: sticky;
@@ -30,7 +36,7 @@
   z-index: 10;
   background: #FFFFFF;
   border-bottom: 1px solid var(--color-border-subtle);
-  padding: env(safe-area-inset-top, 12px) 16px 12px 16px;
+  padding: max(14px, env(safe-area-inset-top, 14px)) 16px 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -71,7 +77,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--color-secondary);
+  background: var(--color-forest-green, #1A7A5A);
 }
 
 .headerTitle {
@@ -83,8 +89,8 @@
 
 .publishBtn {
   min-height: 44px;
-  padding: 8px 18px;
-  background: var(--color-secondary);
+  padding: 8px 20px;
+  background: var(--color-forest-green, #1A7A5A);
   color: #FFFFFF;
   border: none;
   border-radius: var(--radius-md);
@@ -94,7 +100,7 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 108, 77, 0.25);
+  box-shadow: 0 2px 8px rgba(26, 122, 90, 0.35);
   transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -102,7 +108,7 @@
 
 .publishBtn:active {
   transform: scale(0.96);
-  background: var(--color-tertiary-container);
+  background: var(--color-forest-hover, #146348);
 }
 
 /* Scroll Content Container */
@@ -163,7 +169,8 @@
 
 .typeTabActive {
   background: #FFFFFF;
-  color: var(--color-secondary);
+  color: var(--color-forest-green, #1A7A5A);
+  font-weight: 700;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -278,6 +285,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .scopeMenu {
+    animation: none;
+  }
+}
+
 .scopeMenuItem {
   width: 100%;
   min-height: 44px;
@@ -294,8 +307,10 @@
   transition: background 120ms ease-out;
 }
 
-.scopeMenuItem:hover {
-  background: #F8FAFC;
+@media (hover: hover) and (pointer: fine) {
+  .scopeMenuItem:hover {
+    background: #F8FAFC;
+  }
 }
 
 .scopeMenuItemActive {
@@ -522,9 +537,11 @@
   transition: background 120ms ease-out, color 120ms ease-out;
 }
 
-.formatBtn:hover {
-  background: #FFFFFF;
-  color: #0F172A;
+@media (hover: hover) and (pointer: fine) {
+  .formatBtn:hover {
+    background: #FFFFFF;
+    color: #0F172A;
+  }
 }
 
 .formatBtnMention {
@@ -711,8 +728,10 @@
   border-radius: 4px;
 }
 
-.deleteDocBtn:hover {
-  color: #DC2626;
+@media (hover: hover) and (pointer: fine) {
+  .deleteDocBtn:hover {
+    color: #DC2626;
+  }
 }
 
 /* Options & Toggles */
@@ -753,4 +772,135 @@
   height: 20px;
   accent-color: var(--color-primary-container);
   cursor: pointer;
+}
+
+/* WhatsApp Status Mode Banner & Color Theme */
+.statusBannerRow {
+  margin: 12px 16px 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statusBannerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.statusBannerTitle {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: #14532D;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDurationPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  border: 1px solid #86EFAC;
+}
+
+.colorPickerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.colorPickerLabel {
+  font-size: var(--font-size-xs);
+  color: #166534;
+  font-weight: 600;
+}
+
+.colorDotBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.colorDotBtn:active {
+  transform: scale(0.92);
+}
+
+.colorDotActive {
+  outline: 2px solid #0055A4;
+  outline-offset: 2px;
+  transform: scale(1.1);
+}
+
+/* Primary Bottom Submit Action Deck */
+.bottomSubmitDeck {
+  padding: 16px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.bottomCancelBtn {
+  min-height: 44px;
+  padding: 10px 20px;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: #475569;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottomCancelBtn:active {
+  transform: scale(0.97);
+  background: #F1F5F9;
+}
+
+.bottomPublishBtn {
+  min-height: 44px;
+  padding: 10px 24px;
+  background: var(--color-forest-green, #1A7A5A);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(26, 122, 90, 0.3);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottomPublishBtn:active {
+  transform: scale(0.97);
+  background: var(--color-forest-hover, #146348);
 }

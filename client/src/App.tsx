@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import type { Comment, Post } from './types/bulletin';
-import { CURRENT_USER, DEPARTMENTS, INITIAL_POSTS, INITIAL_STORIES } from './services/mockData';
+import { useState, useEffect } from 'react';
+import type { Comment, Employee, Post, Story } from './types/bulletin';
+import { CURRENT_USER, DEPARTMENTS, INITIAL_POSTS, INITIAL_STORIES, getEmployeeByAuthor } from './services/mockData';
+import { bulletinService } from './services/bulletinService';
+import { isSupabaseConfigured, supabase } from './services/supabaseClient';
 import { AppShell } from './components/AppShell';
 import { TopAppBar } from './components/TopAppBar';
 import { KinabaluSkylineHero } from './components/KinabaluSkylineHero';
@@ -19,14 +21,31 @@ import { DesktopWidgetsRail } from './components/DesktopWidgetsRail';
 import { Toast } from './components/Toast';
 import { PostDetailView } from './components/PostDetailView';
 import { ImageViewerModal } from './components/ImageViewerModal';
+import { LoginPage } from './components/LoginPage';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 
 export function App() {
-  const [currentUser] = useState(CURRENT_USER);
+  const [currentUser, setCurrentUser] = useState<Employee>(() => {
+    const saved = localStorage.getItem('sesb_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return CURRENT_USER;
+      }
+    }
+    return CURRENT_USER;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('sesb_auth') === 'true';
+  });
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
-  const [stories] = useState(INITIAL_STORIES);
+  const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
   const [selectedDeptId, setSelectedDeptId] = useState('dept-all');
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [unreadCount, setUnreadCount] = useState(3);
+  const [viewedProfileEmployee, setViewedProfileEmployee] = useState<Employee | null>(null);
+  const [previousTab, setPreviousTab] = useState<TabKey>('home');
 
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -38,6 +57,167 @@ export function App() {
     title?: string;
     location?: string | null;
   } | null>(null);
+
+  // 1. Initial Load from BulletinService / Supabase
+  useEffect(() => {
+    bulletinService.getPosts().then((fetched) => {
+      if (fetched && fetched.length > 0) {
+        setPosts(fetched);
+      }
+    });
+  }, []);
+
+  // 2. Real-time Cloud Synchronization (Posts, Likes, and Comments)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const channel = supabase
+      .channel('realtime:bulletin-live')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row = payload.new as any;
+          const livePost: Post = {
+            id: row.id,
+            title: row.title,
+            content: row.content,
+            author: {
+              id: row.author_id || `author-${(row.author_name || 'user').toLowerCase()}`,
+              name: row.author_name,
+              designation: row.author_role || 'Sabah Electricity Staff',
+              department: row.department,
+              avatarUrl: row.author_avatar || '/user_face.png',
+              isVerified: true,
+            },
+            timestamp: 'Just now',
+            location: row.location,
+            imageUrl: row.image_url,
+            mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : row.image_url ? [row.image_url] : [],
+            isPinned: Boolean(row.is_pinned),
+            commentsEnabled: Boolean(row.comments_enabled ?? true),
+            likesCount: Number(row.likes_count || 0),
+            commentsCount: Number(row.comments_count || 0),
+            sharesCount: 0,
+            isLiked: false,
+            isBookmarked: false,
+            departmentId: row.department_id || 'dept-ops',
+            departmentName: row.department,
+            departmentColor: row.department_color || '#0055A4',
+            officialNotice: Boolean(row.official_notice),
+          };
+
+          setPosts((prev) => [livePost, ...prev.filter((p) => p.id !== livePost.id)]);
+          setToast({
+            message: `New bulletin: "${row.title.slice(0, 26)}..."`,
+            icon: 'campaign',
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'posts' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row = payload.new as any;
+          setPosts((prev) =>
+            prev.map((post) =>
+              post.id === row.id
+                ? {
+                    ...post,
+                    likesCount: Number(row.likes_count ?? post.likesCount),
+                    commentsCount: Number(row.comments_count ?? post.commentsCount),
+                  }
+                : post
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comments' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row = payload.new as any;
+          const liveComment: Comment = {
+            id: row.id,
+            authorName: row.author_name,
+            department: row.department,
+            avatarInitials: (row.author_name || 'SE')
+              .split(' ')
+              .map((n: string) => n[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase(),
+            avatarUrl: row.author_avatar || undefined,
+            text: row.text,
+            timestamp: 'Just now',
+            likesCount: 0,
+          };
+
+          setCommentsByPost((prev) => {
+            const list = prev[row.post_id] || [];
+            if (list.some((c) => c.id === liveComment.id)) return prev;
+            return {
+              ...prev,
+              [row.post_id]: [...list, liveComment],
+            };
+          });
+
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === row.post_id
+                ? {
+                    ...p,
+                    commentsCount: p.commentsCount + 1,
+                    previewComment: liveComment,
+                  }
+                : p
+            )
+          );
+
+          setToast({
+            message: `${row.author_name}: "${row.text.slice(0, 24)}..."`,
+            icon: 'chat',
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'posts' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const oldRow = payload.old as any;
+          if (oldRow?.id) {
+            setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
+
+  const handleViewAuthorProfile = (author: {
+    id?: string;
+    name: string;
+    avatarUrl?: string;
+    designation?: string;
+    department?: string;
+  }) => {
+    const emp = getEmployeeByAuthor(author);
+    setViewedProfileEmployee(emp);
+    setPreviousTab(activeTab);
+    setSelectedPostForDetail(null);
+    setActiveCommentPost(null);
+    setActiveTab('profile');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Threaded comments database mock
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
@@ -87,15 +267,31 @@ export function App() {
     ],
   });
 
-  // Calculate post counts per department
+  // Fetch cloud comments when CommentDrawer opens
+  useEffect(() => {
+    if (!activeCommentPost) return;
+    bulletinService.getComments(activeCommentPost.id).then((cloudComments) => {
+      if (cloudComments && cloudComments.length > 0) {
+        setCommentsByPost((prev) => {
+          const existing = prev[activeCommentPost.id] || [];
+          const existingIds = new Set(existing.map((c) => c.id));
+          const merged = [...existing, ...cloudComments.filter((c) => !existingIds.has(c.id))];
+          return {
+            ...prev,
+            [activeCommentPost.id]: merged,
+          };
+        });
+      }
+    });
+  }, [activeCommentPost?.id]);
+
+  // Calculate post counts per official Bahagian
   const postCounts: Record<string, number> = {
     total: posts.length,
-    'dept-ops': posts.filter((p) => p.departmentId === 'dept-ops').length,
-    'dept-hse': posts.filter((p) => p.departmentId === 'dept-hse').length,
-    'dept-hr': posts.filter((p) => p.departmentId === 'dept-hr').length,
-    'dept-it': posts.filter((p) => p.departmentId === 'dept-it').length,
-    'dept-fin': posts.filter((p) => p.departmentId === 'dept-fin').length,
-    'dept-comm': posts.filter((p) => p.departmentId === 'dept-comm').length,
+    ...DEPARTMENTS.reduce((acc, dept) => {
+      acc[dept.id] = posts.filter((p) => p.departmentId === dept.id).length;
+      return acc;
+    }, {} as Record<string, number>),
   };
 
   // Filtered posts based on active pill
@@ -104,21 +300,25 @@ export function App() {
       ? posts
       : posts.filter((p) => p.departmentId === selectedDeptId);
 
-  // Optimistic Like Handler (1A)
+  // Optimistic Like Handler with Supabase Cloud Sync
   const handleLikeToggle = (postId: string) => {
+    let nextCount = 0;
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
           const nextIsLiked = !post.isLiked;
+          nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
           return {
             ...post,
             isLiked: nextIsLiked,
-            likesCount: nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1),
+            likesCount: nextCount,
           };
         }
         return post;
       })
     );
+
+    bulletinService.toggleLike(postId, nextCount);
   };
 
   // Bookmark Toggle
@@ -138,35 +338,27 @@ export function App() {
     );
   };
 
-  // Share Link Handler
-  const handleShare = (post: Post) => {
-    const link = `https://bulletin.sesb.com.my/posts/${post.id}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(link).catch(() => {});
-    }
-    setToast({
-      message: 'Intranet link copied to clipboard',
-      icon: 'link',
+
+  // Add Comment Handler with Supabase Cloud Sync
+  const handleAddComment = async (postId: string, commentText: string) => {
+    const targetPost = posts.find((p) => p.id === postId);
+    const currentCount = targetPost ? targetPost.commentsCount : 0;
+
+    const newComment = await bulletinService.addComment(
+      postId,
+      commentText,
+      currentUser,
+      currentCount
+    );
+
+    setCommentsByPost((prev) => {
+      const existing = prev[postId] || [];
+      if (existing.some((c) => c.id === newComment.id)) return prev;
+      return {
+        ...prev,
+        [postId]: [...existing, newComment],
+      };
     });
-  };
-
-  // Add Comment Handler (2A)
-  const handleAddComment = (postId: string, commentText: string) => {
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      authorName: currentUser.name,
-      department: 'IT',
-      avatarInitials: 'MI',
-      avatarUrl: currentUser.avatarUrl,
-      text: commentText,
-      timestamp: 'Just now',
-      likesCount: 0,
-    };
-
-    setCommentsByPost((prev) => ({
-      ...prev,
-      [postId]: [...(prev[postId] || []), newComment],
-    }));
 
     setPosts((prev) =>
       prev.map((post) => {
@@ -197,6 +389,51 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Delete Post Handler (with optimistic removal and Supabase cloud sync)
+  const handleDeletePost = async (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    if (selectedPostForDetail?.id === postId) {
+      setSelectedPostForDetail(null);
+    }
+    if (activeCommentPost?.id === postId) {
+      setActiveCommentPost(null);
+    }
+    setToast({
+      message: 'Bulletin deleted',
+      icon: 'delete',
+    });
+
+    await bulletinService.deletePost(postId);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginPage
+          onLogin={(employee) => {
+            setCurrentUser(employee);
+            setIsAuthenticated(true);
+            localStorage.setItem('sesb_auth', 'true');
+            localStorage.setItem('sesb_user', JSON.stringify(employee));
+            setToast({
+              message: `Welcome back, ${employee.name}`,
+              icon: 'verified_user',
+            });
+          }}
+          onShowNotice={(msg) => setToast({ message: msg, icon: 'info' })}
+        />
+        {toast && (
+          <Toast
+            message={toast.message}
+            icon={toast.icon}
+            onDismiss={() => setToast(null)}
+          />
+        )}
+        <PwaInstallPrompt />
+      </>
+    );
+  }
+
   return (
     <>
       {/* Sticky Corporate Top App Bar */}
@@ -204,7 +441,10 @@ export function App() {
         currentUser={currentUser}
         unreadCount={unreadCount}
         onNotificationClick={() => setActiveTab('notifications')}
-        onProfileClick={() => setActiveTab('profile')}
+        onProfileClick={() => {
+          setViewedProfileEmployee(null);
+          setActiveTab('profile');
+        }}
       />
 
       {/* Main Container Shell with Multi-Screen Responsive Layout */}
@@ -214,6 +454,7 @@ export function App() {
             activeTab={activeTab}
             onTabChange={(tab) => {
               setSelectedPostForDetail(null);
+              if (tab === 'profile') setViewedProfileEmployee(null);
               setActiveTab(tab);
             }}
             onCreateClick={() => setIsCreateOpen(true)}
@@ -227,6 +468,7 @@ export function App() {
           <PostDetailView
             post={selectedPostForDetail}
             onBack={() => setSelectedPostForDetail(null)}
+            onAuthorClick={handleViewAuthorProfile}
             onLikeToggle={(postId) => {
               handleLikeToggle(postId);
               setSelectedPostForDetail((prev) =>
@@ -245,7 +487,10 @@ export function App() {
                 prev && prev.id === postId ? { ...prev, isBookmarked: !prev.isBookmarked } : prev
               );
             }}
-            onShareClick={handleShare}
+            currentUserId={currentUser.id}
+            currentUserName={currentUser.name}
+            currentUserRole={currentUser.role}
+            onDeletePost={handleDeletePost}
             onImageClick={(imageUrl, title, location) => {
               setLightboxImage({ url: imageUrl, title, location });
             }}
@@ -319,11 +564,15 @@ export function App() {
                   <FeedCard
                     key={post.id}
                     post={post}
+                    currentUserId={currentUser.id}
+                    currentUserName={currentUser.name}
+                    currentUserRole={currentUser.role}
                     onLikeToggle={handleLikeToggle}
                     onCommentClick={(p) => setActiveCommentPost(p)}
-                    onShareClick={handleShare}
                     onBookmarkToggle={handleBookmarkToggle}
+                    onDeletePost={handleDeletePost}
                     onPostClick={(p) => setSelectedPostForDetail(p)}
+                    onAuthorClick={handleViewAuthorProfile}
                   />
                 ))
               )}
@@ -336,10 +585,14 @@ export function App() {
           <SearchDirectoryPage
             posts={posts}
             departments={DEPARTMENTS}
+            currentUserId={currentUser.id}
+            currentUserName={currentUser.name}
+            currentUserRole={currentUser.role}
             onLikeToggle={handleLikeToggle}
             onOpenComments={(post) => setActiveCommentPost(post)}
-            onShare={handleShare}
+            onDeletePost={handleDeletePost}
             onPostClick={(post) => setSelectedPostForDetail(post)}
+            onViewProfile={handleViewAuthorProfile}
           />
         )}
 
@@ -409,12 +662,36 @@ export function App() {
         {activeTab === 'profile' && (
           <ProfilePage
             posts={posts}
+            currentUser={currentUser}
+            viewedEmployee={viewedProfileEmployee}
+            onBack={
+              viewedProfileEmployee && viewedProfileEmployee.id !== currentUser.id
+                ? () => {
+                    setViewedProfileEmployee(null);
+                    setActiveTab(previousTab);
+                  }
+                : undefined
+            }
             onLikeToggle={handleLikeToggle}
             onOpenComments={(post) => setActiveCommentPost(post)}
-            onShare={handleShare}
+            onDeletePost={handleDeletePost}
             onOpenCreate={() => setIsCreateOpen(true)}
             onPostClick={(post) => setSelectedPostForDetail(post)}
             onImageClick={(url, title) => setLightboxImage({ url, title })}
+            onCallExt={(emp) =>
+              setToast({
+                message: `Calling ${emp.name} (${emp.phoneExtension || 'Ext. 4102'})...`,
+                icon: 'phone_in_talk',
+              })
+            }
+            onLogout={() => {
+              setIsAuthenticated(false);
+              localStorage.removeItem('sesb_auth');
+              setToast({
+                message: 'Logged out. Ready for new staff login.',
+                icon: 'logout',
+              });
+            }}
           />
         )}
           </>
@@ -430,6 +707,7 @@ export function App() {
           onClose={() => setActiveCommentPost(null)}
           onAddComment={handleAddComment}
           comments={commentsByPost[activeCommentPost.id] || []}
+          onAuthorClick={(name, dept) => handleViewAuthorProfile({ name, department: dept })}
         />
       )}
 
@@ -438,35 +716,25 @@ export function App() {
         <CreateBulletinPage
           departments={DEPARTMENTS}
           onClose={() => setIsCreateOpen(false)}
-          onSubmit={(newPostData) => {
-            const newPost: Post = {
-              id: `post-${Date.now()}`,
-              author: {
-                id: currentUser.id,
-                name: currentUser.name,
-                designation: currentUser.designation,
-                department: newPostData.department || currentUser.department,
-                avatarUrl: currentUser.avatarUrl,
-                isVerified: currentUser.isVerified ?? true,
-              },
-              timestamp: 'Just now',
-              title: newPostData.title || '',
-              content: newPostData.content || '',
-              location: 'Wisma SESB HQ',
-              imageUrl: newPostData.mediaUrls?.[0] || newPostData.imageUrl || null,
-              isPinned: newPostData.isPinned || false,
-              officialNotice: newPostData.officialNotice || false,
-              commentsEnabled: true,
-              likesCount: 0,
-              commentsCount: 0,
-              sharesCount: 0,
-              isLiked: false,
-              isBookmarked: false,
-              departmentId: newPostData.departmentId || 'dept-ops',
-              departmentName: newPostData.department || 'Operations & Engineering',
-              departmentColor: '#0055A4',
-            };
+          onSubmit={async (newPostData) => {
+            const newPost = await bulletinService.createPost(newPostData, currentUser);
             handlePublishPost(newPost);
+
+            // If published as a 24h WhatsApp Status, also push to StoriesBar
+            if (!newPostData.officialNotice) {
+              const newStory: Story = {
+                id: `story-${Date.now()}`,
+                departmentId: newPost.departmentId || 'dept-ops',
+                departmentName: newPost.departmentName || 'Operations',
+                authorName: currentUser.name,
+                hasUnread: true,
+                imageUrl: (newPostData.mediaUrls && newPostData.mediaUrls[0]) || '/mock-images/image1.png',
+                caption: newPostData.content.slice(0, 80),
+                hoursRemaining: 24,
+              };
+              setStories((prev) => [newStory, ...prev]);
+            }
+
             setIsCreateOpen(false);
           }}
         />
@@ -477,6 +745,7 @@ export function App() {
         activeTab={activeTab}
         onTabChange={(tab) => {
           setSelectedPostForDetail(null);
+          if (tab === 'profile') setViewedProfileEmployee(null);
           setActiveTab(tab);
         }}
         onCreateClick={() => setIsCreateOpen(true)}
@@ -492,6 +761,9 @@ export function App() {
           onClose={() => setLightboxImage(null)}
         />
       )}
+
+      {/* In-App Mobile PWA Install Banner (Android & iOS) */}
+      <PwaInstallPrompt />
 
       {/* Apple HIG Spring Toast Feedback */}
       {toast && (

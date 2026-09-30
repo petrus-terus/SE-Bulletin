@@ -2,16 +2,38 @@
   "short_name": "SE Bulletin",
   "name": "Sabah Electricity Bulletin",
   "description": "Sabah Electricity Internal Corporate Bulletin & Social Communication PWA",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#F5F7FA",
+  "theme_color": "#1A7A5A",
+  "categories": ["business", "productivity", "news"],
   "icons": [
+    {
+      "src": "/sesb_app_icon.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/sesb_app_icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/sesb_app_icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192 512x512"
+      "sizes": "any"
     }
-  ],
-  "start_url": "/",
-  "background_color": "#F5F7FA",
-  "theme_color": "#1A7A5A",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }

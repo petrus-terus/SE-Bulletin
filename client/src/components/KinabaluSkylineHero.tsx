@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import type { TimeAmbiance } from '../types/bulletin';
 import { fetchTenagaMarketData, type TenagaMarketData } from '../services/marketService';
 import styles from './KinabaluSkylineHero.module.css';
 
@@ -44,15 +43,6 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   onNavigateDirectory: _onNavigateDirectory,
   onFilterCategory: _onFilterCategory,
 }) => {
-  // Determine default ambiance from local client time
-  const getInitialAmbiance = (): TimeAmbiance => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 17) return 'day';
-    if (hour >= 17 && hour < 20) return 'dusk';
-    return 'night';
-  };
-
-  const [ambiance, setAmbiance] = useState<TimeAmbiance>(getInitialAmbiance());
   const [currentDateStr, setCurrentDateStr] = useState('');
 
   // Actual Real-Time Bursa Malaysia Market Data State
@@ -90,13 +80,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     };
   }, []);
 
-  const getGreeting = () => {
-    if (ambiance === 'day') return 'Selamat Pagi';
-    if (ambiance === 'dusk') return 'Selamat Petang';
-    return 'Selamat Malam';
-  };
-
-  const isDark = ambiance === 'dusk' || ambiance === 'night';
+  const isDark = false;
 
   // Derived graph & scrubbing coordinates
   const points = marketData?.intradayPoints || [];
@@ -151,15 +135,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className={`${styles.heroCard} ${
-        ambiance === 'day'
-          ? styles.themeDay
-          : ambiance === 'dusk'
-          ? styles.themeDusk
-          : styles.themeNight
-      }`}
-    >
+    <div className={`${styles.heroCard} ${styles.themeDay}`}>
       {/* Background Architectural Accent: Multi-Layered Animated Mt Kinabalu & Energy Grid Landscape */}
       <svg
         className={styles.watermarkSvg}
@@ -290,49 +266,6 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
               </span>
               <span>{currentDateStr || 'Jumaat, 25 Sep 2026'}</span>
             </span>
-
-            <span className={styles.gridStatusPill}>
-              <span className={styles.liveIndicator}></span>
-              <span className="font-mono tabular-nums">50.02 Hz</span>
-              <span className={styles.gridStatusLabel}>• Grid Normal</span>
-            </span>
-          </div>
-
-          {/* Time Ambiance Switcher */}
-          <div className={styles.ambianceGroup} role="group" aria-label="Time Ambiance">
-            <button
-              type="button"
-              className={`${styles.ambianceBtn} ${ambiance === 'day' ? styles.ambianceBtnActive : ''}`}
-              onClick={() => setAmbiance('day')}
-              title="Day Mode (Morning Executive)"
-              aria-label="Day Mode"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                light_mode
-              </span>
-            </button>
-            <button
-              type="button"
-              className={`${styles.ambianceBtn} ${ambiance === 'dusk' ? styles.ambianceBtnActive : ''}`}
-              onClick={() => setAmbiance('dusk')}
-              title="Dusk Mode"
-              aria-label="Dusk Mode"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                wb_twilight
-              </span>
-            </button>
-            <button
-              type="button"
-              className={`${styles.ambianceBtn} ${ambiance === 'night' ? styles.ambianceBtnActive : ''}`}
-              onClick={() => setAmbiance('night')}
-              title="Night Mode"
-              aria-label="Night Mode"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                dark_mode
-              </span>
-            </button>
           </div>
         </div>
 
@@ -340,7 +273,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
         <div className={styles.greetingBlock}>
           <div className={styles.greetingHeader}>
             <h1 className={styles.greetingTitle}>
-              {getGreeting()}, <span className={styles.highlightName}>{userName}</span>
+              Selamat Pagi, <span className={styles.highlightName}>{userName}</span>
             </h1>
             <span className={styles.wismaBadge}>
               <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--color-primary-container)' }}>
@@ -354,8 +287,6 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             <span className={styles.deptText}>{department}</span>
             <span className={styles.metaDivider}>|</span>
             <span className="font-mono tabular-nums font-semibold">{employeeId}</span>
-            <span className={styles.metaDivider}>|</span>
-            <span className={styles.shiftLabel}>Shift: Normal Operational Window</span>
           </div>
         </div>
 
@@ -388,20 +319,15 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Live Indicator Pill or Scrubbing Badge */}
-            <div className={styles.statusIndicatorBlock}>
-              {isScrubbing ? (
+            {/* Scrubbing indicator if active */}
+            {isScrubbing && (
+              <div className={styles.statusIndicatorBlock}>
                 <span className={styles.scrubbingStatusPill}>
                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>touch_app</span>
                   <span>Scrubbing</span>
                 </span>
-              ) : (
-                <span className={styles.liveMarketPill}>
-                  <span className={styles.liveMarketDot} />
-                  <span className="font-mono tabular-nums">Bursa Live</span>
-                </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Main Price Valuation Row */}

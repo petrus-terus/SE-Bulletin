@@ -1,0 +1,362 @@
+import type { CreatePostPayload, Employee, Post, Story } from '../types/bulletin';
+import { INITIAL_POSTS, INITIAL_STORIES } from './mockData';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
+
+const DELETED_POSTS_STORAGE_KEY = 'sesb_deleted_posts';
+
+function getDeletedPostIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_POSTS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function recordDeletedPostId(postId: string) {
+  try {
+    const ids = getDeletedPostIds();
+    ids.add(postId);
+    localStorage.setItem(DELETED_POSTS_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch (e) {
+    console.warn('[BulletinService] Failed to record deleted post ID:', e);
+  }
+}
+
+/**
+ * Universal Bulletin Service Layer (Repository Pattern)
+ * 
+ * Protects frontend components from tight coupling with Supabase or any specific backend.
+ * When SESB approves the project for internal deployment, this service can easily be
+ * redirected to ASP.NET Core 8 Web API + SQL Server without changing React UI code.
+ */
+class BulletinService {
+  /**
+   * Fetch all bulletins/posts
+   */
+  async getPosts(): Promise<Post[]> {
+    const deletedIds = getDeletedPostIds();
+
+    if (!isSupabaseConfigured || !supabase) {
+      return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        if (error) console.warn('[BulletinService] Supabase getPosts fallback:', error.message);
+        return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+      }
+
+      const cloudPosts: Post[] = data.map((row) => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        author: {
+          id: row.author_id || `author-${row.author_name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
+          name: row.author_name,
+          designation: row.author_role || 'Sabah Electricity Staff',
+          department: row.department,
+          avatarUrl: row.author_avatar || '/user_face.png',
+          isVerified: true,
+        },
+        timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        location: row.location,
+        imageUrl: row.image_url,
+        mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : row.image_url ? [row.image_url] : [],
+        isPinned: Boolean(row.is_pinned),
+        commentsEnabled: Boolean(row.comments_enabled ?? true),
+        likesCount: Number(row.likes_count || 0),
+        commentsCount: Number(row.comments_count || 0),
+        sharesCount: 0,
+        isLiked: false,
+        isBookmarked: false,
+        departmentId: row.department_id || 'dept-ops',
+        departmentName: row.department,
+        departmentColor: row.department_color || '#0055A4',
+        officialNotice: Boolean(row.official_notice),
+      }));
+
+      const cloudIds = new Set(cloudPosts.map((p) => p.id));
+      const combined = [...cloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
+      return combined.filter((p) => !deletedIds.has(p.id));
+    } catch (err) {
+      console.warn('[BulletinService] Offline / connection error, using local data:', err);
+      return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+    }
+  }
+
+  /**
+   * Publish a new bulletin or status
+   */
+  async createPost(payload: CreatePostPayload, currentUser: Employee): Promise<Post> {
+    const newPost: Post = {
+      id: `post-${Date.now()}`,
+      title: payload.title,
+      content: payload.content,
+      author: {
+        id: currentUser.id,
+        name: currentUser.name,
+        designation: currentUser.designation,
+        department: payload.department || currentUser.department,
+        avatarUrl: currentUser.avatarUrl,
+        isVerified: currentUser.isVerified ?? true,
+      },
+      timestamp: 'Just now',
+      location: 'Wisma SESB HQ',
+      imageUrl: payload.mediaUrls?.[0] || payload.imageUrl || null,
+      mediaUrls: payload.mediaUrls,
+      isPinned: Boolean(payload.isPinned),
+      commentsEnabled: true,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      isLiked: false,
+      isBookmarked: false,
+      departmentId: payload.departmentId || 'dept-ops',
+      departmentName: payload.department || currentUser.department,
+      departmentColor: '#0055A4',
+      officialNotice: Boolean(payload.officialNotice),
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('posts').insert([
+          {
+            id: newPost.id,
+            title: newPost.title,
+            content: newPost.content,
+            author_id: null,
+            author_name: currentUser.name,
+            author_role: currentUser.designation,
+            author_avatar: currentUser.avatarUrl,
+            department: newPost.departmentName,
+            department_id: newPost.departmentId,
+            department_color: newPost.departmentColor,
+            location: newPost.location,
+            image_url: newPost.imageUrl,
+            media_urls: newPost.mediaUrls || [],
+            is_pinned: newPost.isPinned,
+            official_notice: newPost.officialNotice,
+            comments_enabled: newPost.commentsEnabled,
+            likes_count: 0,
+            comments_count: 0,
+          },
+        ]);
+
+        if (error) {
+          console.warn('[BulletinService] Supabase createPost insert warning:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BulletinService] Failed to sync post to Supabase, continuing locally:', err);
+      }
+    }
+
+    return newPost;
+  }
+
+  /**
+   * Fetch 24h stories
+   */
+  async getStories(): Promise<Story[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      return INITIAL_STORIES;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        return INITIAL_STORIES;
+      }
+
+      return data.map((row) => ({
+        id: row.id,
+        departmentId: row.department_id,
+        departmentName: row.department_name,
+        authorName: row.author_name,
+        hasUnread: true,
+        imageUrl: row.image_url,
+        caption: row.caption || '',
+        hoursRemaining: 24,
+      }));
+    } catch {
+      return INITIAL_STORIES;
+    }
+  }
+
+  /**
+   * Upload media photo to Supabase storage with fallback to DataURL
+   */
+  async uploadPhoto(file: File): Promise<string> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const { error } = await supabase.storage.from('bulletin-media').upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+        if (!error) {
+          const { data } = supabase.storage.from('bulletin-media').getPublicUrl(fileName);
+          if (data?.publicUrl) return data.publicUrl;
+        }
+      } catch (err) {
+        console.warn('[BulletinService] Storage upload failed, using object URL:', err);
+      }
+    }
+
+    return URL.createObjectURL(file);
+  }
+
+  /**
+   * Fetch comments for a specific post
+   */
+  async getComments(postId: string): Promise<import('../types/bulletin').Comment[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+
+      if (error || !data) {
+        return [];
+      }
+
+      return data.map((row) => ({
+        id: row.id,
+        authorName: row.author_name,
+        department: row.department,
+        avatarInitials: row.author_name
+          .split(' ')
+          .map((n: string) => n[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase(),
+        avatarUrl: row.author_avatar || undefined,
+        text: row.text,
+        timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        likesCount: 0,
+      }));
+    } catch (err) {
+      console.warn('[BulletinService] getComments error:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Add a new comment to Supabase and update post comment count
+   */
+  async addComment(
+    postId: string,
+    commentText: string,
+    currentUser: Employee,
+    currentCommentsCount: number
+  ): Promise<import('../types/bulletin').Comment> {
+    const newComment: import('../types/bulletin').Comment = {
+      id: `c-${Date.now()}`,
+      authorName: currentUser.name,
+      department: currentUser.department || 'Operations',
+      avatarInitials: currentUser.name
+        .split(' ')
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase(),
+      avatarUrl: currentUser.avatarUrl,
+      text: commentText,
+      timestamp: 'Just now',
+      likesCount: 0,
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('comments').insert([
+          {
+            id: newComment.id,
+            post_id: postId,
+            author_name: newComment.authorName,
+            author_avatar: newComment.avatarUrl || null,
+            department: newComment.department,
+            text: newComment.text,
+          },
+        ]);
+
+        if (error) {
+          console.warn('[BulletinService] Supabase addComment warning:', error.message);
+        } else {
+          // Increment comment count on the post
+          await supabase
+            .from('posts')
+            .update({ comments_count: currentCommentsCount + 1 })
+            .eq('id', postId);
+        }
+      } catch (err) {
+        console.warn('[BulletinService] addComment sync error:', err);
+      }
+    }
+
+    return newComment;
+  }
+
+  /**
+   * Update post like count in Supabase
+   */
+  async toggleLike(postId: string, nextLikesCount: number): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('posts')
+          .update({ likes_count: nextLikesCount })
+          .eq('id', postId);
+      } catch (err) {
+        console.warn('[BulletinService] toggleLike sync error:', err);
+      }
+    }
+  }
+
+  /**
+   * Delete a post by ID (and cascade delete its comments)
+   */
+  async deletePost(postId: string): Promise<boolean> {
+    // 1. Immediately record deletion tombstone in local persistence
+    recordDeletedPostId(postId);
+
+    // 2. Sync to Supabase cloud if configured
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // Delete associated comments first to maintain referential integrity
+        await supabase.from('comments').delete().eq('post_id', postId);
+        
+        // Delete the post itself
+        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        if (error) {
+          console.warn('[BulletinService] deletePost error:', error.message);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.warn('[BulletinService] deletePost sync error:', err);
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+export const bulletinService = new BulletinService();
+

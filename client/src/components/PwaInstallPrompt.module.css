@@ -1,0 +1,372 @@
+/* ==========================================================================
+   PwaInstallPrompt Component Styles
+   Mobile-first, unobtrusive, Apple HIG & Material 3 compliant
+   ========================================================================== */
+
+.installBanner {
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom)); /* Sits smoothly above BottomNav */
+  left: 12px;
+  right: 12px;
+  max-width: 440px;
+  margin: 0 auto;
+  z-index: 80;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  animation: slideUpEntrance 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+@keyframes slideUpEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .installBanner {
+    animation: none;
+    transform: none;
+  }
+}
+
+.bannerContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.appIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.appIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 7px;
+}
+
+.bannerText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bannerTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bannerSubtitle {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.iosShareHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #0055A4;
+  font-weight: 600;
+}
+
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.installBtn {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background-color: #0055A4;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 8px rgba(0, 85, 164, 0.25);
+  touch-action: manipulation;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
+}
+
+.installBtn:active {
+  transform: scale(0.96);
+  background-color: #003E7A;
+}
+
+.dismissBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dismissBtn:active {
+  background-color: #F1F5F9;
+  color: #475569;
+}
+
+/* Instructions Overlay Modal */
+.instructionsOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.instructionsCard {
+  width: 100%;
+  max-width: 380px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 22px 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.instructionsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.instructionsHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalAppIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid #E2E8F0;
+  object-fit: contain;
+}
+
+.instructionsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.instructionsSubtitle {
+  font-size: 12px;
+  color: #64748B;
+  margin: 2px 0 0 0;
+}
+
+.instructionsCloseBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #F1F5F9;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.instructionsCloseBtn:active {
+  background: #E2E8F0;
+}
+
+.iosInstructionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #F8FAFC;
+  border: 1px solid #EDF2F7;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.stepNumberBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0055A4;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.stepContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stepTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stepTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.stepDesc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748B;
+  margin: 0;
+}
+
+.iosIconPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.iosAddPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: #007AFF;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.safariPointerBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1D4ED8;
+  margin-bottom: 12px;
+}
+
+.gotItBtn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  background: #1A7A5A;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gotItBtn:active {
+  transform: scale(0.97);
+  background: #145E45;
+}
+
+

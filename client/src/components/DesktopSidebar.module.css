@@ -60,10 +60,12 @@
   width: 100%;
 }
 
-.navItem:hover {
-  background-color: rgba(0, 85, 164, 0.06);
-  color: var(--color-primary-container);
-  transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+  .navItem:hover {
+    background-color: rgba(0, 85, 164, 0.06);
+    color: var(--color-primary-container);
+    transform: translateX(2px);
+  }
 }
 
 .navItem:active {
@@ -85,7 +87,9 @@
   margin-left: auto;
   background: var(--color-alert-red);
   color: #FFFFFF;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   padding: 1px 7px;
   border-radius: var(--radius-pill);
@@ -110,10 +114,12 @@
   transition: all var(--transition-fast);
 }
 
-.createButton:hover {
-  background-color: var(--color-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.38);
+@media (hover: hover) and (pointer: fine) {
+  .createButton:hover {
+    background-color: var(--color-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.38);
+  }
 }
 
 .createButton:active {
@@ -138,9 +144,11 @@
   transition: all var(--transition-fast);
 }
 
-.userFooter:hover {
-  border-color: rgba(0, 85, 164, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+@media (hover: hover) and (pointer: fine) {
+  .userFooter:hover {
+    border-color: rgba(0, 85, 164, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
 }
 
 .avatarWrapper {
@@ -185,7 +193,7 @@
 }
 
 .userRole {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
