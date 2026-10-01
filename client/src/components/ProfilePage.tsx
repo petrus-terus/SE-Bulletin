@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee, Post } from '../types/bulletin';
 import { CURRENT_USER } from '../services/mockData';
@@ -23,79 +23,20 @@ interface Props {
   onUpdateProfile?: (updated: Employee) => void;
 }
 
-// Curated authentic Sabah Electricity scenic presets for cover banners
-export const SESB_COVER_PRESETS = [
-  {
-    id: 'kinabalu-hq',
-    name: 'Wisma SESB HQ & Kinabalu',
-    location: 'Kota Kinabalu HQ',
-    url: '/mock-images/image3.png',
-  },
-  {
-    id: 'tenom-hydro',
-    name: 'Tenom Pangi Hydro Penstock',
-    location: 'Tenom Pangi',
-    url: '/mock-images/image4.png',
-  },
-  {
-    id: 'sepanggar-station',
-    name: 'Sepanggar Substation 132kV',
-    location: 'Sepanggar Bay',
-    url: '/mock-images/image1.png',
-  },
-  {
-    id: 'grid-sunset',
-    name: 'Sabah Grid Horizon Sunset',
-    location: 'Statewide Grid',
-    url: '/grid_horizon_hero.jpg',
-  },
-  {
-    id: 'scada-control',
-    name: 'SCADA Telemetry Operations',
-    location: 'Grid System Control',
-    url: '/mock-images/image2.png',
-  },
+// Curated authentic corporate defaults
+export const DEFAULT_COVER_URL = '/grid_horizon_hero.jpg';
+export const DEFAULT_AVATAR_URL = '/sabah_electricity_logo.png';
+
+export const SESB_DIVISIONS = ['INFORMATION & DIGITAL'];
+
+export const SESB_ROLES = [
+  'Chief Information & Digital Officer (CIDO)',
+  'Senior Manager',
+  'Head',
+  'Staff',
 ];
 
-// Curated authentic corporate presets for avatars / profile pictures
-export const SESB_AVATAR_PRESETS = [
-  {
-    id: 'sesb-crest',
-    name: 'Official Sabah Electricity Crest',
-    url: '/sabah_electricity_logo.png',
-  },
-  {
-    id: 'tnb-emblem',
-    name: 'TNB Corporate Emblem',
-    url: '/tnb_emblem.png',
-  },
-  {
-    id: 'default-staff',
-    name: 'Standard Staff Avatar',
-    url: '/user_face.png',
-  },
-];
-
-export const SESB_DEPARTMENTS = [
-  'Grid Operations',
-  'Engineering & Technical Services',
-  'Safety, Health & Environment (HSE)',
-  'Corporate Communications',
-  'Human Resources',
-  'Finance & Accounts',
-  'Information Technology',
-  'Distribution & Retail',
-];
-
-export const SESB_STATIONS = [
-  'Wisma SESB HQ, Kota Kinabalu',
-  'Tenom Pangi Hydro Power Station',
-  'Sepanggar Power Station',
-  'Sandakan Regional Operations Office',
-  'Tawau Regional Operations Office',
-  'Labuan Operations Center',
-  'Lahad Datu 132kV Substation',
-];
+export const SESB_LOCATIONS = ['Bangunan KWASA'];
 
 export const ProfilePage: React.FC<Props> = ({
   posts,
@@ -109,7 +50,6 @@ export const ProfilePage: React.FC<Props> = ({
   onPostClick,
   onImageClick,
   onCallExt,
-  onLogout,
   onUpdateProfile,
 }) => {
   const loggedInUser = currentUser || CURRENT_USER;
@@ -121,6 +61,14 @@ export const ProfilePage: React.FC<Props> = ({
   // Profile fields state
   const [profileData, setProfileData] = useState<Employee>(activeEmployee);
 
+  // Normalize division & location for Phase 1 pilot
+  const activeDivision = SESB_DIVISIONS.includes(profileData.department)
+    ? profileData.department
+    : SESB_DIVISIONS[0];
+  const activeLocation = SESB_LOCATIONS.includes(profileData.officeLocation || '')
+    ? (profileData.officeLocation || SESB_LOCATIONS[0])
+    : SESB_LOCATIONS[0];
+
   // Sync state if activeEmployee prop changes
   useEffect(() => {
     setProfileData(activeEmployee);
@@ -128,31 +76,53 @@ export const ProfilePage: React.FC<Props> = ({
 
   // Modal visibility states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
-  const [mediaPickerMode, setMediaPickerMode] = useState<'avatar' | 'cover'>('cover');
 
   // Temporary edit form state
   const [tempName, setTempName] = useState(profileData.name);
   const [tempDesignation, setTempDesignation] = useState(profileData.designation);
-  const [tempDepartment, setTempDepartment] = useState(profileData.department);
-  const [tempEmpId, setTempEmpId] = useState(profileData.employeeId);
-  const [tempEmail, setTempEmail] = useState(profileData.email);
-  const [tempLocation, setTempLocation] = useState(
-    profileData.officeLocation || SESB_STATIONS[0]
-  );
-  const [tempExt, setTempExt] = useState(profileData.phoneExtension || 'Ext. 4102');
+  const [tempDepartment, setTempDepartment] = useState(activeDivision);
+  const [tempLocation, setTempLocation] = useState(activeLocation);
   const [tempBio, setTempBio] = useState(
     profileData.bio ||
-      'Leading grid telemetry automation and SCADA sensor deployments statewide. Committed to Sabah Electricity Goal Zero and reliable transmission.'
+      'Committed to Sabah Electricity Goal Zero, digital transformation, and reliable power statewide.'
   );
-  const [tempAvatarUrl, setTempAvatarUrl] = useState(profileData.avatarUrl);
+  const [tempAvatarUrl, setTempAvatarUrl] = useState(
+    profileData.avatarUrl || DEFAULT_AVATAR_URL
+  );
   const [tempCoverUrl, setTempCoverUrl] = useState(
-    profileData.coverUrl || SESB_COVER_PRESETS[0].url
+    profileData.coverUrl || DEFAULT_COVER_URL
   );
 
   // Hidden file inputs for direct device photo upload
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle direct device file upload (FileReader to Data URL)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (!result) return;
+
+      if (mode === 'avatar') {
+        const updated = { ...profileData, avatarUrl: result };
+        setProfileData(updated);
+        setTempAvatarUrl(result);
+        if (onUpdateProfile) onUpdateProfile(updated);
+      } else {
+        const updated = { ...profileData, coverUrl: result };
+        setProfileData(updated);
+        setTempCoverUrl(result);
+        if (onUpdateProfile) onUpdateProfile(updated);
+      }
+    };
+    reader.readAsDataURL(file);
+    // Reset target value so selecting the same photo triggers change
+    e.target.value = '';
+  };
 
   // Filter posts authored by active employee
   const userPosts = posts.filter(
@@ -181,24 +151,14 @@ export const ProfilePage: React.FC<Props> = ({
     }));
 
   // Brand-new user onboarding completion rate calculation (Gate 15.4)
-  const hasCustomAvatar = profileData.avatarUrl && profileData.avatarUrl !== '/user_face.png';
-  const hasCustomCover = profileData.coverUrl && profileData.coverUrl !== '';
   const hasBioFilled = Boolean(profileData.bio && profileData.bio.trim().length > 15);
   const hasPublishedBulletin = userPosts.length > 0;
 
   const completionChecks = [
-    { label: `Staff ID Registered (${profileData.employeeId})`, isCompleted: true },
+    { label: `Division Registered (${profileData.department || 'INFORMATION & DIGITAL'})`, isCompleted: true },
+    { label: `Office Location (${profileData.officeLocation || 'Bangunan KWASA'})`, isCompleted: true },
     {
-      label: 'Personalize Avatar & Cover Photo',
-      isCompleted: Boolean(hasCustomAvatar || hasCustomCover),
-      action: () => {
-        setMediaPickerMode('avatar');
-        setIsMediaPickerOpen(true);
-      },
-      actionLabel: 'Change Photo',
-    },
-    {
-      label: 'Complete Operational Bio & Station',
+      label: 'Complete Operational Bio',
       isCompleted: hasBioFilled,
       action: () => {
         openEditProfileModal();
@@ -220,17 +180,14 @@ export const ProfilePage: React.FC<Props> = ({
   const openEditProfileModal = () => {
     setTempName(profileData.name);
     setTempDesignation(profileData.designation);
-    setTempDepartment(profileData.department);
-    setTempEmpId(profileData.employeeId);
-    setTempEmail(profileData.email);
-    setTempLocation(profileData.officeLocation || SESB_STATIONS[0]);
-    setTempExt(profileData.phoneExtension || 'Ext. 4102');
+    setTempDepartment(activeDivision);
+    setTempLocation(activeLocation);
     setTempBio(
       profileData.bio ||
-        'Leading grid telemetry automation and SCADA sensor deployments statewide. Committed to Sabah Electricity Goal Zero and reliable transmission.'
+        'Committed to Sabah Electricity Goal Zero, digital transformation, and reliable power statewide.'
     );
-    setTempAvatarUrl(profileData.avatarUrl);
-    setTempCoverUrl(profileData.coverUrl || SESB_COVER_PRESETS[0].url);
+    setTempAvatarUrl(profileData.avatarUrl || DEFAULT_AVATAR_URL);
+    setTempCoverUrl(profileData.coverUrl || DEFAULT_COVER_URL);
     setIsEditModalOpen(true);
   };
 
@@ -243,13 +200,10 @@ export const ProfilePage: React.FC<Props> = ({
       fullName: tempName.trim() || profileData.name,
       designation: tempDesignation.trim() || profileData.designation,
       department: tempDepartment,
-      employeeId: tempEmpId.trim() || profileData.employeeId,
-      email: tempEmail.trim() || profileData.email,
       officeLocation: tempLocation,
-      phoneExtension: tempExt.trim() || profileData.phoneExtension,
       bio: tempBio.trim(),
-      avatarUrl: tempAvatarUrl,
-      coverUrl: tempCoverUrl,
+      avatarUrl: tempAvatarUrl || DEFAULT_AVATAR_URL,
+      coverUrl: tempCoverUrl || DEFAULT_COVER_URL,
     };
 
     setProfileData(updatedEmployee);
@@ -259,73 +213,46 @@ export const ProfilePage: React.FC<Props> = ({
     setIsEditModalOpen(false);
   };
 
-  // Quick preset selection from Media Picker
-  const handleSelectPreset = (url: string) => {
-    if (mediaPickerMode === 'avatar') {
-      const updated = { ...profileData, avatarUrl: url };
-      setProfileData(updated);
-      setTempAvatarUrl(url);
-      if (onUpdateProfile) onUpdateProfile(updated);
-    } else {
-      const updated = { ...profileData, coverUrl: url };
-      setProfileData(updated);
-      setTempCoverUrl(url);
-      if (onUpdateProfile) onUpdateProfile(updated);
-    }
-    setIsMediaPickerOpen(false);
-  };
-
-  // Handle device file upload (FileReader to base64 Data URL)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (!result) return;
-
-      if (mode === 'avatar') {
-        const updated = { ...profileData, avatarUrl: result };
-        setProfileData(updated);
-        setTempAvatarUrl(result);
-        if (onUpdateProfile) onUpdateProfile(updated);
-      } else {
-        const updated = { ...profileData, coverUrl: result };
-        setProfileData(updated);
-        setTempCoverUrl(result);
-        if (onUpdateProfile) onUpdateProfile(updated);
-      }
-      setIsMediaPickerOpen(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Handle ESC key to dismiss open modals
+  // Handle ESC key to dismiss open modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isMediaPickerOpen) setIsMediaPickerOpen(false);
-        else if (isEditModalOpen) setIsEditModalOpen(false);
+      if (e.key === 'Escape' && isEditModalOpen) {
+        setIsEditModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMediaPickerOpen, isEditModalOpen]);
-
-  const currentCover = profileData.coverUrl || SESB_COVER_PRESETS[0].url;
+  }, [isEditModalOpen]);
 
   return (
     <div className={styles.profileContainer}>
+      {/* Hidden file inputs for direct device photo uploads */}
+      <input
+        type="file"
+        ref={avatarFileInputRef}
+        onChange={(e) => handleFileUpload(e, 'avatar')}
+        accept="image/*"
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
+      <input
+        type="file"
+        ref={coverFileInputRef}
+        onChange={(e) => handleFileUpload(e, 'cover')}
+        accept="image/*"
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
+
       {/* 1. Facebook-Style Hero & Panoramic Cover Banner */}
       <div className={styles.profileCard}>
         <div className={styles.coverWrapper}>
           <img
-            src={currentCover}
+            src={profileData.coverUrl || DEFAULT_COVER_URL}
             alt="Corporate Cover Banner"
             className={styles.coverImg}
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/mock-images/image3.png';
+              (e.currentTarget as HTMLImageElement).src = DEFAULT_COVER_URL;
             }}
           />
 
@@ -347,16 +274,13 @@ export const ProfilePage: React.FC<Props> = ({
             </button>
           )}
 
-          {/* Dual Trigger: Direct Edit Cover Button on Banner */}
+          {/* Direct Trigger: Upload Cover Photo Button on Banner */}
           {isOwnProfile && (
             <button
               type="button"
               className={styles.changeCoverBtn}
-              onClick={() => {
-                setMediaPickerMode('cover');
-                setIsMediaPickerOpen(true);
-              }}
-              title="Personalize cover photo"
+              onClick={() => coverFileInputRef.current?.click()}
+              title="Upload cover banner photo"
               aria-label="Change Cover Photo"
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
@@ -370,30 +294,27 @@ export const ProfilePage: React.FC<Props> = ({
         {/* Profile Info Header */}
         <div className={styles.profileMetaDeck}>
           <div className={styles.avatarRow}>
-            {/* 88px Avatar with Dual Trigger Camera Overlay */}
+            {/* 88px Avatar with Sabah Electricity Crest or custom photo */}
             <div className={styles.avatarHolder}>
               <img
-                src={profileData.avatarUrl}
+                src={profileData.avatarUrl || DEFAULT_AVATAR_URL}
                 alt={profileData.name}
                 className={styles.profileAvatar}
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
+                  (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR_URL;
                 }}
               />
               {profileData.isOnline && (
                 <span className={styles.onlineBadge} title="Available on Sabah corporate intranet" />
               )}
 
-              {/* Dual Trigger: Tap Camera Overlay on Avatar */}
+              {/* Direct Trigger: Camera Upload Button on Avatar */}
               {isOwnProfile && (
                 <button
                   type="button"
                   className={styles.avatarCameraBtn}
-                  onClick={() => {
-                    setMediaPickerMode('avatar');
-                    setIsMediaPickerOpen(true);
-                  }}
-                  title="Change profile picture"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  title="Upload profile picture"
                   aria-label="Change Profile Picture"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
@@ -405,45 +326,17 @@ export const ProfilePage: React.FC<Props> = ({
 
             <div className={styles.actionPillsRow}>
               {isOwnProfile ? (
-                <>
-                  <button
-                    type="button"
-                    className={styles.editProfileBtn}
-                    onClick={openEditProfileModal}
-                    title="Customize all profile information"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      edit
-                    </span>
-                    <span>Edit Profile</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.createShortcutBtn}
-                    onClick={onOpenCreate}
-                    title="Publish a new bulletin"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      add
-                    </span>
-                    <span>New Post</span>
-                  </button>
-
-                  {onLogout && (
-                    <button
-                      type="button"
-                      className={styles.logoutBtn}
-                      onClick={onLogout}
-                      title="Switch staff account or log out"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                        logout
-                      </span>
-                      <span>Switch / Log Out</span>
-                    </button>
-                  )}
-                </>
+                <button
+                  type="button"
+                  className={styles.editProfileBtn}
+                  onClick={openEditProfileModal}
+                  title="Customize profile information"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    edit
+                  </span>
+                  <span>Edit Profile</span>
+                </button>
               ) : (
                 <>
                   <a
@@ -492,32 +385,16 @@ export const ProfilePage: React.FC<Props> = ({
             </div>
 
             <div className={styles.designationPillRow}>
-              <span className={styles.deptBadge}>{profileData.department}</span>
-              <span className={styles.roleBadge}>{profileData.designation}</span>
+              <span className={styles.deptBadge}>{activeDivision}</span>
+              <span className={styles.roleBadge}>{profileData.designation || 'Staff'}</span>
             </div>
 
             <div className={styles.empIdRow}>
               <span className={styles.metaItem}>
                 <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  badge
-                </span>
-                <span className="font-mono tabular-nums font-semibold">
-                  {profileData.employeeId}
-                </span>
-              </span>
-              <span className={styles.metaItem}>
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                   location_on
                 </span>
-                <span>{profileData.officeLocation || SESB_STATIONS[0]}</span>
-              </span>
-              <span className={styles.metaItem}>
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  call
-                </span>
-                <span className="font-mono tabular-nums font-semibold">
-                  {profileData.phoneExtension || 'Ext. 4102'}
-                </span>
+                <span>{activeLocation}</span>
               </span>
             </div>
 
@@ -775,6 +652,8 @@ export const ProfilePage: React.FC<Props> = ({
         )}
       </section>
 
+
+
       {/* Hidden File Inputs for Device Camera / File Uploads */}
       <input
         ref={avatarFileInputRef}
@@ -790,185 +669,6 @@ export const ProfilePage: React.FC<Props> = ({
         style={{ display: 'none' }}
         onChange={(e) => handleFileUpload(e, 'cover')}
       />
-
-      {/* 7. Dedicated Media Picker Modal Sheet (Portaled via createPortal) */}
-      {isMediaPickerOpen &&
-        createPortal(
-          <div
-            className={styles.modalBackdrop}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Change Photo"
-            onClick={() => setIsMediaPickerOpen(false)}
-          >
-            <div
-              className={styles.mediaPickerSheet}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Sheet Header */}
-              <div className={styles.modalHeader}>
-                <div className={styles.mediaTabsRow}>
-                  <button
-                    type="button"
-                    className={`${styles.mediaTabBtn} ${mediaPickerMode === 'cover' ? styles.mediaTabActive : ''}`}
-                    onClick={() => setMediaPickerMode('cover')}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      panorama
-                    </span>
-                    <span>Cover Banner</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.mediaTabBtn} ${mediaPickerMode === 'avatar' ? styles.mediaTabActive : ''}`}
-                    onClick={() => setMediaPickerMode('avatar')}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      account_circle
-                    </span>
-                    <span>Profile Picture</span>
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.modalCloseBtn}
-                  onClick={() => setIsMediaPickerOpen(false)}
-                  title="Close media picker"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                    close
-                  </span>
-                </button>
-              </div>
-
-              <div className={styles.mediaPickerBody}>
-                {/* Upload from Device Option */}
-                <div className={styles.uploadPromptCard}>
-                  <div className={styles.uploadPromptIcon}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#0055A4' }}>
-                      add_photo_alternate
-                    </span>
-                  </div>
-                  <div className={styles.uploadPromptText}>
-                    <h4 className={styles.uploadPromptTitle}>
-                      Upload from Camera or Gallery
-                    </h4>
-                    <p className={styles.uploadPromptDesc}>
-                      {mediaPickerMode === 'cover'
-                        ? 'Select a high-resolution landscape photo for your cover banner.'
-                        : 'Upload a square portrait of yourself or team badge.'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.deviceUploadBtn}
-                    onClick={() => {
-                      if (mediaPickerMode === 'avatar') {
-                        avatarFileInputRef.current?.click();
-                      } else {
-                        coverFileInputRef.current?.click();
-                      }
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      file_upload
-                    </span>
-                    <span>Choose File</span>
-                  </button>
-                </div>
-
-                {/* Curated Presets Section */}
-                <div className={styles.presetsSection}>
-                  <h4 className={styles.presetsHeading}>
-                    {mediaPickerMode === 'cover'
-                      ? 'Authentic Sabah Electricity Scenic Presets'
-                      : 'Corporate Emblem & Identity Presets'}
-                  </h4>
-
-                  {mediaPickerMode === 'cover' ? (
-                    <div className={styles.coverPresetsGrid}>
-                      {SESB_COVER_PRESETS.map((preset) => {
-                        const isSelected = profileData.coverUrl === preset.url;
-                        return (
-                          <div
-                            key={preset.id}
-                            className={`${styles.presetCoverTile} ${isSelected ? styles.presetSelected : ''}`}
-                            onClick={() => handleSelectPreset(preset.url)}
-                          >
-                            <img
-                              src={preset.url}
-                              alt={preset.name}
-                              className={styles.presetCoverImg}
-                              onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = '/mock-images/image3.png';
-                              }}
-                            />
-                            <div className={styles.presetCoverMeta}>
-                              <span className={styles.presetCoverName}>{preset.name}</span>
-                              <span className={styles.presetCoverLoc}>{preset.location}</span>
-                            </div>
-                            {isSelected && (
-                              <span className={styles.selectedBadge}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#FFFFFF' }}>
-                                  check
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className={styles.avatarPresetsGrid}>
-                      {SESB_AVATAR_PRESETS.map((preset) => {
-                        const isSelected = profileData.avatarUrl === preset.url;
-                        return (
-                          <div
-                            key={preset.id}
-                            className={`${styles.presetAvatarTile} ${isSelected ? styles.presetSelected : ''}`}
-                            onClick={() => handleSelectPreset(preset.url)}
-                          >
-                            <div className={styles.presetAvatarCircle}>
-                              <img
-                                src={preset.url}
-                                alt={preset.name}
-                                className={styles.presetAvatarImg}
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                                }}
-                              />
-                            </div>
-                            <span className={styles.presetAvatarName}>{preset.name}</span>
-                            {isSelected && (
-                              <span className={styles.selectedBadge}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#FFFFFF' }}>
-                                  check
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sheet Footer */}
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={() => setIsMediaPickerOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
 
       {/* 8. Comprehensive Edit Profile Modal Sheet (Portaled via createPortal) */}
       {isEditModalOpen &&
@@ -1006,66 +706,93 @@ export const ProfilePage: React.FC<Props> = ({
 
               {/* Form Content */}
               <form onSubmit={handleSaveProfile} className={styles.modalForm}>
-                {/* Media Quick Previews Deck */}
+                {/* Media Quick Previews Deck with Direct Upload Triggers */}
                 <div className={styles.mediaPreviewsDeck}>
+                  {/* Panoramic Banner Preview */}
                   <div className={styles.previewCoverWrap}>
                     <img
-                      src={tempCoverUrl}
+                      src={tempCoverUrl || DEFAULT_COVER_URL}
                       alt="Banner Preview"
                       className={styles.previewCoverImg}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/mock-images/image3.png';
+                        (e.currentTarget as HTMLImageElement).src = DEFAULT_COVER_URL;
                       }}
                     />
-                    <button
-                      type="button"
-                      className={styles.quickCoverChangeBtn}
-                      onClick={() => {
-                        setMediaPickerMode('cover');
-                        setIsMediaPickerOpen(true);
-                      }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        photo_camera
-                      </span>
-                      <span>Change Banner</span>
-                    </button>
+                    <div className={styles.coverButtonsOverlay}>
+                      {tempCoverUrl !== DEFAULT_COVER_URL && (
+                        <button
+                          type="button"
+                          className={styles.quickCoverChangeBtn}
+                          onClick={() => setTempCoverUrl(DEFAULT_COVER_URL)}
+                          title="Reset to Sabah Grid Horizon Sunset"
+                          style={{ background: 'rgba(15, 23, 42, 0.65)' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                            restart_alt
+                          </span>
+                          <span>Reset</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.quickCoverChangeBtn}
+                        onClick={() => coverFileInputRef.current?.click()}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                          photo_camera
+                        </span>
+                        <span>Upload Banner</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className={styles.previewAvatarRow}>
+                  {/* Avatar & Controls Row below the banner */}
+                  <div className={styles.previewMediaControls}>
                     <div className={styles.previewAvatarHolder}>
                       <img
-                        src={tempAvatarUrl}
+                        src={tempAvatarUrl || DEFAULT_AVATAR_URL}
                         alt="Avatar Preview"
                         className={styles.previewAvatarImg}
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
+                          (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR_URL;
                         }}
                       />
                       <button
                         type="button"
                         className={styles.quickAvatarChangeBtn}
-                        onClick={() => {
-                          setMediaPickerMode('avatar');
-                          setIsMediaPickerOpen(true);
-                        }}
-                        title="Change profile picture"
+                        onClick={() => avatarFileInputRef.current?.click()}
+                        title="Upload profile picture"
+                        aria-label="Upload profile picture"
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
                           photo_camera
                         </span>
                       </button>
                     </div>
+
                     <div className={styles.previewMetaNotice}>
-                      <span className={styles.previewMetaTitle}>Profile Media</span>
+                      <div className={styles.previewNoticeHeader}>
+                        <span className={styles.previewMetaTitle}>Profile Photo</span>
+                        {tempAvatarUrl !== DEFAULT_AVATAR_URL && (
+                          <button
+                            type="button"
+                            onClick={() => setTempAvatarUrl(DEFAULT_AVATAR_URL)}
+                            className={styles.resetCrestBtn}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
+                              restart_alt
+                            </span>
+                            Reset to Crest
+                          </button>
+                        )}
+                      </div>
                       <span className={styles.previewMetaSub}>
-                        Tap icons above to change cover or avatar
+                        Tap camera to select custom photo from device
                       </span>
                     </div>
                   </div>
                 </div>
-
-                {/* Row 1: Full Name & Designation */}
+                {/* Row 1: Full Name & Role Dropdown */}
                 <div className={styles.formRow}>
                   <div className={styles.fieldGroup}>
                     <label className={styles.fieldLabel}>Full Name</label>
@@ -1080,28 +807,32 @@ export const ProfilePage: React.FC<Props> = ({
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Designation / Role</label>
-                    <input
-                      type="text"
-                      className={styles.textInput}
+                    <label className={styles.fieldLabel}>Role</label>
+                    <select
+                      className={styles.selectInput}
                       value={tempDesignation}
                       onChange={(e) => setTempDesignation(e.target.value)}
-                      placeholder="e.g. Senior Grid Operations Engineer"
-                      required
-                    />
+                    >
+                      <option value="">Role</option>
+                      {SESB_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Row 2: Department & Station Location */}
+                {/* Row 2: Division & Station Location */}
                 <div className={styles.formRow}>
                   <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Department</label>
+                    <label className={styles.fieldLabel}>Division</label>
                     <select
                       className={styles.selectInput}
                       value={tempDepartment}
                       onChange={(e) => setTempDepartment(e.target.value)}
                     >
-                      {SESB_DEPARTMENTS.map((dept) => (
+                      {SESB_DIVISIONS.map((dept) => (
                         <option key={dept} value={dept}>
                           {dept}
                         </option>
@@ -1110,56 +841,18 @@ export const ProfilePage: React.FC<Props> = ({
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Station / Office Location</label>
+                    <label className={styles.fieldLabel}>Location</label>
                     <select
                       className={styles.selectInput}
                       value={tempLocation}
                       onChange={(e) => setTempLocation(e.target.value)}
                     >
-                      {SESB_STATIONS.map((station) => (
+                      {SESB_LOCATIONS.map((station) => (
                         <option key={station} value={station}>
                           {station}
                         </option>
                       ))}
                     </select>
-                  </div>
-                </div>
-
-                {/* Row 3: Staff ID, Email & Extension */}
-                <div className={styles.formRowThree}>
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Staff ID</label>
-                    <input
-                      type="text"
-                      className={`${styles.textInput} font-mono tabular-nums`}
-                      value={tempEmpId}
-                      onChange={(e) => setTempEmpId(e.target.value)}
-                      placeholder="SESB-1001"
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Corporate Email</label>
-                    <input
-                      type="email"
-                      className={styles.textInput}
-                      value={tempEmail}
-                      onChange={(e) => setTempEmail(e.target.value)}
-                      placeholder="irfan@sesb.com.my"
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Desk Ext.</label>
-                    <input
-                      type="text"
-                      className={`${styles.textInput} font-mono tabular-nums`}
-                      value={tempExt}
-                      onChange={(e) => setTempExt(e.target.value)}
-                      placeholder="Ext. 4102"
-                    />
                   </div>
                 </div>
 

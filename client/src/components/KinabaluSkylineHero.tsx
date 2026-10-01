@@ -85,14 +85,16 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   // Derived graph & scrubbing coordinates
   const points = marketData?.intradayPoints || [];
   const prevClose = marketData?.previousClose ?? 13.06;
+  const dayLow = marketData?.dayLow ?? 13.10;
+  const dayHigh = marketData?.dayHigh ?? 13.28;
 
   const svgWidth = 320;
-  const svgHeight = 72;
-  const paddingY = 9;
+  const svgHeight = 78;
+  const paddingY = 10;
 
   const allPrices = points.length > 0 ? points.map((p) => p.price) : [13.22, 13.06];
-  const minPrice = Math.min(...allPrices, prevClose);
-  const maxPrice = Math.max(...allPrices, prevClose);
+  const minPrice = Math.min(...allPrices, prevClose, dayLow);
+  const maxPrice = Math.max(...allPrices, prevClose, dayHigh);
   const priceRange = Math.max(0.12, maxPrice - minPrice);
 
   const coordPoints = points.map((p, idx) => ({
@@ -116,6 +118,13 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   const priceDiff = Math.round((displayPrice - prevClose) * 100) / 100;
   const pctDiff = Math.round(((priceDiff / prevClose) * 100) * 100) / 100;
   const isPositive = priceDiff >= 0;
+
+  // Day Range position calculation
+  const rangeSpan = Math.max(0.01, dayHigh - dayLow);
+  const rangeProgress = Math.max(0, Math.min(100, ((displayPrice - dayLow) / rangeSpan) * 100));
+
+  // Floating magnetic tooltip coordinates
+  const tooltipXPercent = activePoint ? Math.max(10, Math.min(90, (activePoint.x / svgWidth) * 100)) : 50;
 
   const strokeColor = isPositive ? '#10B981' : '#EF4444';
   const gradId = isPositive ? 'chartGreenGrad' : 'chartRedGrad';
@@ -290,74 +299,36 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Market Card */}
+        {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */}
         <div className={styles.sharesWidget} aria-label="Tenaga Nasional Berhad Market Telemetry">
-          {/* Top Row: Brand & Live Market Indicator */}
+          {/* Top Pill Row: Side-by-side Pills */}
           <div className={styles.sharesTopRow}>
-            <div className={styles.sharesBrandGroup}>
-              <div className={styles.tnbLogoBadge} title="Tenaga Nasional Berhad">
-                <img
-                  src="/tnb_logo.png"
-                  alt=""
-                  className={styles.tnbLogoImg}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
-              <div className={styles.brandTextContainer}>
-                <div className={styles.sharesTickerName}>
-                  <span className={styles.companyTitle}>Tenaga Nasional Bhd</span>
-                </div>
-                <div className={styles.sharesExchangeSub}>
-                  <span className="font-mono tabular-nums font-semibold">KLSE: TENAGA</span>
-                  <span>•</span>
-                  <span className="font-mono tabular-nums">5347</span>
-                  <span>•</span>
-                  <span>Bursa Malaysia</span>
-                </div>
-              </div>
+            <div className={styles.brandPill} title="Tenaga Nasional Berhad (Bursa: 5347)">
+              <span className={styles.brandPillText}>TNB • Bursa 5347</span>
             </div>
 
-            {/* Scrubbing indicator if active */}
-            {isScrubbing && (
-              <div className={styles.statusIndicatorBlock}>
-                <span className={styles.scrubbingStatusPill}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>touch_app</span>
-                  <span>Scrubbing</span>
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Main Price Valuation Row */}
-          <div className={styles.sharesPriceRow}>
-            <div className={styles.priceContainer}>
-              <div className={styles.priceMain}>
-                <span className={styles.currencyPrefix}>MYR</span>
-                <span className={`font-mono tabular-nums ${styles.priceNumber}`}>
-                  {displayPrice.toFixed(2)}
-                </span>
-              </div>
-
-              <div className={`${styles.gainPill} ${!isPositive ? styles.lossPill : ''}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  {isPositive ? 'arrow_drop_up' : 'arrow_drop_down'}
-                </span>
-                <span className="font-mono tabular-nums font-bold">
-                  {isPositive ? `+${priceDiff.toFixed(2)}` : priceDiff.toFixed(2)} ({isPositive ? '+' : ''}{pctDiff.toFixed(2)}%)
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.timeSnapshot}>
-              <span className={`font-mono tabular-nums ${styles.sparklineLabel}`}>
-                {activePoint ? activePoint.timeStr : (marketData?.lastUpdated ? `1D • ${marketData.lastUpdated}` : '1D • Live')}
+            <div className={styles.liveStatusPill}>
+              <span className={styles.liveStatusDot} aria-hidden="true" />
+              <span className="font-mono tabular-nums">
+                {activePoint ? 'Live 11:30 MYT' : (marketData?.lastUpdated ? `Live ${marketData.lastUpdated}` : 'Live 11:30 MYT')}
               </span>
             </div>
           </div>
 
-          {/* Full-Width Interactive Intraday Chart Canvas */}
+          {/* Main Price & Valuation Row: Price + unpill percentage on side */}
+          <div className={styles.sharesPriceRow}>
+            <div className={styles.priceContainer}>
+              <span className={styles.priceNumber}>
+                MYR <span className="font-mono tabular-nums">{displayPrice.toFixed(2)}</span>
+              </span>
+              <span className={`${styles.changeText} ${isPositive ? styles.changeTextUp : styles.changeTextDown}`}>
+                <span className={styles.changeArrow}>{isPositive ? '▲' : '▼'}</span>
+                <span className="font-mono tabular-nums">{isPositive ? '+' : ''}{pctDiff.toFixed(2)}%</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Full-Width Interactive Intraday Chart Canvas with Floating Tooltip */}
           <div
             className={styles.chartCanvasContainer}
             onPointerDown={(e) => {
@@ -384,6 +355,24 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
               }
             }}
           >
+            {/* Floating Magnetic Tooltip above active touch point */}
+            {activePoint && (
+              <div
+                className={styles.floatingTooltip}
+                style={{
+                  left: `${tooltipXPercent}%`,
+                }}
+              >
+                <span className={`font-mono tabular-nums ${styles.tooltipPrice}`}>
+                  {activePoint.price.toFixed(2)}
+                </span>
+                <span className={styles.tooltipDot}>•</span>
+                <span className={`font-mono tabular-nums ${styles.tooltipTime}`}>
+                  {activePoint.timeStr}
+                </span>
+              </div>
+            )}
+
             <svg
               className={styles.interactiveChartSvg}
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
@@ -391,11 +380,11 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             >
               <defs>
                 <linearGradient id="chartGreenGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity={isDark ? '0.36' : '0.20'} />
+                  <stop offset="0%" stopColor="#10B981" stopOpacity={isDark ? '0.24' : '0.12'} />
                   <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
                 </linearGradient>
                 <linearGradient id="chartRedGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity={isDark ? '0.36' : '0.20'} />
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity={isDark ? '0.24' : '0.12'} />
                   <stop offset="100%" stopColor="#EF4444" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
@@ -403,13 +392,13 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
               {/* Transparent pointer capture plane */}
               <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="transparent" />
 
-              {/* Previous Close Horizontal Baseline */}
+              {/* Previous Close Horizontal Baseline (Subtle reference, no text) */}
               <line
                 x1="0"
                 y1={baselineY}
                 x2={svgWidth}
                 y2={baselineY}
-                stroke={isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)'}
+                stroke={isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(100, 116, 139, 0.22)'}
                 strokeWidth="1"
                 strokeDasharray="3 3"
               />
@@ -423,7 +412,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
                   d={linePath}
                   fill="none"
                   stroke={strokeColor}
-                  strokeWidth="2.2"
+                  strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -437,43 +426,57 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
                     y1="0"
                     x2={activePoint.x}
                     y2={svgHeight}
-                    stroke={isDark ? 'rgba(56, 189, 248, 0.75)' : 'rgba(0, 85, 164, 0.65)'}
+                    stroke={isDark ? 'rgba(56, 189, 248, 0.75)' : 'rgba(0, 85, 164, 0.55)'}
                     strokeWidth="1.2"
                     strokeDasharray="2 2"
                   />
                   <circle
                     cx={activePoint.x}
                     cy={activePoint.y}
-                    r="4.5"
+                    r="4"
                     fill={strokeColor}
                     stroke={isDark ? '#0F172A' : '#FFFFFF'}
                     strokeWidth="2"
                   />
                 </g>
               ) : (
-                /* Terminal Pulsing Dot on Rightmost Point */
+                /* Terminal Live Dot on Rightmost Point */
                 coordPoints.length > 0 && (
                   <circle
                     cx={coordPoints[coordPoints.length - 1].x}
                     cy={coordPoints[coordPoints.length - 1].y}
                     r="3.5"
                     fill={strokeColor}
-                    className={styles.terminalLiveDot}
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
                   />
                 )
               )}
             </svg>
+          </div>
 
-            {/* Scrub Tooltip Cue / Baseline Legend */}
-            <div className={styles.chartFooterRow}>
-              <span className={`font-mono tabular-nums ${styles.chartLegend}`}>
-                Prev Close: {prevClose.toFixed(2)}
+          {/* Clean Minimalist Day Range Slider */}
+          <div className={styles.dayRangeContainer}>
+            <div className={styles.dayRangeRow}>
+              <span className={`font-mono tabular-nums ${styles.dayRangeBound}`}>
+                {dayLow.toFixed(2)}
               </span>
-              <span className={styles.chartHint}>
-                {isScrubbing ? 'Slide across to inspect' : 'Touch & drag to scrub'}
-              </span>
-              <span className={`font-mono tabular-nums ${styles.chartLegend}`}>
-                Day High: {(marketData?.dayHigh ?? 13.28).toFixed(2)}
+
+              <div className={styles.dayRangeTrack}>
+                <div
+                  className={styles.dayRangeMarker}
+                  style={{ left: `${rangeProgress}%` }}
+                />
+                <span
+                  className={`font-mono tabular-nums ${styles.dayRangeCurrentVal}`}
+                  style={{ left: `${rangeProgress}%` }}
+                >
+                  {displayPrice.toFixed(2)}
+                </span>
+              </div>
+
+              <span className={`font-mono tabular-nums ${styles.dayRangeBound}`}>
+                {dayHigh.toFixed(2)}
               </span>
             </div>
           </div>

@@ -7,22 +7,24 @@ interface Props {
   unreadCount?: number;
   onNotificationClick?: () => void;
   onProfileClick: () => void;
+  onBrandClick?: () => void;
 }
 
 export const TopAppBar: React.FC<Props> = ({
   currentUser,
   onProfileClick,
+  onBrandClick,
 }) => {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        {/* Official Sabah Electricity Brand Logo + App Title */}
+        {/* Official Sabah Electricity Brand Logo + App Title: Tapping opens Brand Sidebar */}
         <div
           className={styles.brandGroup}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={onBrandClick || (() => window.scrollTo({ top: 0, behavior: 'smooth' }))}
           role="button"
           tabIndex={0}
-          aria-label="Sabah Electricity Home"
+          aria-label="Sabah Electricity Navigation Menu"
         >
           <img
             src="/sabah_electricity_logo.png"
@@ -33,6 +35,9 @@ export const TopAppBar: React.FC<Props> = ({
             }}
           />
           <span className={styles.brandTitle}>SE Bulletin</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0055A4', marginLeft: '2px' }}>
+            menu
+          </span>
         </div>
 
         {/* Action Controls: Profile Avatar Only */}

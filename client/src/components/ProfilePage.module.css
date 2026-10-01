@@ -1139,15 +1139,15 @@
 }
 
 .mediaPreviewsDeck {
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-lg, 12px);
   overflow: hidden;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--color-border-subtle, #E2E8F0);
   background: #F8FAFC;
-  padding: 0 0 10px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .previewCoverWrap {
-  height: 80px;
+  height: 96px;
   position: relative;
   background: #0055A4;
   overflow: hidden;
@@ -1159,45 +1159,57 @@
   object-fit: cover;
 }
 
-.quickCoverChangeBtn {
+.coverButtonsOverlay {
   position: absolute;
   bottom: 8px;
   right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.quickCoverChangeBtn {
   min-height: 32px;
   padding: 4px 10px;
   border-radius: var(--radius-pill, 9999px);
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
-  font-size: 11px;
+  font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
   touch-action: manipulation;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
 }
 
-.previewAvatarRow {
+.quickCoverChangeBtn:active {
+  transform: scale(0.96);
+}
+
+.previewMediaControls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
-  margin-top: -26px;
+  gap: 14px;
+  padding: 8px 14px 12px 14px;
   position: relative;
-  z-index: 2;
 }
 
 .previewAvatarHolder {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: #FFFFFF;
-  padding: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 2.5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   position: relative;
+  margin-top: -24px;
+  z-index: 4;
+  flex-shrink: 0;
 }
 
 .previewAvatarImg {
@@ -1205,14 +1217,15 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  background: #FFFFFF;
 }
 
 .quickAvatarChangeBtn {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #0055A4;
   border: 1.5px solid #FFFFFF;
@@ -1222,11 +1235,26 @@
   justify-content: center;
   cursor: pointer;
   touch-action: manipulation;
+  box-shadow: 0 2px 4px rgba(0, 85, 164, 0.35);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quickAvatarChangeBtn:active {
+  transform: scale(0.92);
 }
 
 .previewMetaNotice {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.previewNoticeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .previewMetaTitle {
@@ -1236,8 +1264,28 @@
 }
 
 .previewMetaSub {
-  font-size: 11px;
+  font-size: var(--font-size-xs, 12px);
   color: #64748B;
+}
+
+.resetCrestBtn {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #0055A4;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill, 9999px);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  touch-action: manipulation;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+}
+
+.resetCrestBtn:active {
+  transform: scale(0.96);
 }
 
 .formRow {

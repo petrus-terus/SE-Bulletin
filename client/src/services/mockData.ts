@@ -5,17 +5,18 @@ export const CURRENT_USER: Employee = {
   employeeId: 'SESB-1001',
   name: 'Mohd Irfan',
   fullName: 'Mohd Irfan bin Khairunnizam',
-  designation: 'Digital Transformation Lead',
-  department: 'Information & Digital',
+  designation: 'Senior Manager',
+  department: 'INFORMATION & DIGITAL',
   email: 'irfan@sesb.com.my',
-  avatarUrl: '/user_face.png',
-  officeLocation: 'Wisma SESB, Level 7, Kota Kinabalu',
+  avatarUrl: '/sabah_electricity_logo.png',
+  coverUrl: '/grid_horizon_hero.jpg',
+  officeLocation: 'Bangunan KWASA',
   phoneExtension: 'Ext. 4412',
   role: 'DepartmentAdmin',
   adminDepartments: ['dept-id'],
   isVerified: true,
   isOnline: true,
-  bio: 'Leading digital transformation, grid telemetry automation, and SCADA sensor deployments statewide. Committed to Sabah Electricity Goal Zero.',
+  bio: 'Committed to Sabah Electricity Goal Zero, digital transformation, and reliable power statewide.',
 };
 
 export const ALL_EMPLOYEES: Employee[] = [

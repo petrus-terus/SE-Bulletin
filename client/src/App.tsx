@@ -23,6 +23,8 @@ import { PostDetailView } from './components/PostDetailView';
 import { ImageViewerModal } from './components/ImageViewerModal';
 import { LoginPage } from './components/LoginPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { BrandSidebarDrawer } from './components/BrandSidebarDrawer';
+import { SavedPostsDrawer } from './components/SavedPostsDrawer';
 
 export function App() {
   const [currentUser, setCurrentUser] = useState<Employee>(() => {
@@ -49,6 +51,8 @@ export function App() {
 
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isBrandSidebarOpen, setIsBrandSidebarOpen] = useState(false);
+  const [isSavedPostsOpen, setIsSavedPostsOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
   const [selectedPostForDetail, setSelectedPostForDetail] = useState<Post | null>(null);
@@ -57,6 +61,16 @@ export function App() {
     title?: string;
     location?: string | null;
   } | null>(null);
+
+  // Corporate Staff Logout Handler
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('sesb_auth');
+    setToast({
+      message: 'Logged out. Ready for new staff login.',
+      icon: 'logout',
+    });
+  };
 
   // 1. Initial Load from BulletinService / Supabase
   useEffect(() => {
@@ -496,6 +510,7 @@ export function App() {
         currentUser={currentUser}
         unreadCount={unreadCount}
         onNotificationClick={() => setActiveTab('notifications')}
+        onBrandClick={() => setIsBrandSidebarOpen(true)}
         onProfileClick={() => {
           setViewedProfileEmployee(null);
           setActiveTab('profile');
@@ -739,14 +754,7 @@ export function App() {
                 icon: 'phone_in_talk',
               })
             }
-            onLogout={() => {
-              setIsAuthenticated(false);
-              localStorage.removeItem('sesb_auth');
-              setToast({
-                message: 'Logged out. Ready for new staff login.',
-                icon: 'logout',
-              });
-            }}
+            onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
           />
         )}
@@ -820,6 +828,31 @@ export function App() {
 
       {/* In-App Mobile PWA Install Banner (Android & iOS) */}
       <PwaInstallPrompt />
+
+      {/* Slide-out Navigation Drawer triggered by Sabah Electricity Brand Logo */}
+      <BrandSidebarDrawer
+        isOpen={isBrandSidebarOpen}
+        onClose={() => setIsBrandSidebarOpen(false)}
+        currentUser={currentUser}
+        savedCount={posts.filter((p) => p.isBookmarked).length}
+        onOpenSavedPosts={() => {
+          setIsBrandSidebarOpen(false);
+          setIsSavedPostsOpen(true);
+        }}
+        onLogout={handleLogout}
+      />
+
+      {/* Dedicated Saved Posts Slide-over Drawer */}
+      <SavedPostsDrawer
+        isOpen={isSavedPostsOpen}
+        onClose={() => setIsSavedPostsOpen(false)}
+        savedPosts={posts.filter((p) => p.isBookmarked)}
+        onPostClick={(post) => {
+          setIsSavedPostsOpen(false);
+          setSelectedPostForDetail(post);
+        }}
+        onRemoveBookmark={handleBookmarkToggle}
+      />
 
       {/* Apple HIG Spring Toast Feedback */}
       {toast && (

@@ -246,191 +246,121 @@
 
 
 
-/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Market Card */
+/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */
 .sharesWidget {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 85, 164, 0.14);
-  border-radius: var(--radius-card);
-  padding: 12px 14px;
+  background: #FFFFFF;
+  background-image: none !important;
+  border: 1px solid rgba(0, 85, 164, 0.1);
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 2px 12px rgba(0, 85, 164, 0.06);
-  margin-top: 4px;
-  transition: background var(--transition-normal), border-color var(--transition-normal);
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 18px -4px rgba(0, 85, 164, 0.05);
+  margin-top: 8px;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: visible;
 }
 
 .themeDusk .sharesWidget,
 .themeNight .sharesWidget {
-  background: rgba(15, 23, 42, 0.72);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  background: #0F172A;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Top Row: Brand & Live Market Indicator */
+/* Top Pill Row: Side-by-side Pills */
 .sharesTopRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
+  margin-bottom: 2px;
 }
 
-.sharesBrandGroup {
-  display: flex;
+.brandPill {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  transition: background 150ms ease;
 }
 
-.tnbLogoBadge {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 85, 164, 0.12);
-  border-radius: 7px;
-  padding: 3px 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-  height: 30px;
-  width: 50px;
+.themeDusk .brandPill,
+.themeNight .brandPill {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
-.themeDusk .tnbLogoBadge,
-.themeNight .tnbLogoBadge {
-  background: #FFFFFF;
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.tnbLogoImg {
-  height: 20px;
-  width: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.brandTextContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.sharesTickerName {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.companyTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0F172A;
+.brandPillText {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #1E293B;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
-.themeDusk .companyTitle,
-.themeNight .companyTitle {
+.themeDusk .brandPillText,
+.themeNight .brandPillText {
   color: #F8FAFC;
 }
 
-.sharesExchangeSub {
-  font-size: var(--font-size-xs);
-  color: #64748B;
-  display: flex;
+.liveStatusPill {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  font-size: var(--font-size-xs);
+  color: #334155;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.themeDusk .sharesExchangeSub,
-.themeNight .sharesExchangeSub {
+.themeDusk .liveStatusPill,
+.themeNight .liveStatusPill {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
   color: #94A3B8;
 }
 
-/* Market Status & Scrubbing Indicators */
-.statusIndicatorBlock {
-  display: flex;
-  align-items: center;
+.liveStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  flex-shrink: 0;
 }
 
-
-
-.scrubbingStatusPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  background: rgba(0, 85, 164, 0.1);
-  border: 1px solid rgba(0, 85, 164, 0.25);
-  font-size: var(--font-size-xs);
-  color: #0055A4;
-  font-weight: 600;
-  animation: scrubGlow 1.5s infinite alternate ease-in-out;
-}
-
-.themeDusk .scrubbingStatusPill,
-.themeNight .scrubbingStatusPill {
-  background: rgba(56, 189, 248, 0.18);
-  color: #38BDF8;
-  border-color: rgba(56, 189, 248, 0.35);
-}
-
-@keyframes scrubGlow {
-  0% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-/* Main Price Row */
+/* Main Price & Valuation Row: Price + unpill percentage on side */
 .sharesPriceRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 2px 0;
+  align-items: baseline;
+  margin-top: 4px;
 }
 
 .priceContainer {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.priceMain {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.currencyPrefix {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: #64748B;
-}
-
-.themeDusk .currencyPrefix,
-.themeNight .currencyPrefix {
-  color: #94A3B8;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .priceNumber {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
-  color: #0F172A;
-  letter-spacing: -0.02em;
-  transition: color 250ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  color: #111C2D;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-family: var(--font-family-sans);
 }
 
 .themeDusk .priceNumber,
@@ -438,54 +368,36 @@
   color: #F8FAFC;
 }
 
-.gainPill {
+.changeText {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  background: #D1FAE5;
-  color: #065F46; /* 9.4:1 contrast WCAG AAA */
-  border: 1px solid #A7F3D0;
-  font-size: var(--font-size-xs);
+  gap: 3px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: 6px;
+  letter-spacing: -0.01em;
 }
 
-.themeDusk .gainPill,
-.themeNight .gainPill {
-  background: rgba(16, 185, 129, 0.2);
+.changeTextUp {
+  color: #15803D; /* WCAG AAA 7.2:1 contrast */
+}
+
+.themeDusk .changeTextUp,
+.themeNight .changeTextUp {
   color: #34D399;
-  border-color: rgba(52, 211, 153, 0.3);
 }
 
-.lossPill {
-  background: #FEE2E2 !important;
-  color: #991B1B !important;
-  border-color: #FECACA !important;
+.changeTextDown {
+  color: #DC2626; /* WCAG AAA 7.0:1 contrast */
 }
 
-.themeDusk .lossPill,
-.themeNight .lossPill {
-  background: rgba(239, 68, 68, 0.2) !important;
-  color: #F87171 !important;
-  border-color: rgba(248, 113, 113, 0.3) !important;
+.themeDusk .changeTextDown,
+.themeNight .changeTextDown {
+  color: #F87171;
 }
 
-.timeSnapshot {
-  display: flex;
-  align-items: center;
-  text-align: right;
-}
-
-.sparklineLabel {
-  font-size: var(--font-size-xs);
-  color: #64748B;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.themeDusk .sparklineLabel,
-.themeNight .sparklineLabel {
-  color: #94A3B8;
+.changeArrow {
+  font-size: 11px;
 }
 
 /* Full-Width Interactive Chart Canvas */
@@ -495,9 +407,89 @@
   margin-top: 4px;
 }
 
+/* Floating White Tooltip Tag Matching User Crop */
+.floatingTooltip {
+  position: absolute;
+  top: -14px;
+  transform: translate(-50%, -100%);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  animation: tooltipFadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floatingTooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #FFFFFF transparent transparent transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.06));
+}
+
+.themeDusk .floatingTooltip,
+.themeNight .floatingTooltip {
+  background: #1E293B;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.themeDusk .floatingTooltip::after,
+.themeNight .floatingTooltip::after {
+  border-color: #1E293B transparent transparent transparent;
+}
+
+.tooltipPrice {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: #111C2D;
+}
+
+.themeDusk .tooltipPrice,
+.themeNight .tooltipPrice {
+  color: #F8FAFC;
+}
+
+.tooltipDot {
+  font-size: var(--font-size-xs);
+  color: #94A3B8;
+}
+
+.tooltipTime {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: #64748B;
+}
+
+.themeDusk .tooltipTime,
+.themeNight .tooltipTime {
+  color: #94A3B8;
+}
+
+@keyframes tooltipFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -90%);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
 .interactiveChartSvg {
   width: 100%;
-  height: 76px;
+  height: 82px;
   overflow: visible;
   touch-action: pan-y;
   cursor: crosshair;
@@ -505,38 +497,83 @@
   display: block;
 }
 
-.terminalLiveDot {
-  animation: pulseLive 2s infinite ease-in-out;
+/* Clean Minimalist Day Range Slider Matching User Crop */
+.dayRangeContainer {
+  margin-top: 10px;
+  padding-top: 8px;
+  padding-bottom: 22px;
+  position: relative;
 }
 
-.chartFooterRow {
+.dayRangeRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
+  gap: 10px;
+  position: relative;
+}
+
+.dayRangeBound {
   font-size: var(--font-size-xs);
-}
-
-.chartLegend {
-  color: #94A3B8;
-  font-weight: 500;
-}
-
-.themeDusk .chartLegend,
-.themeNight .chartLegend {
-  color: #64748B;
-}
-
-.chartHint {
-  color: var(--color-forest-green);
   font-weight: 600;
-  font-size: var(--font-size-xs);
-  opacity: 0.9;
+  color: #64748B;
+  min-width: 36px;
 }
 
-.themeDusk .chartHint,
-.themeNight .chartHint {
-  color: #34D399;
+.dayRangeBound:last-child {
+  text-align: right;
+}
+
+.themeDusk .dayRangeBound,
+.themeNight .dayRangeBound {
+  color: #94A3B8;
+}
+
+.dayRangeTrack {
+  flex: 1;
+  height: 1.5px;
+  background: #CBD5E1;
+  position: relative;
+}
+
+.themeDusk .dayRangeTrack,
+.themeNight .dayRangeTrack {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dayRangeMarker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94A3B8;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: left 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.themeDusk .dayRangeMarker,
+.themeNight .dayRangeMarker {
+  background: #94A3B8;
+  border-color: #0F172A;
+}
+
+.dayRangeCurrentVal {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #111C2D;
+  white-space: nowrap;
+  transition: left 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.themeDusk .dayRangeCurrentVal,
+.themeNight .dayRangeCurrentVal {
+  color: #F8FAFC;
 }
 
 /* Accessibility: prefers-reduced-motion (emil-design-eng & animate) */
@@ -546,17 +583,27 @@
   .pulseTrack1,
   .pulseTrack2,
   .liveMarketDot,
-  .terminalLiveDot,
-  .scrubbingStatusPill {
+  .floatingTooltip,
+  .dayRangeMarker,
+  .dayRangeCurrentVal {
     animation: none;
     transform: none;
+    transition: none;
   }
 }
 
 /* Hover gating for touch devices (mobile-native) */
 @media (hover: hover) and (pointer: fine) {
   .sharesWidget:hover {
-    box-shadow: 0 4px 16px rgba(0, 85, 164, 0.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 12px 28px -4px rgba(0, 85, 164, 0.08);
+  }
+  .brandPill:hover {
+    background: #E2E8F0;
   }
 }
+
+.sharesWidget:active {
+  transform: scale(0.995);
+}
+
 
