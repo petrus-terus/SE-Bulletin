@@ -122,3 +122,27 @@
   - Stationary Live Graph Terminal Dot (`KinabaluSkylineHero.module.css`): Fixed moving dot issue by restricting `@keyframes pulseLive` to opacity modulation (`opacity: 1` to `0.35`) without SVG canvas origin transform scaling, keeping the live trade tip dot anchored precisely to the curve tip.
   - Bursa Malaysia Live Data & Scrubbing: Verified real intraday price curve with interactive touch/pointer scrubbing, snapping laser guide-line, and Prev Close reference line.
   - Verified with `npx tsc --noEmit` (0 errors), `impeccable detect` (0 defects), and browser subagent visual checks on both mobile (`393 × 852`) and desktop (`1280 × 800`) viewports.
+
+## Gate 15: User Profile Personalization & Onboarding Suite
+- STATUS: MET
+- EVIDENCE:
+  - Gate 15.1: Profile Picture (PFP) Personalization: Added dual-trigger camera overlay button on avatar (`avatarCameraBtn`) and dedicated Media Picker Sheet with file upload via `FileReader` and curated corporate emblems (`/sabah_electricity_logo.png`, `/tnb_emblem.png`, `/user_face.png`). Tested and verified immediate reactive update across profile card, top app bar, and authored feed cards.
+  - Gate 15.2: Cover Banner Customization: Added "Edit Cover" action button with 44px touch target on panoramic banner. Features authentic Sabah Electricity scenic presets (Wisma SESB HQ, Tenom Pangi Hydro Penstock, Sepanggar Substation 132kV, Sabah Grid Sunset, SCADA Telemetry Operations) plus direct camera/gallery file uploads.
+  - Gate 15.3: Comprehensive Profile Editor: Dedicated modal sheet portaled to `document.body` (`createPortal`) allowing editing of Full Name, Designation, Department dropdown, Station/Location dropdown, Staff ID (`font-mono tabular-nums`), Corporate Email (`@sesb.com.my`), Phone Extension, and Operational Bio (with live 160-character counter). Persists updates to `localStorage` (`sesb_user`) and cascades live across all user authored posts and comments.
+  - Gate 15.4: Brand-New User Empty Profile & Gamified Onboarding: When a user has 0 bulletins, renders a motivating First-Run Milestone card with a greeting ("Welcome to SE Bulletin, {name}! 👋"), real-time Profile Readiness completion meter (e.g. 50% - 100% with smooth GPU `scaleX` fill bar), 4-step actionable checklist (Staff ID registered, Personalize Photos, Add Bio, Publish First Bulletin), and prominent Forest Green primary CTA `[+ Publish Your First Bulletin]`. Replaced generic photo gallery with a clean, encouraging empty state with `[Share Field Photo]` CTA.
+  - Gate 15.5: Impeccable Verification:
+    - `npm run build` (`tsc -b && vite build`) passed with exit code 0.
+    - `impeccable detect` scanner executed on `ProfilePage.tsx` and `ProfilePage.module.css`, returned `[]` (0 mechanical defects).
+    - Browser subagent verified full end-to-end flow on 393×852 mobile viewport: Avatar preset switching, cover preset switching, full profile information editing, live cascade to TopAppBar and feed posts, and new-user onboarding milestone card verification.
+
+## Gate 16: Pilot Launch & Cloud Deployment Suite (Cloudflare Pages + Supabase)
+- STATUS: PENDING
+- EVIDENCE:
+  - Gate 16.1: Supabase Storage Integration: Media upload helper in `bulletinService.ts` targeting public bucket `bulletin-media`, replacing base64 strings with small public CDN URLs for post attachments, inspection photos, and custom avatars.
+  - Gate 16.2: Supabase SQL Migrations & RLS Hardening: Execute SQL schema in `docs/PILOT_DEPLOYMENT_GUIDE.md` (`posts`, `comments`, `profiles`) with active Realtime publications and permissive pilot RLS policies.
+  - Gate 16.3: Cloudflare Pages Deployment Verification: Build command `npm run build` in `client`, publish directory `dist`, environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), and verified SPA routing via `client/public/_redirects`.
+  - Gate 16.4: Pilot In-App Feedback & Diagnostics: Floating or settings-drawer "Report Issue / Suggestion" action that submits directly to a Supabase `feedback` table for HQ pilot feedback.
+  - Gate 16.5: End-to-End Verification: Complete mobile hardware verification on both Android Chrome (1-click PWA install) and iOS Safari (Apple HIG 3-step illustrated install sheet) with live real-time sync across devices.
+
+
+

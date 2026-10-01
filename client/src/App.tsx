@@ -406,6 +406,61 @@ export function App() {
     await bulletinService.deletePost(postId);
   };
 
+  // Update Profile Handler with local persistence and live cascade across bulletins/comments
+  const handleUpdateProfile = (updatedUser: Employee) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('sesb_user', JSON.stringify(updatedUser));
+
+    // Cascade updated name, designation, department, and avatar to user's authored bulletins
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => {
+        const isAuthored =
+          (p.author?.id && updatedUser.id && p.author.id === updatedUser.id) ||
+          (p.author?.name || '').toLowerCase().trim() === (currentUser.name || '').toLowerCase().trim();
+
+        if (isAuthored) {
+          return {
+            ...p,
+            author: {
+              ...p.author,
+              id: updatedUser.id,
+              name: updatedUser.name,
+              designation: updatedUser.designation,
+              department: updatedUser.department,
+              avatarUrl: updatedUser.avatarUrl,
+            },
+            departmentName: updatedUser.department,
+          };
+        }
+        return p;
+      })
+    );
+
+    // Cascade to user's authored comments
+    setCommentsByPost((prevMap) => {
+      const updatedMap = { ...prevMap };
+      for (const postId in updatedMap) {
+        updatedMap[postId] = updatedMap[postId].map((c) => {
+          if (c.authorName.toLowerCase().trim() === (currentUser.name || '').toLowerCase().trim()) {
+            return {
+              ...c,
+              authorName: updatedUser.name,
+              department: updatedUser.department,
+              avatarUrl: updatedUser.avatarUrl,
+            };
+          }
+          return c;
+        });
+      }
+      return updatedMap;
+    });
+
+    setToast({
+      message: 'Profile updated successfully',
+      icon: 'manage_accounts',
+    });
+  };
+
   if (!isAuthenticated) {
     return (
       <>
@@ -692,6 +747,7 @@ export function App() {
                 icon: 'logout',
               });
             }}
+            onUpdateProfile={handleUpdateProfile}
           />
         )}
           </>

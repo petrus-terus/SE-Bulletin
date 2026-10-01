@@ -7,6 +7,7 @@ export interface Employee {
   department: string;
   email: string;
   avatarUrl: string;
+  coverUrl?: string;
   officeLocation?: string;
   phoneExtension?: string;
   role: 'GeneralStaff' | 'DepartmentAdmin' | 'SuperAdmin';

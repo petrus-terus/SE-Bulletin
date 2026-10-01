@@ -105,6 +105,9 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
 - **Mandatory Reduced Motion & Sticky Hover Gating**:
   - Every CSS keyframe animation or continuous pulse MUST include `@media (prefers-reduced-motion: reduce) { animation: none; transform: none; }`.
   - Every interactive hover transition on cards or buttons MUST be gated inside `@media (hover: hover) and (pointer: fine)` to prevent stuck hover states on mobile touchscreens.
+- **Cloudflare Pages SPA Routing**: Always maintain `client/public/_redirects` with `/*  /index.html  200` so deep-links, browser refreshes, and PWA launch URLs never trigger Cloudflare 404 errors.
+- **Supabase Storage over Base64**: Do not persist large base64 image strings into PostgreSQL table columns. Upload image blobs directly to the Supabase Storage bucket (`bulletin-media`) and store the resulting public CDN URL.
+- **Supabase Row Level Security (RLS)**: Always verify that tables (`posts`, `comments`, `profiles`, `likes`) in Supabase have active RLS policies for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` so queries do not fail silently.
 
 ---
 
@@ -127,12 +130,19 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
 
 ## 4. Tech Stack & Architecture
 
-- **Frontend**: React + Vite PWA (Mobile-first 393x852 iPhone baseline) with Service Worker (Cache API + IndexedDB) for offline feed browsing and Web Push notifications.
-- **Styling**: Pure modern CSS / CSS Variables / CSS Modules. Do NOT install or use Tailwind CSS (avoids class clutter and ensures fine-grained control over Apple HIG spring animations).
+### 4.1 Phase 1 Pilot Architecture (Active Deployment)
+- **Frontend Hosting**: **Cloudflare Pages** (Vite React PWA, static `dist` bundle, global CDN, automated SSL/HTTPS).
+- **Backend & Database**: **Supabase** (Managed PostgreSQL, PostgREST REST API, WebSocket Realtime Engine for live reactions and comment sync).
+- **Media Storage**: **Supabase Storage** (Public bucket `bulletin-media` for field photos, announcement flyers, and avatars).
+- **PWA Capabilities**: Service Worker with Cache API, Web Manifest, iOS 3-step illustrated install sheet, and Android 1-click install banner.
+- **Pilot Authentication**: Enterprise corporate login supporting `@sesb.com.my` accounts with instant session persistence (`localStorage`).
+
+### 4.2 Phase 2 Enterprise On-Prem Architecture (Internal SESB Intranet)
+- **Frontend**: React + Vite PWA behind corporate reverse proxy.
 - **Backend**: ASP.NET Core 8 Web API (C#) aligned with internal SESB enterprise standards.
-- **Real-Time**: SignalR Hub (`/hubs/bulletin`) for live reactions, online presence dots, real-time comment counts, and emergency safety broadcasts.
-- **Database**: SQL Server / PostgreSQL with Entity Framework Core.
-- **Storage**: On-premise internal SESB network storage mount (`/app_data/media`) behind corporate intranet.
+- **Real-Time**: SignalR Hub (`/hubs/bulletin`) for live reactions, online presence dots, and emergency safety broadcasts.
+- **Database**: SQL Server / PostgreSQL on-premise.
+- **Storage**: On-premise internal SESB network storage mount (`/app_data/media`) behind Wisma SESB firewall.
 - **Authentication**: Corporate `@sesb.com.my` email with 6-digit OTP verification via internal SESB SMTP.
 
 ---
@@ -147,3 +157,4 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
 
 ## 6. Specification Reference
 For the full functional requirements, database ERD, API endpoints, and screen flows, refer to [PROJECT_SPEC.md](./PROJECT_SPEC.md).
+For the step-by-step pilot deployment guide, SQL schemas, and Cloudflare configuration, refer to [docs/PILOT_DEPLOYMENT_GUIDE.md](./docs/PILOT_DEPLOYMENT_GUIDE.md).
