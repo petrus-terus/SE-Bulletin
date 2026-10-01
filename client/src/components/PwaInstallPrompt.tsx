@@ -9,7 +9,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const PwaInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isIos, setIsIos] = useState(false);
+  const [isIos] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const ua = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod/.test(ua) && !('MSStream' in window);
+  });
   const [isVisible, setIsVisible] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -19,12 +23,7 @@ export const PwaInstallPrompt: React.FC = () => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
     if (isStandalone) return;
 
-    // 2. Detect iOS device (iPhone / iPad / iPod)
     const ua = window.navigator.userAgent.toLowerCase();
-    const isAppleDevice = /iphone|ipad|ipod/.test(ua) && !('MSStream' in window);
-    if (isAppleDevice) {
-      setIsIos(true);
-    }
 
     // 3. Reveal banner gently after 1.2s on mobile devices
     const isMobile = /android|iphone|ipad|ipod|mobile/.test(ua) || window.innerWidth <= 768;

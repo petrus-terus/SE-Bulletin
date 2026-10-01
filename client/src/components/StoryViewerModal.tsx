@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Story } from '../types/bulletin';
 import styles from './StoryViewerModal.module.css';
 
@@ -18,6 +18,22 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
   const DURATION_MS = 5000;
   const INTERVAL_MS = 50;
 
+  const handleNext = useCallback(() => {
+    if (currentIndex < stories.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setProgress(0);
+    } else {
+      onClose();
+    }
+  }, [currentIndex, stories.length, onClose]);
+
+  const handlePrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+      setProgress(0);
+    }
+  }, [currentIndex]);
+
   // Handle auto-advancing progress
   useEffect(() => {
     if (isPaused) return;
@@ -26,7 +42,9 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
       setProgress((prev) => {
         const next = prev + (INTERVAL_MS / DURATION_MS) * 100;
         if (next >= 100) {
-          return 100;
+          if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+          handleNext();
+          return 0;
         }
         return next;
       });
@@ -35,14 +53,7 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
     return () => {
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     };
-  }, [currentIndex, isPaused]);
-
-  // Auto-advance story when progress bar reaches 100%
-  useEffect(() => {
-    if (progress >= 100) {
-      handleNext();
-    }
-  }, [progress]);
+  }, [currentIndex, isPaused, handleNext]);
 
   // Keyboard navigation & Escape key
   useEffect(() => {
@@ -53,23 +64,7 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex]);
-
-  const handleNext = () => {
-    if (currentIndex < stories.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setProgress(0);
-    } else {
-      onClose();
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-      setProgress(0);
-    }
-  };
+  }, [onClose, handleNext, handlePrev]);
 
   if (!currentStory) return null;
 

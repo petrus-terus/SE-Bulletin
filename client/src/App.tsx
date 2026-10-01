@@ -42,6 +42,52 @@ export function App() {
     return localStorage.getItem('sesb_auth') === 'true';
   });
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
+    'post-101': [
+      {
+        id: 'c1',
+        authorName: 'Siti Aminah',
+        department: 'HR',
+        avatarInitials: 'SA',
+        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
+        text: 'Congratulations team! Exemplary safety compliance during the shut-in window.',
+        timestamp: '1h ago',
+        likesCount: 14,
+      },
+      {
+        id: 'c2',
+        authorName: 'Mohd Irfan',
+        department: 'IT',
+        avatarInitials: 'MI',
+        avatarUrl: CURRENT_USER.avatarUrl,
+        text: 'Grid telemetry sensors are streaming real-time SCADA telemetry back to Wisma SESB server room without any packet drops.',
+        timestamp: '45m ago',
+        likesCount: 7,
+      },
+    ],
+    'post-102': [
+      {
+        id: 'c3',
+        authorName: 'Ir. Raymond Chin',
+        department: 'OPS',
+        avatarInitials: 'RC',
+        text: 'Noted. Transmission crews across Tenom and Papar have been briefed on SOP-2026-04.',
+        timestamp: '2h ago',
+        likesCount: 5,
+      },
+    ],
+    'post-103': [
+      {
+        id: 'c4',
+        authorName: 'Ir. Raymond Chin',
+        department: 'OPS',
+        avatarInitials: 'RC',
+        text: 'Engineering team has formed 4 relay groups. Looking forward to it!',
+        timestamp: '3h ago',
+        likesCount: 8,
+      },
+    ],
+  });
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
   const [selectedDeptId, setSelectedDeptId] = useState('dept-all');
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -233,71 +279,24 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Threaded comments database mock
-  const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
-    'post-101': [
-      {
-        id: 'c1',
-        authorName: 'Siti Aminah',
-        department: 'HR',
-        avatarInitials: 'SA',
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
-        text: 'Congratulations team! Exemplary safety compliance during the shut-in window.',
-        timestamp: '1h ago',
-        likesCount: 14,
-      },
-      {
-        id: 'c2',
-        authorName: 'Mohd Irfan',
-        department: 'IT',
-        avatarInitials: 'MI',
-        avatarUrl: CURRENT_USER.avatarUrl,
-        text: 'Grid telemetry sensors are streaming real-time SCADA telemetry back to Wisma SESB server room without any packet drops.',
-        timestamp: '45m ago',
-        likesCount: 7,
-      },
-    ],
-    'post-102': [
-      {
-        id: 'c3',
-        authorName: 'Ir. Raymond Chin',
-        department: 'OPS',
-        avatarInitials: 'RC',
-        text: 'Noted. Transmission crews across Tenom and Papar have been briefed on SOP-2026-04.',
-        timestamp: '2h ago',
-        likesCount: 5,
-      },
-    ],
-    'post-103': [
-      {
-        id: 'c4',
-        authorName: 'Ir. Raymond Chin',
-        department: 'OPS',
-        avatarInitials: 'RC',
-        text: 'Engineering team has formed 4 relay groups. Looking forward to it!',
-        timestamp: '3h ago',
-        likesCount: 8,
-      },
-    ],
-  });
-
   // Fetch cloud comments when CommentDrawer opens
+  const activeCommentPostId = activeCommentPost?.id;
   useEffect(() => {
-    if (!activeCommentPost) return;
-    bulletinService.getComments(activeCommentPost.id).then((cloudComments) => {
+    if (!activeCommentPostId) return;
+    bulletinService.getComments(activeCommentPostId).then((cloudComments) => {
       if (cloudComments && cloudComments.length > 0) {
         setCommentsByPost((prev) => {
-          const existing = prev[activeCommentPost.id] || [];
+          const existing = prev[activeCommentPostId] || [];
           const existingIds = new Set(existing.map((c) => c.id));
           const merged = [...existing, ...cloudComments.filter((c) => !existingIds.has(c.id))];
           return {
             ...prev,
-            [activeCommentPost.id]: merged,
+            [activeCommentPostId]: merged,
           };
         });
       }
     });
-  }, [activeCommentPost?.id]);
+  }, [activeCommentPostId]);
 
   // Calculate post counts per official Bahagian
   const postCounts: Record<string, number> = {
@@ -731,6 +730,7 @@ export function App() {
         {/* Facebook-Style Profile Tab View */}
         {activeTab === 'profile' && (
           <ProfilePage
+            key={viewedProfileEmployee?.id || currentUser.id}
             posts={posts}
             currentUser={currentUser}
             viewedEmployee={viewedProfileEmployee}

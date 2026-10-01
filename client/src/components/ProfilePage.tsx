@@ -24,19 +24,19 @@ interface Props {
 }
 
 // Curated authentic corporate defaults
-export const DEFAULT_COVER_URL = '/grid_horizon_hero.jpg';
-export const DEFAULT_AVATAR_URL = '/sabah_electricity_logo.png';
+const DEFAULT_COVER_URL = '/grid_horizon_hero.jpg';
+const DEFAULT_AVATAR_URL = '/sabah_electricity_logo.png';
 
-export const SESB_DIVISIONS = ['INFORMATION & DIGITAL'];
+const SESB_DIVISIONS = ['INFORMATION & DIGITAL'];
 
-export const SESB_ROLES = [
+const SESB_ROLES = [
   'Chief Information & Digital Officer (CIDO)',
   'Senior Manager',
   'Head',
   'Staff',
 ];
 
-export const SESB_LOCATIONS = ['Bangunan KWASA'];
+const SESB_LOCATIONS = ['Bangunan KWASA'];
 
 export const ProfilePage: React.FC<Props> = ({
   posts,
@@ -58,7 +58,7 @@ export const ProfilePage: React.FC<Props> = ({
 
   const photosScrollRef = useHorizontalScroll<HTMLDivElement>();
 
-  // Profile fields state
+  // Profile fields state (keyed by employee id in App.tsx for automatic resets)
   const [profileData, setProfileData] = useState<Employee>(activeEmployee);
 
   // Normalize division & location for Phase 1 pilot
@@ -68,11 +68,6 @@ export const ProfilePage: React.FC<Props> = ({
   const activeLocation = SESB_LOCATIONS.includes(profileData.officeLocation || '')
     ? (profileData.officeLocation || SESB_LOCATIONS[0])
     : SESB_LOCATIONS[0];
-
-  // Sync state if activeEmployee prop changes
-  useEffect(() => {
-    setProfileData(activeEmployee);
-  }, [activeEmployee]);
 
   // Modal visibility states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

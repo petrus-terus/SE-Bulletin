@@ -344,7 +344,11 @@ export const FeedCard: React.FC<Props> = ({
           className={styles.previewCommentBlock}
           onClick={(e) => {
             e.stopPropagation();
-            onPostClick ? onPostClick(post) : onCommentClick(post);
+            if (onPostClick) {
+              onPostClick(post);
+            } else {
+              onCommentClick(post);
+            }
           }}
           style={{ cursor: 'pointer' }}
           title="Click to view all comments"

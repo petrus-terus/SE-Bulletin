@@ -1,5 +1,6 @@
 import http from 'http';
 import fs from 'fs';
+import path from 'path';
 
 // 1. Get targets from CDP
 function getTargets() {
@@ -113,8 +114,9 @@ async function run() {
 
   // Capture screenshot of Brand Sidebar Drawer
   const shot1 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('d:/SE Bulletin/brand_sidebar_drawer.png', Buffer.from(shot1.data, 'base64'));
-  console.log('Saved d:/SE Bulletin/brand_sidebar_drawer.png');
+  const shot1Path = path.join(process.cwd(), 'docs/screenshots/brand_sidebar_drawer.png');
+  fs.writeFileSync(shot1Path, Buffer.from(shot1.data, 'base64'));
+  console.log('Saved ' + shot1Path);
 
   // Click Saved Posts inside the drawer
   await evalExpr(`(() => {
@@ -137,8 +139,9 @@ async function run() {
 
   // Capture screenshot of Saved Posts Drawer
   const shot2 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('d:/SE Bulletin/saved_posts_drawer.png', Buffer.from(shot2.data, 'base64'));
-  console.log('Saved d:/SE Bulletin/saved_posts_drawer.png');
+  const shot2Path = path.join(process.cwd(), 'docs/screenshots/saved_posts_drawer.png');
+  fs.writeFileSync(shot2Path, Buffer.from(shot2.data, 'base64'));
+  console.log('Saved ' + shot2Path);
 
   // Close Saved Posts drawer by clicking close button
   const closeRes = await evalExpr(`(() => {
@@ -186,8 +189,9 @@ async function run() {
 
   // Capture screenshot of Profile Page
   const shot3 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('d:/SE Bulletin/profile_clean_view.png', Buffer.from(shot3.data, 'base64'));
-  console.log('Saved d:/SE Bulletin/profile_clean_view.png');
+  const shot3Path = path.join(process.cwd(), 'docs/screenshots/profile_clean_view.png');
+  fs.writeFileSync(shot3Path, Buffer.from(shot3.data, 'base64'));
+  console.log('Saved ' + shot3Path);
 
   // Click Edit Profile button
   await evalExpr(`(() => {
@@ -223,8 +227,9 @@ async function run() {
 
   // Capture screenshot of Edit Profile Modal
   const shot4 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('d:/SE Bulletin/edit_profile_modal.png', Buffer.from(shot4.data, 'base64'));
-  console.log('Saved d:/SE Bulletin/edit_profile_modal.png');
+  const shot4Path = path.join(process.cwd(), 'docs/screenshots/edit_profile_modal.png');
+  fs.writeFileSync(shot4Path, Buffer.from(shot4.data, 'base64'));
+  console.log('Saved ' + shot4Path);
 
   // Close modal
   await evalExpr(`(() => {

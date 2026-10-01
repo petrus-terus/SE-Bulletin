@@ -24,7 +24,6 @@ export const ImageViewerModal: React.FC<Props> = ({
   const touchStartDistRef = useRef<number | null>(null);
   const touchStartScaleRef = useRef<number>(1);
   const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isPinchingRef = useRef<boolean>(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -96,7 +95,7 @@ export const ImageViewerModal: React.FC<Props> = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       // Pinch started
-      isPinchingRef.current = true;
+      setIsDragging(true);
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -157,7 +156,7 @@ export const ImageViewerModal: React.FC<Props> = ({
 
   const handleTouchEnd = () => {
     touchStartDistRef.current = null;
-    isPinchingRef.current = false;
+    setIsDragging(false);
   };
 
   return (
@@ -220,7 +219,7 @@ export const ImageViewerModal: React.FC<Props> = ({
           className={styles.imageTransformContainer}
           style={{
             transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})`,
-            transition: isDragging || isPinchingRef.current ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+            transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           <img

@@ -35,4 +35,4 @@ Scope: Clean up the Profile Page fields (division, role dropdown, Bangunan KWASA
   EVIDENCE: Verified. 'npm run build' completed with 0 errors. 'impeccable.cmd detect' returned zero defects [].
 
 - [x] G7: Mobile Viewport 393x852 Visual & Interactive Verification
-  EVIDENCE: Verified via automated Chrome DevTools Protocol test (scripts/verify-ui.mjs) on mobile viewport (393x852). Captured full visual evidence: brand_sidebar_drawer.png, saved_posts_drawer.png, profile_clean_view.png, and edit_profile_modal.png.
+  EVIDENCE: Verified via automated Chrome DevTools Protocol test (scripts/verify-ui.mjs) on mobile viewport (393x852). Captured full visual evidence: docs/screenshots/brand_sidebar_drawer.png, docs/screenshots/saved_posts_drawer.png, docs/screenshots/profile_clean_view.png, and docs/screenshots/edit_profile_modal.png.

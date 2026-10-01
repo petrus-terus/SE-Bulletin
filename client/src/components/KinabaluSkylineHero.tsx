@@ -43,14 +43,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   onNavigateDirectory: _onNavigateDirectory,
   onFilterCategory: _onFilterCategory,
 }) => {
-  const [currentDateStr, setCurrentDateStr] = useState('');
-
-  // Actual Real-Time Bursa Malaysia Market Data State
-  const [marketData, setMarketData] = useState<TenagaMarketData | null>(null);
-  const [scrubIndex, setScrubIndex] = useState<number | null>(null);
-  const [isScrubbing, setIsScrubbing] = useState(false);
-
-  useEffect(() => {
+  const [currentDateStr] = useState(() => {
     const now = new Date();
     const days = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
     const months = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
@@ -58,8 +51,13 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     const dateNum = now.getDate();
     const monthName = months[now.getMonth()];
     const year = now.getFullYear();
-    setCurrentDateStr(`${dayName}, ${dateNum} ${monthName} ${year}`);
-  }, []);
+    return `${dayName}, ${dateNum} ${monthName} ${year}`;
+  });
+
+  // Actual Real-Time Bursa Malaysia Market Data State
+  const [marketData, setMarketData] = useState<TenagaMarketData | null>(null);
+  const [scrubIndex, setScrubIndex] = useState<number | null>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
 
   // Fetch actual live Bursa Malaysia market data (TNB 5347.KL)
   useEffect(() => {
