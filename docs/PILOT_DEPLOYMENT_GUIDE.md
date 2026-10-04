@@ -45,8 +45,19 @@ graph LR
 Run the following complete SQL script in your **Supabase Dashboard** (`SQL Editor` → `New Query`):
 
 ```sql
+-- ==============================================================================
+-- Sabah Electricity Bulletin (SE Bulletin) - Complete Clean Pilot Schema
+-- Drops old/conflicting test tables and recreates the full schema cleanly.
+-- ==============================================================================
+
+-- 0. Clean up previous test tables to prevent column mismatch errors
+DROP TABLE IF EXISTS public.comments CASCADE;
+DROP TABLE IF EXISTS public.stories CASCADE;
+DROP TABLE IF EXISTS public.posts CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
 -- 1. Create Posts Table
-CREATE TABLE IF NOT EXISTS public.posts (
+CREATE TABLE public.posts (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
@@ -67,16 +78,22 @@ CREATE TABLE IF NOT EXISTS public.posts (
     likes_count INTEGER DEFAULT 0,
     comments_count INTEGER DEFAULT 0,
     shares_count INTEGER DEFAULT 0,
+    reshares_count INTEGER DEFAULT 0,
     quote_post_id TEXT REFERENCES public.posts(id) ON DELETE SET NULL,
     reactions_breakdown JSONB DEFAULT '{"like":0,"celebrate":0,"support":0,"insightful":0,"safety":0}'::jsonb,
     poll_data JSONB DEFAULT NULL,
+    pdf_url TEXT DEFAULT NULL,
+    pdf_name TEXT DEFAULT NULL,
+    pdf_size TEXT DEFAULT NULL,
+    is_edited BOOLEAN DEFAULT false,
+    edited_at TIMESTAMPTZ DEFAULT NULL,
     deleted_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- 2. Create Comments Table
-CREATE TABLE IF NOT EXISTS public.comments (
+CREATE TABLE public.comments (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     post_id TEXT NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
     author_name TEXT NOT NULL,
@@ -88,8 +105,20 @@ CREATE TABLE IF NOT EXISTS public.comments (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Create Profiles Table (for Personalization & Onboarding)
-CREATE TABLE IF NOT EXISTS public.profiles (
+-- 3. Create Stories Table (24-Hour Casual Updates)
+CREATE TABLE public.stories (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    department_id TEXT NOT NULL,
+    department_name TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_avatar TEXT DEFAULT '/user_face.png',
+    image_url TEXT NOT NULL,
+    caption TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. Create Profiles Table (for Personalization & Onboarding)
+CREATE TABLE public.profiles (
     id TEXT PRIMARY KEY,
     employee_id TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
@@ -109,56 +138,104 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 4. Enable Row Level Security (RLS)
+-- 5. Enable Row Level Security (RLS)
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 5. Create Permissive Policies for the Pilot Phase
+-- 6. Create Permissive Policies for Pilot
 -- Posts Policies
+DROP POLICY IF EXISTS "Allow public select on active posts" ON public.posts;
 CREATE POLICY "Allow public select on active posts"
     ON public.posts FOR SELECT
     USING (deleted_at IS NULL);
 
+DROP POLICY IF EXISTS "Allow public insert on posts" ON public.posts;
 CREATE POLICY "Allow public insert on posts"
     ON public.posts FOR INSERT
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public update on posts" ON public.posts;
 CREATE POLICY "Allow public update on posts"
     ON public.posts FOR UPDATE
     USING (true);
 
+DROP POLICY IF EXISTS "Allow public delete on posts" ON public.posts;
 CREATE POLICY "Allow public delete on posts"
     ON public.posts FOR DELETE
     USING (true);
 
 -- Comments Policies
+DROP POLICY IF EXISTS "Allow public select on comments" ON public.comments;
 CREATE POLICY "Allow public select on comments"
     ON public.comments FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Allow public insert on comments" ON public.comments;
 CREATE POLICY "Allow public insert on comments"
     ON public.comments FOR INSERT
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public delete on comments" ON public.comments;
 CREATE POLICY "Allow public delete on comments"
     ON public.comments FOR DELETE
     USING (true);
 
+-- Stories Policies
+DROP POLICY IF EXISTS "Allow public select on stories" ON public.stories;
+CREATE POLICY "Allow public select on stories"
+    ON public.stories FOR SELECT
+    USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert on stories" ON public.stories;
+CREATE POLICY "Allow public insert on stories"
+    ON public.stories FOR INSERT
+    WITH CHECK (true);
+
 -- Profiles Policies
+DROP POLICY IF EXISTS "Allow public select on profiles" ON public.profiles;
 CREATE POLICY "Allow public select on profiles"
     ON public.profiles FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Allow public insert/update on profiles" ON public.profiles;
 CREATE POLICY "Allow public insert/update on profiles"
     ON public.profiles FOR ALL
     USING (true);
 
--- 6. Enable Realtime Replication for Live Counters
-ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
+-- 7. Enable Realtime Replication for Live Counters (Safe Check)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'posts'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
+    END IF;
 
--- 7. Stored Procedure for Atomic Post View Tracking
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'comments'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'stories'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.stories;
+    END IF;
+END $$;
+
+-- 8. Stored Procedure for Atomic Post View Tracking
 CREATE OR REPLACE FUNCTION public.increment_post_views(target_post_id TEXT)
 RETURNS void
 LANGUAGE plpgsql
