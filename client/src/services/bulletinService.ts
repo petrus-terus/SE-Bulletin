@@ -1,8 +1,31 @@
 import type { CreatePostPayload, Employee, Post, Story } from '../types/bulletin';
 import { INITIAL_POSTS, INITIAL_STORIES } from './mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { compressImageFile } from '../utils/imageCompressor';
 
 const DELETED_POSTS_STORAGE_KEY = 'sesb_deleted_posts';
+const VIEWED_POSTS_STORAGE_KEY = 'sesb_viewed_bulletin_ids';
+
+function getViewedPostIds(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(VIEWED_POSTS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markPostIdAsViewed(postId: string) {
+  try {
+    const ids = getViewedPostIds();
+    ids.add(postId);
+    sessionStorage.setItem(VIEWED_POSTS_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch (e) {
+    console.warn('[BulletinService] Failed to record viewed post ID:', e);
+  }
+}
 
 function getDeletedPostIds(): Set<string> {
   try {
@@ -63,7 +86,10 @@ class BulletinService {
           name: row.author_name,
           designation: row.author_role || 'Sabah Electricity Staff',
           department: row.department,
-          avatarUrl: row.author_avatar || '/user_face.png',
+          avatarUrl:
+            row.author_id === 'user-ceo' || (row.author_name || '').toLowerCase().includes('yaakob')
+              ? '/ceo_portrait.png'
+              : row.author_avatar || '/user_face.png',
           isVerified: true,
         },
         timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -75,17 +101,30 @@ class BulletinService {
         likesCount: Number(row.likes_count || 0),
         commentsCount: Number(row.comments_count || 0),
         sharesCount: 0,
+        viewsCount: Number(row.views_count || 0),
+        resharesCount: Number(row.reshares_count || 0),
         isLiked: false,
         isBookmarked: false,
         departmentId: row.department_id || 'dept-ops',
         departmentName: row.department,
         departmentColor: row.department_color || '#0055A4',
         officialNotice: Boolean(row.official_notice),
+        poll: row.poll || undefined,
+        pdfUrl: row.pdf_url || undefined,
+        pdfName: row.pdf_name || undefined,
+        pdfSize: row.pdf_size || undefined,
+        quotedPost: row.quoted_post || undefined,
       }));
 
       const cloudIds = new Set(cloudPosts.map((p) => p.id));
       const combined = [...cloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
-      return combined.filter((p) => !deletedIds.has(p.id));
+      // Ensure pinned bulletins stay at the very top of the feed
+      const sorted = combined.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+      return sorted.filter((p) => !deletedIds.has(p.id));
     } catch (err) {
       console.warn('[BulletinService] Offline / connection error, using local data:', err);
       return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
@@ -123,6 +162,11 @@ class BulletinService {
       departmentName: payload.department || currentUser.department,
       departmentColor: '#0055A4',
       officialNotice: Boolean(payload.officialNotice),
+      poll: payload.poll,
+      pdfUrl: payload.pdfUrl,
+      pdfName: payload.pdfName,
+      pdfSize: payload.pdfSize,
+      quotedPost: payload.quotedPost,
     };
 
     if (isSupabaseConfigured && supabase) {
@@ -195,13 +239,32 @@ class BulletinService {
   }
 
   /**
-   * Upload media photo to Supabase storage with fallback to DataURL
+   * Upload media photo to Supabase storage with automatic client-side compression
+   * and fallback to DataURL.
    */
   async uploadPhoto(file: File): Promise<string> {
+    let uploadTarget = file;
+
+    // Automatically optimize smartphone captures to ~150-250KB WebP
+    try {
+      if (file.type.startsWith('image/')) {
+        const compressed = await compressImageFile(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.82,
+        });
+        uploadTarget = compressed.file;
+      }
+    } catch (compressionErr) {
+      console.warn('[BulletinService] Image auto-compression fallback to raw file:', compressionErr);
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
-        const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const { error } = await supabase.storage.from('bulletin-media').upload(fileName, file, {
+        const ext = uploadTarget.name.endsWith('.webp') ? '.webp' : '.jpg';
+        const cleanName = uploadTarget.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `${Date.now()}-${cleanName.endsWith(ext) ? cleanName : `${cleanName}${ext}`}`;
+        const { error } = await supabase.storage.from('bulletin-media').upload(fileName, uploadTarget, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -215,7 +278,7 @@ class BulletinService {
       }
     }
 
-    return URL.createObjectURL(file);
+    return URL.createObjectURL(uploadTarget);
   }
 
   /**
@@ -354,6 +417,89 @@ class BulletinService {
         return false;
       }
     }
+    return true;
+  }
+
+  /**
+   * Update an existing post by ID
+   */
+  async updatePost(postId: string, updates: Partial<Post>): Promise<boolean> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const updatePayload: Record<string, any> = {};
+        if (updates.title !== undefined) updatePayload.title = updates.title;
+        if (updates.content !== undefined) updatePayload.content = updates.content;
+        if (updates.location !== undefined) updatePayload.location = updates.location;
+        if (updates.isPinned !== undefined) updatePayload.is_pinned = updates.isPinned;
+        if (updates.commentsEnabled !== undefined) updatePayload.comments_enabled = updates.commentsEnabled;
+        if (updates.mediaUrls !== undefined) {
+          updatePayload.media_urls = updates.mediaUrls;
+          updatePayload.image_url = updates.mediaUrls[0] || null;
+        } else if (updates.imageUrl !== undefined) {
+          updatePayload.image_url = updates.imageUrl;
+        }
+        if (updates.departmentId !== undefined) updatePayload.department_id = updates.departmentId;
+        if (updates.departmentName !== undefined) updatePayload.department = updates.departmentName;
+        if (updates.departmentColor !== undefined) updatePayload.department_color = updates.departmentColor;
+        if (updates.officialNotice !== undefined) updatePayload.official_notice = updates.officialNotice;
+
+        const { error } = await supabase.from('posts').update(updatePayload).eq('id', postId);
+        if (error) {
+          console.warn('[BulletinService] updatePost error:', error.message);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.warn('[BulletinService] updatePost sync error:', err);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Check if a bulletin has already been viewed during the current user session
+   */
+  isPostViewedInSession(postId: string): boolean {
+    return getViewedPostIds().has(postId);
+  }
+
+  /**
+   * Record a bulletin view with session deduplication and Supabase sync
+   */
+  async recordPostView(postId: string): Promise<boolean> {
+    if (this.isPostViewedInSession(postId)) {
+      return false; // Already recorded in this session
+    }
+    markPostIdAsViewed(postId);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // Try RPC first for atomic increment if configured
+        const { error: rpcErr } = await supabase.rpc('increment_post_views', {
+          post_id_input: postId,
+        });
+
+        if (rpcErr) {
+          // Fallback to fetch & update
+          const { data: currentPost } = await supabase
+            .from('posts')
+            .select('views_count')
+            .eq('id', postId)
+            .single();
+
+          if (currentPost) {
+            await supabase
+              .from('posts')
+              .update({ views_count: Number(currentPost.views_count || 0) + 1 })
+              .eq('id', postId);
+          }
+        }
+      } catch (err) {
+        console.warn('[BulletinService] recordPostView sync error:', err);
+      }
+    }
+
     return true;
   }
 }

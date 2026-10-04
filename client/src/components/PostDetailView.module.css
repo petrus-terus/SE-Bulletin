@@ -318,6 +318,105 @@
   color: var(--color-text-muted);
 }
 
+.engagementRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engagementBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm, 6px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease-out, color 150ms ease-out;
+}
+
+.engagementBtn:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .engagementBtn:hover {
+    color: var(--color-primary, #0055A4);
+  }
+}
+
+.reshareActive {
+  color: var(--color-forest-green, #1A7A5A) !important;
+}
+
+.bookmarkActive {
+  color: var(--color-primary, #0055A4) !important;
+}
+
+/* Embedded Quoted Post Preview */
+.quotedCard {
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  overflow: hidden;
+}
+
+.quotedCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 6px;
+}
+
+.quotedCardAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.quotedCardAuthor {
+  font-size: var(--font-size-xs, 13px);
+  font-weight: 700;
+  color: var(--color-text-main, #1E293B);
+}
+
+.quotedCardMeta {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted, #64748B);
+}
+
+.quotedCardContent {
+  padding: 0 14px 10px;
+  font-size: var(--font-size-xs, 13px);
+  color: var(--color-text-main, #1E293B);
+  line-height: 1.45;
+}
+
+.quotedCardMedia {
+  width: 100%;
+  max-height: 220px;
+  overflow: hidden;
+  background: #0F172A;
+  border-top: 1px solid #E2E8F0;
+}
+
+.quotedCardImg {
+  width: 100%;
+  height: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
 /* Discussion Thread Section */
 .discussionSection {
   display: flex;
@@ -621,3 +720,108 @@
   transform: scale(0.97);
   background: #B91C1C;
 }
+
+/* Attached Interactive PDF Document Card in Detail View */
+.pdfCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background: #F8FAFC;
+  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pdfCard:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+  }
+}
+
+.pdfCard:active {
+  transform: scale(0.985);
+}
+
+.pdfCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pdfBadgeWrap {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  background: #FEE2E2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdfBadgeIcon {
+  font-size: 22px !important;
+  color: #DC2626 !important;
+}
+
+.pdfCardInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pdfCardFileName {
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 600;
+  color: #1E293B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdfCardMeta {
+  font-size: var(--font-size-xs, 12px);
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.pdfCardActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  min-height: 36px;
+  background: #0055A4;
+  color: #FFFFFF;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background-color 120ms ease-out;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pdfCardActionBtn:hover {
+    background: #004080;
+  }
+}
+
+.pdfCardActionBtn:active {
+  transform: scale(0.96);
+}
+

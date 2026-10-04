@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Comment, Employee, Post, Story } from './types/bulletin';
+import type { Comment, Employee, EmojiReactionType, Post, Story } from './types/bulletin';
 import { CURRENT_USER, DEPARTMENTS, INITIAL_POSTS, INITIAL_STORIES, getEmployeeByAuthor } from './services/mockData';
 import { bulletinService } from './services/bulletinService';
 import { isSupabaseConfigured, supabase } from './services/supabaseClient';
@@ -13,7 +13,10 @@ import { BottomNav } from './components/BottomNav';
 import type { TabKey } from './components/BottomNav';
 import { CommentDrawer } from './components/CommentDrawer';
 import { CreateBulletinPage } from './components/CreateBulletinPage';
+import { CreateStoryModal } from './components/CreateStoryModal';
 import { TrendingSection } from './components/TrendingSection';
+import { SesiKnowledgeHubBanner } from './components/SesiKnowledgeHubBanner';
+import { CeoWisdomSection } from './components/CeoWisdomSection';
 import { SearchDirectoryPage } from './components/SearchDirectoryPage';
 import { ProfilePage } from './components/ProfilePage';
 import { DesktopSidebar } from './components/DesktopSidebar';
@@ -25,6 +28,8 @@ import { LoginPage } from './components/LoginPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { BrandSidebarDrawer } from './components/BrandSidebarDrawer';
 import { SavedPostsDrawer } from './components/SavedPostsDrawer';
+import { ReshareBottomSheet } from './components/ReshareBottomSheet';
+import { QuoteBulletinModal } from './components/QuoteBulletinModal';
 
 export function App() {
   const [currentUser, setCurrentUser] = useState<Employee>(() => {
@@ -97,9 +102,13 @@ export function App() {
 
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
   const [isBrandSidebarOpen, setIsBrandSidebarOpen] = useState(false);
   const [isSavedPostsOpen, setIsSavedPostsOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
+  const [activeResharePost, setActiveResharePost] = useState<Post | null>(null);
+  const [activeQuotePost, setActiveQuotePost] = useState<Post | null>(null);
   const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
   const [selectedPostForDetail, setSelectedPostForDetail] = useState<Post | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{
@@ -313,6 +322,12 @@ export function App() {
       ? posts
       : posts.filter((p) => p.departmentId === selectedDeptId);
 
+  // CEO Wisdom post (latest post authored by the CEO)
+  const latestCeoPost = posts.find((p) => p.author?.id === 'user-ceo');
+
+  // Filtered posts for the general feed stream (excluding CEO posts to prevent duplication under CEO Wisdom)
+  const feedPosts = filteredPosts.filter((p) => p.author?.id !== 'user-ceo');
+
   // Optimistic Like Handler with Supabase Cloud Sync
   const handleLikeToggle = (postId: string) => {
     let nextCount = 0;
@@ -349,6 +364,214 @@ export function App() {
         return post;
       })
     );
+  };
+
+  // Poll Vote Handler (Interactive Vote & Deselect)
+  const handleVotePoll = (postId: string, optionId: string) => {
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id === postId && post.poll) {
+          const currentVoted = post.poll.userVotedOptionId;
+
+          // If tapping on the already-voted option, deselect it!
+          if (currentVoted === optionId) {
+            const updatedOptions = post.poll.options.map((opt) => {
+              if (opt.id === optionId) {
+                return { ...opt, votes: Math.max(0, opt.votes - 1) };
+              }
+              return opt;
+            });
+            const totalVotes = Math.max(0, post.poll.totalVotes - 1);
+
+            setToast({
+              message: 'Vote removed from poll',
+              icon: 'undo',
+            });
+
+            return {
+              ...post,
+              poll: {
+                ...post.poll,
+                options: updatedOptions,
+                totalVotes,
+                userVotedOptionId: undefined,
+              },
+            };
+          }
+
+          const updatedOptions = post.poll.options.map((opt) => {
+            if (opt.id === optionId) {
+              return { ...opt, votes: opt.votes + 1 };
+            }
+            if (currentVoted && opt.id === currentVoted) {
+              return { ...opt, votes: Math.max(0, opt.votes - 1) };
+            }
+            return opt;
+          });
+
+          const totalVotes = currentVoted
+            ? post.poll.totalVotes
+            : post.poll.totalVotes + 1;
+
+          setToast({
+            message: currentVoted ? 'Vote changed' : 'Vote submitted to SESB poll',
+            icon: 'how_to_vote',
+          });
+
+          return {
+            ...post,
+            poll: {
+              ...post.poll,
+              options: updatedOptions,
+              totalVotes,
+              userVotedOptionId: optionId,
+            },
+          };
+        }
+        return post;
+      })
+    );
+  };
+
+  // Emoji Reaction Handler (😂, 🔥, 👏, 😭)
+  const handleReactionSelect = (postId: string, reaction: EmojiReactionType) => {
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id === postId) {
+          const oldReaction = post.userReaction;
+          const currentReactions = post.reactions || { laugh: 0, fire: 0, clap: 0, cry: 0 };
+          const updatedReactions = { ...currentReactions };
+
+          if (oldReaction && updatedReactions[oldReaction] > 0) {
+            updatedReactions[oldReaction] = Math.max(0, updatedReactions[oldReaction] - 1);
+          }
+          updatedReactions[reaction] = (updatedReactions[reaction] || 0) + 1;
+
+          const nextLikesCount = !post.isLiked ? post.likesCount + 1 : post.likesCount;
+
+          const emojiMap: Record<EmojiReactionType, string> = {
+            laugh: '😂',
+            fire: '🔥',
+            clap: '👏',
+            cry: '😭',
+          };
+
+          setToast({
+            message: `Reacted with ${emojiMap[reaction]}`,
+            icon: 'mood',
+          });
+
+          return {
+            ...post,
+            isLiked: true,
+            likesCount: nextLikesCount,
+            userReaction: reaction,
+            reactions: updatedReactions,
+          };
+        }
+        return post;
+      })
+    );
+  };
+
+  // Reshare / Repost Toggle Handler (Twitter Style)
+  const handleReshareToggle = (postId: string) => {
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id === postId) {
+          const nextReshared = !post.isReshared;
+          const nextCount = nextReshared
+            ? (post.resharesCount || 0) + 1
+            : Math.max(0, (post.resharesCount || 0) - 1);
+
+          setToast({
+            message: nextReshared ? 'Reposted to your profile & feed' : 'Removed repost',
+            icon: 'repeat',
+          });
+
+          return {
+            ...post,
+            isReshared: nextReshared,
+            resharesCount: nextCount,
+            resharedBy: nextReshared
+              ? {
+                  id: currentUser.id,
+                  name: currentUser.name,
+                  designation: currentUser.designation,
+                  avatarUrl: currentUser.avatarUrl,
+                }
+              : undefined,
+          };
+        }
+        return post;
+      })
+    );
+  };
+
+  // Quote Post Handler (Twitter Style)
+  const handleQuotePost = (quotedPost: Post, commentText: string) => {
+    const newQuotePost: Post = {
+      id: `post-quote-${Date.now()}`,
+      author: {
+        id: currentUser.id,
+        name: currentUser.name,
+        designation: currentUser.designation,
+        department: currentUser.department,
+        avatarUrl: currentUser.avatarUrl,
+        isVerified: true,
+      },
+      timestamp: 'Just now',
+      title: '',
+      content: commentText,
+      quotedPost: quotedPost,
+      location: currentUser.officeLocation || 'Bangunan KWASA',
+      isPinned: false,
+      commentsEnabled: true,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      resharesCount: 0,
+      viewsCount: 1,
+      isLiked: false,
+      isBookmarked: false,
+      isReshared: false,
+      departmentId: currentUser.adminDepartments?.[0] || 'dept-id',
+      departmentName: currentUser.department,
+      departmentColor: '#003E7A',
+    };
+
+    setPosts((prev) => [
+      newQuotePost,
+      ...prev.map((p) =>
+        p.id === quotedPost.id ? { ...p, resharesCount: (p.resharesCount || 0) + 1 } : p
+      ),
+    ]);
+
+    setToast({
+      message: 'Quote bulletin published!',
+      icon: 'edit_note',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Share Post Handler
+  const handleSharePost = (post: Post) => {
+    const url = `${window.location.origin}/#post-${post.id}`;
+    if (navigator.share) {
+      navigator
+        .share({
+          title: post.title || 'Sabah Electricity Bulletin',
+          text: post.content.slice(0, 100),
+          url,
+        })
+        .catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+      setToast({
+        message: 'Link copied to clipboard!',
+        icon: 'link',
+      });
+    }
   };
 
 
@@ -419,6 +642,44 @@ export function App() {
     await bulletinService.deletePost(postId);
   };
 
+  // Update Post Handler (with optimistic update, edited timestamp, and Supabase cloud sync)
+  const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            ...updatedData,
+            isEdited: true,
+            editedAt: new Date().toISOString(),
+          };
+        }
+        return p;
+      })
+    );
+
+    if (selectedPostForDetail?.id === postId) {
+      setSelectedPostForDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...updatedData,
+              isEdited: true,
+              editedAt: new Date().toISOString(),
+            }
+          : null
+      );
+    }
+
+    setToast({
+      message: 'Bulletin updated successfully',
+      icon: 'check_circle',
+    });
+
+    await bulletinService.updatePost(postId, updatedData);
+    setEditingPost(null);
+  };
+
   // Update Profile Handler with local persistence and live cascade across bulletins/comments
   const handleUpdateProfile = (updatedUser: Employee) => {
     setCurrentUser(updatedUser);
@@ -472,6 +733,23 @@ export function App() {
       message: 'Profile updated successfully',
       icon: 'manage_accounts',
     });
+  };
+
+  // Open Post Detail with deduplicated view count tracking
+  const handleOpenPostDetail = (post: Post) => {
+    if (!bulletinService.isPostViewedInSession(post.id)) {
+      bulletinService.recordPostView(post.id);
+      const updatedViews = (post.viewsCount || 0) + 1;
+      setPosts((prev) =>
+        prev.map((p) => (p.id === post.id ? { ...p, viewsCount: updatedViews } : p))
+      );
+      setSelectedPostForDetail({
+        ...post,
+        viewsCount: updatedViews,
+      });
+    } else {
+      setSelectedPostForDetail(post);
+    }
   };
 
   if (!isAuthenticated) {
@@ -560,6 +838,7 @@ export function App() {
             currentUserName={currentUser.name}
             currentUserRole={currentUser.role}
             onDeletePost={handleDeletePost}
+            onEditPost={(post) => setEditingPost(post)}
             onImageClick={(imageUrl, title, location) => {
               setLightboxImage({ url: imageUrl, title, location });
             }}
@@ -571,6 +850,45 @@ export function App() {
                   : prev
               );
             }}
+            onVotePoll={(postId, optionId) => {
+              handleVotePoll(postId, optionId);
+              setSelectedPostForDetail((prev) => {
+                if (prev && prev.id === postId && prev.poll) {
+                  const currentVoted = prev.poll.userVotedOptionId;
+                  if (currentVoted === optionId) {
+                    const updatedOptions = prev.poll.options.map((opt) => {
+                      if (opt.id === optionId) return { ...opt, votes: Math.max(0, opt.votes - 1) };
+                      return opt;
+                    });
+                    return {
+                      ...prev,
+                      poll: {
+                        ...prev.poll,
+                        options: updatedOptions,
+                        totalVotes: Math.max(0, prev.poll.totalVotes - 1),
+                        userVotedOptionId: undefined,
+                      },
+                    };
+                  }
+                  const updatedOptions = prev.poll.options.map((opt) => {
+                    if (opt.id === optionId) return { ...opt, votes: opt.votes + 1 };
+                    if (currentVoted && opt.id === currentVoted) return { ...opt, votes: Math.max(0, opt.votes - 1) };
+                    return opt;
+                  });
+                  return {
+                    ...prev,
+                    poll: {
+                      ...prev.poll,
+                      options: updatedOptions,
+                      totalVotes: currentVoted ? prev.poll.totalVotes : prev.poll.totalVotes + 1,
+                      userVotedOptionId: optionId,
+                    },
+                  };
+                }
+                return prev;
+              });
+            }}
+            onReshareClick={(p) => setActiveResharePost(p)}
           />
         ) : (
           <>
@@ -586,18 +904,40 @@ export function App() {
               onFilterCategory={(deptId) => setSelectedDeptId(deptId)}
             />
 
+            {/* 1.5 SESI Knowledge Hub Cross-Promo Banner */}
+            <SesiKnowledgeHubBanner />
+
             {/* 2. Trending Across SESB Section */}
             <TrendingSection
               posts={posts}
-              onSelectPost={(post) => setSelectedPostForDetail(post)}
+              onSelectPost={handleOpenPostDetail}
               onOpenComments={(post) => setActiveCommentPost(post)}
+            />
+
+            {/* 2.1 CEO Wisdom Section */}
+            <CeoWisdomSection
+              ceoPost={latestCeoPost}
+              onVotePoll={handleVotePoll}
+              onLikeToggle={handleLikeToggle}
+              onCommentClick={(p) => setActiveCommentPost(p)}
+              onBookmarkToggle={handleBookmarkToggle}
+              onPostClick={handleOpenPostDetail}
+              onViewCeoProfile={() =>
+                handleViewAuthorProfile({
+                  id: 'user-ceo',
+                  name: 'Datuk Ir. Ts. Mohd Yaakob Hj. Jaafar',
+                  designation: 'Chief Executive Officer (CEO)',
+                  department: 'Chief Executive Officer (CEO) Office',
+                  avatarUrl: '/ceo_portrait.png',
+                })
+              }
             />
 
             {/* 3. 24-Hour Department Stories Carousel */}
             <StoriesBar
               currentUser={currentUser}
               stories={stories}
-              onAddStoryClick={() => setIsCreateOpen(true)}
+              onAddStoryClick={() => setIsCreateStoryOpen(true)}
             />
 
             {/* 3. Department Filter Chips */}
@@ -610,7 +950,7 @@ export function App() {
 
             {/* 4. Bulletin Feed Stream */}
             <section aria-label="Bulletin Stream">
-              {filteredPosts.length === 0 ? (
+              {feedPosts.length === 0 ? (
                 <div
                   style={{
                     textAlign: 'center',
@@ -629,19 +969,27 @@ export function App() {
                   </p>
                 </div>
               ) : (
-                filteredPosts.map((post) => (
+                feedPosts.map((post) => (
                   <FeedCard
                     key={post.id}
                     post={post}
                     currentUserId={currentUser.id}
                     currentUserName={currentUser.name}
                     currentUserRole={currentUser.role}
+                    currentUserAvatar={currentUser.avatarUrl}
                     onLikeToggle={handleLikeToggle}
                     onCommentClick={(p) => setActiveCommentPost(p)}
                     onBookmarkToggle={handleBookmarkToggle}
                     onDeletePost={handleDeletePost}
-                    onPostClick={(p) => setSelectedPostForDetail(p)}
+                    onEditPost={(post) => setEditingPost(post)}
+                    onPostClick={handleOpenPostDetail}
                     onAuthorClick={handleViewAuthorProfile}
+                    onVotePoll={handleVotePoll}
+                    onReactionSelect={handleReactionSelect}
+                    onReshareToggle={handleReshareToggle}
+                    onQuotePost={handleQuotePost}
+                    onSharePost={handleSharePost}
+                    onReshareClick={(p) => setActiveResharePost(p)}
                   />
                 ))
               )}
@@ -657,11 +1005,20 @@ export function App() {
             currentUserId={currentUser.id}
             currentUserName={currentUser.name}
             currentUserRole={currentUser.role}
+            currentUserAvatar={currentUser.avatarUrl}
             onLikeToggle={handleLikeToggle}
             onOpenComments={(post) => setActiveCommentPost(post)}
             onDeletePost={handleDeletePost}
-            onPostClick={(post) => setSelectedPostForDetail(post)}
+            onEditPost={(post) => setEditingPost(post)}
+            onPostClick={handleOpenPostDetail}
             onViewProfile={handleViewAuthorProfile}
+            onBookmarkToggle={handleBookmarkToggle}
+            onVotePoll={handleVotePoll}
+            onReactionSelect={handleReactionSelect}
+            onReshareToggle={handleReshareToggle}
+            onQuotePost={handleQuotePost}
+            onSharePost={handleSharePost}
+            onReshareClick={(p) => setActiveResharePost(p)}
           />
         )}
 
@@ -745,8 +1102,9 @@ export function App() {
             onLikeToggle={handleLikeToggle}
             onOpenComments={(post) => setActiveCommentPost(post)}
             onDeletePost={handleDeletePost}
+            onEditPost={(post) => setEditingPost(post)}
             onOpenCreate={() => setIsCreateOpen(true)}
-            onPostClick={(post) => setSelectedPostForDetail(post)}
+            onPostClick={handleOpenPostDetail}
             onImageClick={(url, title) => setLightboxImage({ url, title })}
             onCallExt={(emp) =>
               setToast({
@@ -756,6 +1114,12 @@ export function App() {
             }
             onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
+            onBookmarkToggle={handleBookmarkToggle}
+            onVotePoll={handleVotePoll}
+            onReactionSelect={handleReactionSelect}
+            onReshareToggle={handleReshareToggle}
+            onQuotePost={handleQuotePost}
+            onSharePost={handleSharePost}
           />
         )}
           </>
@@ -775,32 +1139,78 @@ export function App() {
         />
       )}
 
+      {/* Reshare Bottom Sheet Modal (Root Level) */}
+      {activeResharePost && (
+        <ReshareBottomSheet
+          isOpen={Boolean(activeResharePost)}
+          isReshared={activeResharePost.isReshared}
+          onClose={() => setActiveResharePost(null)}
+          onRepost={() => {
+            handleReshareToggle(activeResharePost.id);
+            setActiveResharePost(null);
+          }}
+          onQuote={() => {
+            const target = activeResharePost;
+            setActiveResharePost(null);
+            setActiveQuotePost(target);
+          }}
+        />
+      )}
+
+      {/* Quote Bulletin Composer Modal (Root Level) */}
+      {activeQuotePost && (
+        <QuoteBulletinModal
+          isOpen={Boolean(activeQuotePost)}
+          quotedPost={activeQuotePost}
+          currentUserAvatar={currentUser.avatarUrl}
+          currentUserName={currentUser.name}
+          onClose={() => setActiveQuotePost(null)}
+          onSubmit={(commentText) => {
+            handleQuotePost(activeQuotePost, commentText);
+            setActiveQuotePost(null);
+          }}
+        />
+      )}
+
+      {/* WhatsApp / Instagram Style 24h Story Creator */}
+      {isCreateStoryOpen && (
+        <CreateStoryModal
+          currentUser={currentUser}
+          onClose={() => setIsCreateStoryOpen(false)}
+          onSubmit={(newStory) => {
+            setStories((prev) => [newStory, ...prev]);
+            setToast({
+              message: '24h Story shared successfully!',
+              icon: 'schedule',
+            });
+          }}
+        />
+      )}
+
       {/* Dedicated Full Page for Creating Bulletins (Stitch Inspired) */}
       {isCreateOpen && (
         <CreateBulletinPage
           departments={DEPARTMENTS}
+          currentUser={currentUser}
           onClose={() => setIsCreateOpen(false)}
           onSubmit={async (newPostData) => {
             const newPost = await bulletinService.createPost(newPostData, currentUser);
             handlePublishPost(newPost);
-
-            // If published as a 24h WhatsApp Status, also push to StoriesBar
-            if (!newPostData.officialNotice) {
-              const newStory: Story = {
-                id: `story-${Date.now()}`,
-                departmentId: newPost.departmentId || 'dept-ops',
-                departmentName: newPost.departmentName || 'Operations',
-                authorName: currentUser.name,
-                hasUnread: true,
-                imageUrl: (newPostData.mediaUrls && newPostData.mediaUrls[0]) || '/mock-images/image1.png',
-                caption: newPostData.content.slice(0, 80),
-                hoursRemaining: 24,
-              };
-              setStories((prev) => [newStory, ...prev]);
-            }
-
             setIsCreateOpen(false);
           }}
+        />
+      )}
+
+      {/* Dedicated Full Page for Editing Bulletins */}
+      {editingPost && (
+        <CreateBulletinPage
+          departments={DEPARTMENTS}
+          currentUser={currentUser}
+          initialPost={editingPost}
+          isEditMode={true}
+          onClose={() => setEditingPost(null)}
+          onSubmit={() => {}}
+          onUpdate={handleUpdatePost}
         />
       )}
 

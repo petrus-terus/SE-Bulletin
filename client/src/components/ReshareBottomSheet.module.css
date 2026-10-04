@@ -1,0 +1,162 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 180ms ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  background: #FFFFFF;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+  animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop { animation: none !important; }
+  .sheet { animation: none !important; }
+}
+
+.dragHandle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #CBD5E1;
+  margin: 0 auto 12px;
+}
+
+.sheetHeader {
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--color-border-subtle, #E8EDF2);
+  margin-bottom: 8px;
+}
+
+.sheetTitle {
+  font-size: var(--font-size-base, 16px);
+  font-weight: 700;
+  color: var(--color-text-main, #1E293B);
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actionBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-main, #1E293B);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, transform 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionBtn:hover {
+    background-color: #F1F5F9;
+  }
+}
+
+.actionBtn:active {
+  transform: scale(0.98);
+}
+
+.iconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 150ms ease-out;
+}
+
+.activeCircle {
+  background: #E8F5E9;
+}
+
+.actionIcon {
+  font-size: 22px;
+  color: var(--color-text-muted, #64748B);
+}
+
+.activeRepostIcon {
+  color: var(--color-forest-green, #1A7A5A);
+}
+
+.actionTextCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.actionTitle {
+  font-size: var(--font-size-sm, 15px);
+  font-weight: 600;
+  color: var(--color-text-main, #1E293B);
+}
+
+.actionDesc {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted, #64748B);
+  line-height: 1.35;
+}
+
+.cancelBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  background: #F8FAFC;
+  color: var(--color-text-muted, #64748B);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, transform 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cancelBtn:hover {
+    background-color: #F1F5F9;
+    color: var(--color-text-main, #1E293B);
+  }
+}
+
+.cancelBtn:active {
+  transform: scale(0.98);
+}

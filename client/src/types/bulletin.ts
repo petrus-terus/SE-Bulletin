@@ -33,8 +33,10 @@ export interface Story {
   departmentId: string;
   departmentName: string;
   authorName: string;
+  authorAvatar?: string;
   hasUnread: boolean;
   imageUrl: string;
+  backgroundColor?: string;
   caption: string;
   hoursRemaining: number;
 }
@@ -48,6 +50,30 @@ export interface Comment {
   text: string;
   timestamp: string;
   likesCount?: number;
+}
+
+export type EmojiReactionType = 'laugh' | 'fire' | 'clap' | 'cry';
+
+export interface ReactionCounts {
+  laugh: number;
+  fire: number;
+  clap: number;
+  cry: number;
+}
+
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+export interface PollData {
+  id: string;
+  question: string;
+  options: PollOption[];
+  totalVotes: number;
+  expiresText?: string;
+  userVotedOptionId?: string;
 }
 
 export interface Post {
@@ -71,13 +97,31 @@ export interface Post {
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
+  viewsCount?: number;
+  resharesCount?: number;
   isLiked: boolean;
   isBookmarked: boolean;
+  isReshared?: boolean;
+  resharedBy?: {
+    id: string;
+    name: string;
+    designation?: string;
+    avatarUrl?: string;
+  };
+  quotedPost?: Post;
+  poll?: PollData;
+  reactions?: ReactionCounts;
+  userReaction?: EmojiReactionType;
+  pdfUrl?: string;
+  pdfName?: string;
+  pdfSize?: string;
   departmentId?: string;
   departmentName?: string;
   departmentColor?: string;
   previewComment?: Comment | null;
   officialNotice?: boolean;
+  isEdited?: boolean;
+  editedAt?: string;
 }
 
 export interface CreatePostPayload {
@@ -86,13 +130,22 @@ export interface CreatePostPayload {
   authorName?: string;
   department?: string;
   departmentId?: string;
+  departmentColor?: string;
   avatarUrl?: string;
+  location?: string;
   isPinned?: boolean;
+  commentsEnabled?: boolean;
   mediaUrls?: string[];
   imageUrl?: string;
   officialNotice?: boolean;
+  quotedPost?: Post;
+  poll?: PollData;
+  pdfUrl?: string;
+  pdfName?: string;
+  pdfSize?: string;
 }
 
 export type TimeAmbiance = 'day' | 'dusk' | 'night';
 
 export type PostArchetype = 'status' | 'photo' | 'announcement';
+

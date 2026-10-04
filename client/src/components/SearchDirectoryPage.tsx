@@ -47,11 +47,20 @@ interface Props {
   currentUserId?: string;
   currentUserName?: string;
   currentUserRole?: string;
+  currentUserAvatar?: string;
   onLikeToggle: (id: string) => void;
   onOpenComments: (post: Post) => void;
   onDeletePost?: (postId: string) => void;
+  onEditPost?: (post: Post) => void;
   onPostClick?: (post: Post) => void;
   onViewProfile?: (employee: { id: string; name: string; avatarUrl: string; designation: string; department: string; email: string; extension?: string; staffId?: string }) => void;
+  onBookmarkToggle?: (postId: string) => void;
+  onVotePoll?: (postId: string, optionId: string) => void;
+  onReactionSelect?: (postId: string, reaction: import('../types/bulletin').EmojiReactionType) => void;
+  onReshareToggle?: (postId: string) => void;
+  onQuotePost?: (quotedPost: Post, commentText: string) => void;
+  onSharePost?: (post: Post) => void;
+  onReshareClick?: (post: Post) => void;
 }
 
 export const SearchDirectoryPage: React.FC<Props> = ({
@@ -60,11 +69,20 @@ export const SearchDirectoryPage: React.FC<Props> = ({
   currentUserId,
   currentUserName,
   currentUserRole,
+  currentUserAvatar,
   onLikeToggle,
   onOpenComments,
   onDeletePost,
+  onEditPost,
   onPostClick,
   onViewProfile,
+  onBookmarkToggle,
+  onVotePoll,
+  onReactionSelect,
+  onReshareToggle,
+  onQuotePost,
+  onSharePost,
+  onReshareClick,
 }) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | 'staff' | 'circulars' | 'departments'>('all');
@@ -352,11 +370,19 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                   currentUserId={currentUserId}
                   currentUserName={currentUserName}
                   currentUserRole={currentUserRole}
+                  currentUserAvatar={currentUserAvatar}
                   onLikeToggle={onLikeToggle}
                   onCommentClick={onOpenComments}
-                  onBookmarkToggle={() => {}}
+                  onBookmarkToggle={onBookmarkToggle || (() => {})}
                   onDeletePost={onDeletePost}
+                  onEditPost={onEditPost}
                   onPostClick={onPostClick}
+                  onVotePoll={onVotePoll}
+                  onReactionSelect={onReactionSelect}
+                  onReshareToggle={onReshareToggle}
+                  onQuotePost={onQuotePost}
+                  onSharePost={onSharePost}
+                  onReshareClick={onReshareClick}
                 />
               ))}
             </div>

@@ -132,46 +132,140 @@
   flex-direction: column;
 }
 
-/* Post Type Segmented Tab Row */
-.typeSelectorRow {
+/* Official Notice Banner */
+.officialNoticeDeck {
+  padding: 12px 16px;
+  background: #F0F7FF;
+  border-bottom: 1px solid #DBEAFE;
   display: flex;
-  background: #F1F5F9;
-  padding: 6px;
-  gap: 6px;
-  border-bottom: 1px solid var(--color-border-subtle);
-  overflow-x: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.typeTab {
-  flex: 1;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: #64748B;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  display: inline-flex;
+.officialNoticeInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.officialNoticeIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm, 8px);
+  background: #DBEAFE;
+  color: var(--color-primary-container, #0055A4);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  flex-shrink: 0;
+}
+
+.officialNoticeTitle {
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 700;
+  color: #1E3A8A;
+  margin: 0;
+}
+
+.officialNoticeDesc {
+  font-size: var(--font-size-xs, 12px);
+  color: #475569;
+  margin: 0;
+}
+
+.toggleSwitch {
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-pill, 9999px);
+  background: #CBD5E1;
+  border: none;
+  position: relative;
   cursor: pointer;
-  white-space: nowrap;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out, color 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background 150ms ease-out;
+  flex-shrink: 0;
 }
 
-.typeTab:active {
-  transform: scale(0.98);
+.toggleSwitchActive {
+  background: var(--color-primary-container, #0055A4);
 }
 
-.typeTabActive {
+.toggleThumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   background: #FFFFFF;
-  color: var(--color-forest-green, #1A7A5A);
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toggleSwitchActive .toggleThumb {
+  transform: translateX(20px);
+}
+
+/* SESB Quick Templates Strip */
+.templatesDeck {
+  padding: 10px 16px;
+  background: #FAFAFA;
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.templatesHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs, 12px);
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.templatesRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.templateChip {
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill, 9999px);
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  color: var(--color-text-main, #1E293B);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out, border-color 120ms ease-out;
+}
+
+.templateChip:active {
+  transform: scale(0.96);
+  background: #F1F5F9;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .templateChip:hover {
+    border-color: var(--color-primary-container, #0055A4);
+    color: var(--color-primary-container, #0055A4);
+  }
 }
 
 /* Author & Audience Meta Deck */
@@ -508,12 +602,12 @@
 
 /* Formatting Toolbar */
 .formattingToolbar {
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: var(--radius-md);
-  background: #F1F5F9;
+  background: #F8FAFC;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .formatToolsGroup {
@@ -616,6 +710,46 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.photoCompressBadge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #10B981;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
 }
 
 .photoPreviewImg {
@@ -881,26 +1015,128 @@
   background: #F1F5F9;
 }
 
-.bottomPublishBtn {
-  min-height: 44px;
-  padding: 10px 24px;
-  background: var(--color-forest-green, #1A7A5A);
-  color: #FFFFFF;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(26, 122, 90, 0.3);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+/* Poll Builder Section */
+.pollBuilderSection {
+  margin: 16px;
+  padding: 16px;
+  background: #F8FAFC;
+  border-radius: var(--radius-card, 12px);
+  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.bottomPublishBtn:active {
-  transform: scale(0.97);
-  background: var(--color-forest-hover, #146348);
+.pollBuilderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pollBuilderTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 700;
+  color: var(--color-text-main, #1E293B);
+}
+
+.removePollBtn {
+  background: none;
+  border: none;
+  color: #DC2626;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.pollInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-main, #1E293B);
+  outline: none;
+  transition: border-color 150ms ease-out;
+}
+
+.pollInput:focus {
+  border-color: var(--color-primary, #0055A4);
+}
+
+.pollOptionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pollOptionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pollOptionInput {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-main, #1E293B);
+  outline: none;
+}
+
+.pollOptionInput:focus {
+  border-color: var(--color-primary, #0055A4);
+}
+
+.removeOptionBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 150ms ease-out, background 150ms ease-out;
+}
+
+.removeOptionBtn:hover {
+  color: #DC2626;
+  background: #FEE2E2;
+}
+
+.addOptionBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px dashed #94A3B8;
+  background: transparent;
+  color: var(--color-primary, #0055A4);
+  font-size: var(--font-size-xs, 13px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+
+.addOptionBtn:hover {
+  background: #EFF6FF;
+  border-color: var(--color-primary, #0055A4);
+}
+
+.addOptionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

@@ -102,9 +102,12 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
         <div className={styles.storyHeader}>
           <div className={styles.authorMeta}>
             <img
-              src={currentStory.imageUrl}
-              alt={currentStory.authorName}
+              src={currentStory.authorAvatar || currentStory.imageUrl || '/user_face.png'}
+              alt=""
               className={styles.authorAvatar}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+              }}
             />
             <div className={styles.authorInfo}>
               <span className={styles.authorDept}>{currentStory.departmentName}</span>
@@ -130,8 +133,11 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
         <div className={styles.mediaContainer}>
           <img
             src={currentStory.imageUrl}
-            alt={currentStory.caption}
+            alt=""
             className={styles.storyImg}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/grid_horizon_hero.jpg';
+            }}
           />
           <div
             className={styles.tapZoneLeft}

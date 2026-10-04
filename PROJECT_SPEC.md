@@ -116,32 +116,57 @@ graph TD
   - Poster's avatar with real-time green active presence dot.
   - Rich text body with clickable `#tags` and `@mentions`.
   - Multi-image swipeable carousel with pagination dots.
-  - Engagement row: Like (animated heart), Comment (triggers nested bottom-sheet discussion), Share (copy intranet deep-link or share to team).
+  - **Interactive Engagement Row**:
+    * **Views Metric**: Eye icon with `viewsCount` rendered in `font-mono tabular-nums`, tracked with `sessionStorage` client-side deduplication (`sesb_viewed_bulletin_ids`).
+    * **Like & Reaction Dock**: One-tap like or long-press/dock trigger for 5 professional reactions (👍 Like, 👏 Tahniah, 🤝 Sokong, 💡 Bernas, 🛡️ Utamakan Keselamatan).
+    * **Comment**: Displays total count in `tabular-nums`; triggers slide-up threaded discussion drawer.
+    * **Reshare & Quote Repost**: Opens `ReshareBottomSheet` offering instant 1-tap repost or "Quote Bulletin" (`QuoteBulletinModal`) to embed the original post card preview inside custom commentary.
+  - **Interactive Poll Card (`InteractivePollCard.tsx`)**: Built-in interactive single-choice voting with live percentage calculation, vote distribution bars, and total vote count.
+  - **Knowledge & Leadership Highlights**:
+    * **CEO Wisdom (`CeoWisdomSection.tsx`)**: Editorial leadership quote banner featuring authentic portrait and monthly executive strategic themes.
+    * **SESI Knowledge Hub Banner (`SesiKnowledgeHubBanner.tsx`)**: High-contrast card with authentic Sabah Electricity Sdn. Bhd. (SESI) corporate crest for training materials and SOP circulars.
 
-### 5.2 Create Post Modal / Bottom Sheet (+)
+### 5.2 Decoupled Creation Architecture (Stories vs. Bulletins)
 
-Tapping the center floating green button opens a modal offering three post archetypes:
+To eliminate cognitive friction and match staff mental models (quick WhatsApp status dispatches vs. formal corporate circulars), the creation experience is decoupled into two dedicated flows:
 
 ```mermaid
 flowchart TD
-    Plus[Tap Center + Button] --> Options{Select Post Type}
-    Options --> TypeA[1. Status Update]
-    Options --> TypeB[2. Photo / Gallery]
-    Options --> TypeC[3. Official Announcement]
+    Trigger{Creation Trigger} -->|Tap '+ Your Story' in StoriesBar| StoryFlow[Dedicated Story Modal: CreateStoryModal.tsx]
+    Trigger -->|Tap Center Floating '+' Nav Button| BulletinFlow[Bulletin Studio: CreateBulletinPage.tsx]
 
-    TypeA --> FormA[Rich Text + Optional 1 Image]
-    TypeB --> FormB[Multi-image Picker up to 10 photos]
-    TypeC --> CheckRole{Has Dept Admin Role?}
-    CheckRole -->|Yes| FormC[Select Department + Headline + Pinned? + Comments Toggle]
-    CheckRole -->|No| Blocked[Show prompt: Request Dept Admin privilege]
+    subgraph StoryFlow [WhatsApp/IG-Style 24-Hour Story Flow]
+        StoryType{Pick Mode} --> PhotoStory[1. Photo Mode: Auto-compress canvas engine]
+        StoryType --> TextStory[2. Text Card Mode: 4 SESB Brand Gradients]
+        TextStory --> Gradients[Kinabalu Forest, Sabah Blue, Sunset Amber, Night Grid]
+        PhotoStory --> StoryPreview[Live 24h Expiry Indicator & Send Button]
+        TextStory --> StoryPreview
+    end
+
+    subgraph BulletinFlow [Corporate Bulletin Studio Flow]
+        BulletinTemplates{1-Tap SESB Quick Templates}
+        BulletinTemplates --> T1[🚨 Keselamatan Goal Zero]
+        BulletinTemplates --> T2[⚡ Penyelenggaraan Grid]
+        BulletinTemplates --> T3[📢 Hebahan Rasmi HQ]
+        BulletinTemplates --> T4[📊 Undian Warga Kerja]
+        T1 & T2 & T3 & T4 --> Editor[Pre-fills Title, Department Pill & Body Template]
+        Editor --> MediaAttach[Auto-compressed Photo & PDF Attachment]
+        Editor --> OfficialToggle[Official Notice Switch: Hebahan Rasmi Bahagian]
+        Editor --> PollBuilder[Optional Interactive Poll Builder]
+    end
 ```
 
-- **Announcement Fields**:
-  - Title / Headline (required, max 120 chars).
-  - Department Selector (dropdown limited to departments the user administers).
-  - Priority flag (Normal vs Urgent HSE / Operational alert).
-  - Engagement controls: Checkbox to enable/disable public comments.
-  - Attachments: Multi-image or PDF document link.
+- **24-Hour Fast Story Creator (`CreateStoryModal.tsx`)**:
+  - Direct 1-tap trigger from the `StoriesBar` avatar ring.
+  - Zero form overhead: toggle between **Photo** (camera/gallery upload with instant canvas compression) and **Text Card** (color gradient selector + quick sticker pills).
+  - Automatically tags author department and sets 24-hour expiration.
+
+- **Corporate Bulletin Studio (`CreateBulletinPage.tsx`)**:
+  - Fixed 44px circular avatar with `.avatarWrapper` to prevent natural size image blowouts.
+  - 4 1-tap SESB Quick Templates for rapid standardization of HSE alerts, grid shutdowns, memos, and employee polls.
+  - Department selector pill with popover selector.
+  - Client-side auto-compression badge showing saved storage bytes before uploading.
+  - Optional interactive poll creator and attachment manager.
 
 ### 5.3 Explore Screen (Directory & Discover)
 
@@ -196,6 +221,10 @@ sequenceDiagram
 - **Manifest (`manifest.json`)**: Configured with `display: standalone`, custom icons (192px, 512px with Mount Kinabalu logo), splash screen background `#1A7A5A`.
 - **Cache Strategy**: *Stale-While-Revalidate* for feed JSON and employee directory; *Cache-First* for static assets, logos, and uploaded image attachments.
 - **Web Push Notifications**: Service worker listens for `push` events sent via WebPush standard from ASP.NET Core for emergency broadcasts and followed department bulletins.
+- **Client-Side Image Optimization Safeguard (`imageCompressor.ts`)**:
+  - Uses HTML5 Offscreen/DOM Canvas to auto-downscale user photos to max 1600px at 0.82 quality WebP/JPEG before upload.
+  - Reduces average field photo size from ~4.8MB down to ~210KB (~95% reduction).
+  - Protects Supabase free tier (1GB storage limit) and prevents browser `localStorage` `QuotaExceededError` during offline mode or profile edits.
 
 ---
 
@@ -214,6 +243,7 @@ erDiagram
     POST ||--o{ ATTACHMENT : contains
     POST ||--o{ COMMENT : receives
     POST ||--o{ REACTION : receives
+    POST ||--o{ POST : quotes
     COMMENT ||--o{ COMMENT : replies_to
 
     EMPLOYEE {
@@ -249,14 +279,19 @@ erDiagram
         uuid id PK
         uuid author_id FK
         uuid department_id FK
+        uuid quote_post_id FK
         string post_type
         string title
         text content
         boolean is_pinned
         boolean comments_enabled
         boolean is_urgent
+        int views_count
         int likes_count
         int comments_count
+        int shares_count
+        jsonb reactions_breakdown
+        jsonb poll_data
         datetime created_at
         datetime updated_at
     }
@@ -275,6 +310,7 @@ erDiagram
         uuid department_id FK
         uuid author_id FK
         string media_url
+        string background_color
         string caption
         datetime expires_at
         datetime created_at
@@ -300,38 +336,41 @@ erDiagram
 
 ---
 
-## 8. ASP.NET Core Web API Specifications
+## 8. API & Service Specifications (Supabase BaaS / ASP.NET Core)
 
-### 8.1 Core Endpoints
+### 8.1 Core Endpoints & Supabase RPCs
 
 #### Authentication & Session
 - `POST /api/v1/auth/request-otp` — Sends 6-digit OTP to `@sesb.com.my` address via internal SMTP.
 - `POST /api/v1/auth/verify-otp` — Verifies OTP, returns signed JWT (`access_token`, `refresh_token`, and user role payload).
 - `GET /api/v1/auth/me` — Fetches active staff profile, department admin privileges, and unread counters.
 
-#### Feed & Posts
-- `GET /api/v1/feed` — Paginated home feed. Supports `?department=`, `?search=`, and `?type=` queries. Returns posts with nested author profile and attachments.
+#### Feed & Bulletins
+- `GET /api/v1/feed` — Paginated home feed. Supports `?department=`, `?search=`, and `?type=` queries. Returns posts with nested author profile, attachments, poll data, and quote post card preview.
 - `POST /api/v1/posts` — Creates a status update or official announcement (role-checked).
+- `POST /api/v1/posts/{id}/view` / `rpc/increment_post_views` — Records verified view increment with client-side session deduplication (`sesb_viewed_bulletin_ids`).
 - `PUT /api/v1/posts/{id}/pin` — Toggles pinned state (Department Admin only).
 - `DELETE /api/v1/posts/{id}` — Removes post (Author or Department Admin).
 
-#### Engagement
-- `POST /api/v1/posts/{id}/reactions` — Toggles like/heart reaction. Dispatches live count update via SignalR.
+#### Engagement & Resharing
+- `POST /api/v1/posts/{id}/reactions` — Toggles reaction (`like`, `celebrate`, `support`, `insightful`, `safety`). Dispatches live count update via SignalR / Supabase Realtime.
+- `POST /api/v1/posts/{id}/poll/vote` — Registers single-choice employee vote and returns recalculation breakdown.
+- `POST /api/v1/posts/{id}/quote` — Submits custom commentary referencing `quote_post_id`.
 - `GET /api/v1/posts/{id}/comments` — Retrieves threaded comment hierarchy.
 - `POST /api/v1/posts/{id}/comments` — Posts reply (validates `comments_enabled == true`).
 - `DELETE /api/v1/comments/{id}` — Moderates/removes inappropriate comment.
 
 #### Stories & Media
 - `GET /api/v1/stories` — Retrieves active, non-expired stories grouped by department.
-- `POST /api/v1/stories` — Creates department story (auto sets `expires_at = DateTime.UtcNow.AddHours(24)`).
-- `POST /api/v1/media/upload` — Multipart file upload. Saves to SESB local storage mount, auto-compresses image to WebP, and generates thumbnails via ImageSharp.
+- `POST /api/v1/stories` — Creates 24h department story with auto-compressed image or background gradient card.
+- `POST /api/v1/media/upload` — Multipart file upload. Saves to Supabase `bulletin-media` or internal network mount, automatically compressed prior to transmission.
 
 #### Search & Directory
 - `GET /api/v1/directory` — Searches employees by name, designation, division, or phone extension.
 
-### 8.2 Real-Time SignalR Hub (`/hubs/bulletin`)
+### 8.2 Real-Time SignalR / WebSocket Hub (`/hubs/bulletin`)
 - `OnUserConnected()` — Marks employee online (green active dot).
-- `SendReactionUpdate(postId, newCount)` — Instant UI update across all active viewers.
+- `SendReactionUpdate(postId, newCount, breakdown)` — Instant UI update across all active viewers.
 - `BroadcastUrgentAlert(alertDto)` — Triggers in-app banner modal for critical safety/grid updates.
 
 ---

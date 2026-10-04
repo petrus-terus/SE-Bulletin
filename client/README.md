@@ -39,17 +39,27 @@ client/
 │   │   ├── SavedPostsDrawer.tsx     # Bookmarked bulletins drawer
 │   │   ├── KinabaluSkylineHero.tsx  # Dynamic time-of-day vector art & real-time TNB market chart
 │   │   ├── StoriesBar.tsx           # 24-hour department updates carousel
+│   │   ├── CreateStoryModal.tsx     # Fast WhatsApp/IG-style 24h story creator (Photo & Text modes)
 │   │   ├── StoryViewerModal.tsx     # 5-second auto-advancing story modal
-│   │   ├── FeedCard.tsx             # Post card with optimistic likes, shares, and comment counter
+│   │   ├── FeedCard.tsx             # Post card with views count, optimistic reactions, reshares, comments
+│   │   ├── EmojiReactionDock.tsx    # LinkedIn-style 5-emoji reaction dock (Like, Celebrate, Support, Insightful, Safety)
+│   │   ├── ReshareBottomSheet.tsx   # Instant repost & Quote Bulletin action sheet
+│   │   ├── QuoteBulletinModal.tsx   # Quote repost composer with embedded post preview card
+│   │   ├── InteractivePollCard.tsx  # Live single-choice voting with animated percentages
+│   │   ├── CeoWisdomSection.tsx     # Leadership executive quotes & portrait banner
+│   │   ├── SesiKnowledgeHubBanner.tsx # SESI training, academy & SOP corporate banner
 │   │   ├── CommentDrawer.tsx        # Threaded discussion drawer with sticky input
-│   │   ├── CreateBulletinPage.tsx   # Bulletin Studio (Status, Photo, Official Announcement)
+│   │   ├── CreateBulletinPage.tsx   # Bulletin Studio with 4 SESB 1-tap quick templates & auto-compress meter
 │   │   ├── SearchDirectoryPage.tsx  # Employee directory with filter chips & instant search
 │   │   ├── ProfilePage.tsx          # Staff profile view & edit modal (Bangunan KWASA location)
+│   │   ├── ErrorBoundary.tsx        # Resilient React error boundary
 │   │   └── PwaInstallPrompt.tsx     # iOS 3-step guide & Android 1-click install banner
+│   ├── utils/
+│   │   └── imageCompressor.ts       # HTML5 Canvas client-side downscaling engine (~95% byte reduction)
 │   ├── hooks/
 │   │   └── useHorizontalScroll.ts   # Mouse wheel-to-horizontal-scroll hook for carousels
 │   ├── services/
-│   │   ├── bulletinService.ts       # Unified API service (Supabase with mock fallback)
+│   │   ├── bulletinService.ts       # Unified API service (Supabase with mock fallback & view tracking)
 │   │   ├── supabaseClient.ts        # Supabase client singleton & auth state
 │   │   ├── marketService.ts         # Bursa Malaysia (TNB 5347.KL) live intraday quote provider
 │   │   └── mockData.ts              # Authentic Sabah Electricity seed dataset

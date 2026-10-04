@@ -1,0 +1,148 @@
+.errorWrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--color-bg-app, #F5F7FA);
+  font-family: inherit;
+}
+
+.errorCard {
+  width: 100%;
+  max-width: 480px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: cardFadeIn 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.logoBadge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-main, #1E293B);
+  margin: 0;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted, #64748B);
+  margin: 0;
+  max-width: 380px;
+}
+
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.primaryBtn {
+  width: 100%;
+  min-height: 44px;
+  background: var(--color-primary, #0055A4);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 150ms ease-out, transform 120ms ease-out;
+}
+
+.primaryBtn:active {
+  transform: scale(0.98);
+}
+
+.secondaryBtn {
+  width: 100%;
+  min-height: 44px;
+  background: transparent;
+  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primaryBtn:hover {
+    background: #004485;
+  }
+  .secondaryBtn:hover {
+    background: #F1F5F9;
+    color: var(--color-text-main, #1E293B);
+  }
+}
+
+.devDetails {
+  width: 100%;
+  margin-top: 12px;
+  text-align: left;
+  border-top: 1px solid #E2E8F0;
+  padding-top: 12px;
+}
+
+.devSummary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94A3B8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.devPre {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #0F172A;
+  color: #F8FAFC;
+  font-size: 11px;
+  font-family: monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+}

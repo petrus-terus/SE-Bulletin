@@ -98,7 +98,14 @@ export const CommentDrawer: React.FC<Props> = ({
                   title={onAuthorClick ? `View ${comment.authorName}'s profile` : undefined}
                 >
                   {comment.avatarUrl ? (
-                    <img src={comment.avatarUrl} alt={comment.authorName} className={styles.avatar} />
+                    <img
+                      src={comment.avatarUrl}
+                      alt=""
+                      className={styles.avatar}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                      }}
+                    />
                   ) : (
                     <div className={styles.avatarInitials}>{comment.avatarInitials}</div>
                   )}
@@ -126,9 +133,12 @@ export const CommentDrawer: React.FC<Props> = ({
         {/* Sticky Input Bar at Bottom */}
         <form className={styles.inputBarContainer} onSubmit={handleSubmit}>
           <img
-            src={currentUser.avatarUrl}
-            alt={currentUser.name}
+            src={currentUser.avatarUrl || '/user_face.png'}
+            alt=""
             className={styles.userMiniAvatar}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+            }}
           />
           <div className={styles.inputFieldWrapper}>
             <input

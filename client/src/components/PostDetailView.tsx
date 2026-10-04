@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, Comment } from '../types/bulletin';
+import { InteractivePollCard } from './InteractivePollCard';
+import { formatCompactNumber } from '../utils/imageCompressor';
 import styles from './PostDetailView.module.css';
 
 interface Props {
@@ -12,9 +14,12 @@ interface Props {
   onLikeToggle: (postId: string) => void;
   onBookmarkToggle: (postId: string) => void;
   onDeletePost?: (postId: string) => void;
+  onEditPost?: (post: Post) => void;
   onImageClick: (imageUrl: string, title?: string, location?: string | null) => void;
   onAddComment: (postId: string, text: string) => void;
   onAuthorClick?: (author: Post['author']) => void;
+  onVotePoll?: (postId: string, optionId: string) => void;
+  onReshareClick?: (post: Post) => void;
 }
 
 export const PostDetailView: React.FC<Props> = ({
@@ -26,9 +31,12 @@ export const PostDetailView: React.FC<Props> = ({
   onLikeToggle,
   onBookmarkToggle,
   onDeletePost,
+  onEditPost,
   onImageClick,
   onAddComment,
   onAuthorClick,
+  onVotePoll,
+  onReshareClick,
 }) => {
   const [commentInput, setCommentInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -150,6 +158,20 @@ export const PostDetailView: React.FC<Props> = ({
             </span>
           </button>
 
+          {canDelete && onEditPost && (
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={() => onEditPost(post)}
+              title="Edit this bulletin"
+              aria-label="Edit post"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#0055A4' }}>
+                edit
+              </span>
+            </button>
+          )}
+
           {canDelete && (
             <button
               type="button"
@@ -178,9 +200,12 @@ export const PostDetailView: React.FC<Props> = ({
           >
             <div className={styles.avatarWrap}>
               <img
-                src={post.author.avatarUrl}
-                alt={post.author.name}
+                src={post.author.avatarUrl || '/user_face.png'}
+                alt=""
                 className={styles.authorAvatar}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                }}
               />
               {post.author.isVerified && (
                 <span className={styles.verifiedCheck} title="Verified Sabah Electricity Officer">
@@ -210,6 +235,11 @@ export const PostDetailView: React.FC<Props> = ({
                 <span>{post.author.designation}</span>
                 <span>•</span>
                 <span className="tabular-nums font-mono">{post.timestamp}</span>
+                {post.isEdited && (
+                  <span style={{ fontStyle: 'italic', color: 'var(--color-text-muted, #64748B)', fontSize: 'var(--font-size-xs, 12px)' }}>
+                    {' '}• Edited
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -220,6 +250,105 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Post Text Body */}
         <div className={styles.postBody}>{renderFormattedContent(post.content)}</div>
+
+        {/* Quoted Post Embedded Card (Twitter/X Style) */}
+        {post.quotedPost && (
+          <div className={styles.quotedCard}>
+            <div className={styles.quotedCardHeader}>
+              <img
+                src={post.quotedPost.author.avatarUrl || '/user_face.png'}
+                alt=""
+                className={styles.quotedCardAvatar}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                }}
+              />
+              <span className={styles.quotedCardAuthor}>{post.quotedPost.author.name}</span>
+              <span className={styles.quotedCardMeta}>• {post.quotedPost.author.department}</span>
+              <span className={`tabular-nums font-mono ${styles.quotedCardMeta}`}>
+                • {post.quotedPost.timestamp}
+              </span>
+            </div>
+            <div className={styles.quotedCardContent}>
+              {post.quotedPost.title ? <strong>{post.quotedPost.title} — </strong> : null}
+              {post.quotedPost.content}
+            </div>
+            {(post.quotedPost.imageUrl ||
+              (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0])) && (
+              <div className={styles.quotedCardMedia}>
+                <img
+                  src={
+                    (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0]) ||
+                    post.quotedPost.imageUrl!
+                  }
+                  alt=""
+                  className={styles.quotedCardImg}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Interactive Poll (if attached) */}
+        {post.poll && (
+          <div style={{ marginBottom: '16px' }}>
+            <InteractivePollCard
+              poll={post.poll}
+              onVote={(optionId) => onVotePoll?.(post.id, optionId)}
+            />
+          </div>
+        )}
+
+        {/* Attached Interactive PDF Document Card */}
+        {post.pdfUrl && (
+          <div
+            className={styles.pdfCard}
+            onClick={() => window.open(post.pdfUrl, '_blank', 'noopener,noreferrer')}
+            title={`Click to view/download ${post.pdfName || 'Document.pdf'}`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                window.open(post.pdfUrl, '_blank', 'noopener,noreferrer');
+              }
+            }}
+          >
+            <div className={styles.pdfCardLeft}>
+              <div className={styles.pdfBadgeWrap}>
+                <span className={`material-symbols-outlined ${styles.pdfBadgeIcon}`}>
+                  picture_as_pdf
+                </span>
+              </div>
+              <div className={styles.pdfCardInfo}>
+                <span className={styles.pdfCardFileName}>
+                  {post.pdfName || 'Official-Bulletin-Document.pdf'}
+                </span>
+                <span className={`font-mono tabular-nums ${styles.pdfCardMeta}`}>
+                  {post.pdfSize ? `${post.pdfSize} • ` : ''}PDF Document
+                </span>
+              </div>
+            </div>
+
+            <a
+              href={post.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={post.pdfName || 'Document.pdf'}
+              className={styles.pdfCardActionBtn}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Open or download ${post.pdfName || 'document'}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                open_in_new
+              </span>
+              <span>View PDF</span>
+            </a>
+          </div>
+        )}
 
         {/* Uncropped Full Photo (Tap to zoom) */}
         {post.imageUrl && (
@@ -238,8 +367,11 @@ export const PostDetailView: React.FC<Props> = ({
           >
             <img
               src={post.imageUrl}
-              alt={post.title}
+              alt=""
               className={styles.fullImage}
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
             />
 
             <div className={styles.zoomBadge}>
@@ -288,6 +420,67 @@ export const PostDetailView: React.FC<Props> = ({
                 {localComments.length + post.commentsCount}
               </span>
             </span>
+
+            {/* Reshare / Quote Button */}
+            <button
+              type="button"
+              className={`${styles.engagementBtn} ${post.isReshared ? styles.reshareActive : ''}`}
+              onClick={() => onReshareClick?.(post)}
+              aria-label={post.isReshared ? 'Undo reshare' : 'Reshare post'}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                repeat
+              </span>
+              <span className="tabular-nums font-mono font-semibold">
+                {post.resharesCount || 0}
+              </span>
+            </button>
+
+            {/* View Count Metric */}
+            <span
+              className={styles.statItem}
+              title={`${(post.viewsCount || 1).toLocaleString()} Views`}
+              aria-label={`${post.viewsCount || 1} views`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                visibility
+              </span>
+              <span className="tabular-nums font-mono">
+                {formatCompactNumber(post.viewsCount || 1)}
+              </span>
+            </span>
+          </div>
+
+          <div className={styles.engagementRight}>
+            {/* Bookmark Toggle */}
+            <button
+              type="button"
+              className={`${styles.engagementBtn} ${post.isBookmarked ? styles.bookmarkActive : ''}`}
+              onClick={() => onBookmarkToggle(post.id)}
+              aria-label={post.isBookmarked ? 'Remove bookmark' : 'Bookmark post'}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  fontSize: '20px',
+                  fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
+                }}
+              >
+                bookmark
+              </span>
+            </button>
+
+            {/* Share / Copy Link */}
+            <button
+              type="button"
+              className={styles.engagementBtn}
+              onClick={handleCopyLink}
+              aria-label="Copy link to bulletin"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                {linkCopied ? 'check' : 'share'}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -311,8 +504,11 @@ export const PostDetailView: React.FC<Props> = ({
                   {comment.avatarUrl ? (
                     <img
                       src={comment.avatarUrl}
-                      alt={comment.authorName}
+                      alt=""
                       className={styles.commentAvatar}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                      }}
                     />
                   ) : (
                     <div className={styles.avatarFallback}>

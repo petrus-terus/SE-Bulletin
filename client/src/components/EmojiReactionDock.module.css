@@ -1,0 +1,126 @@
+.reactionDock {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: #FFFFFF;
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  animation: dockFadeSlide 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: bottom left;
+  user-select: none;
+}
+
+@keyframes dockFadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactionDock {
+    animation: none !important;
+  }
+}
+
+.emojiBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease-out;
+}
+
+.emojiGlyph {
+  font-size: 22px;
+  line-height: 1;
+  display: inline-block;
+  transform-origin: center;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .emojiBtn:hover {
+    background-color: #F1F5F9;
+    transform: translateY(-2px) scale(1.22);
+  }
+}
+
+.emojiBtn:active {
+  transform: scale(0.92);
+}
+
+/* Selected indicator dot */
+.selectedDot {
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-primary, #0055A4);
+}
+
+/* Subtle micro-animations for each emoji type */
+.emojiLaugh:hover .emojiGlyph {
+  animation: laughKeyframes 500ms ease-in-out infinite alternate;
+}
+
+.emojiFire:hover .emojiGlyph {
+  animation: fireKeyframes 400ms ease-in-out infinite alternate;
+}
+
+.emojiClap:hover .emojiGlyph {
+  animation: clapKeyframes 450ms ease-in-out infinite alternate;
+}
+
+.emojiCry:hover .emojiGlyph {
+  animation: cryKeyframes 550ms ease-in-out infinite alternate;
+}
+
+@keyframes laughKeyframes {
+  0% { transform: rotate(-6deg) scale(1.1); }
+  100% { transform: rotate(6deg) scale(1.25); }
+}
+
+@keyframes fireKeyframes {
+  0% { transform: scale(1.1); }
+  100% { transform: scale(1.28) translateY(-2px); }
+}
+
+@keyframes clapKeyframes {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg) scale(1.2); }
+}
+
+@keyframes cryKeyframes {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(2px) scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emojiLaugh:hover .emojiGlyph,
+  .emojiFire:hover .emojiGlyph,
+  .emojiClap:hover .emojiGlyph,
+  .emojiCry:hover .emojiGlyph {
+    animation: none !important;
+  }
+}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { Employee, Post } from '../types/bulletin';
+import type { Employee, EmojiReactionType, Post } from '../types/bulletin';
 import { CURRENT_USER } from '../services/mockData';
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import { AchievementsDeck } from './AchievementsDeck';
 import { FeedCard } from './FeedCard';
+import { compressImageFile } from '../utils/imageCompressor';
 import styles from './ProfilePage.module.css';
 
 interface Props {
@@ -15,12 +16,19 @@ interface Props {
   onLikeToggle: (id: string) => void;
   onOpenComments: (post: Post) => void;
   onDeletePost?: (postId: string) => void;
+  onEditPost?: (post: Post) => void;
   onOpenCreate: () => void;
   onPostClick?: (post: Post) => void;
   onImageClick?: (url: string, title?: string) => void;
   onCallExt?: (employee: Employee) => void;
   onLogout?: () => void;
   onUpdateProfile?: (updated: Employee) => void;
+  onBookmarkToggle?: (postId: string) => void;
+  onVotePoll?: (postId: string, optionId: string) => void;
+  onReactionSelect?: (postId: string, reaction: EmojiReactionType) => void;
+  onReshareToggle?: (postId: string) => void;
+  onQuotePost?: (quotedPost: Post, commentText: string) => void;
+  onSharePost?: (post: Post) => void;
 }
 
 // Curated authentic corporate defaults
@@ -46,11 +54,18 @@ export const ProfilePage: React.FC<Props> = ({
   onLikeToggle,
   onOpenComments,
   onDeletePost,
+  onEditPost,
   onOpenCreate,
   onPostClick,
   onImageClick,
   onCallExt,
   onUpdateProfile,
+  onBookmarkToggle,
+  onVotePoll,
+  onReactionSelect,
+  onReshareToggle,
+  onQuotePost,
+  onSharePost,
 }) => {
   const loggedInUser = currentUser || CURRENT_USER;
   const activeEmployee = viewedEmployee || loggedInUser;
@@ -92,38 +107,64 @@ export const ProfilePage: React.FC<Props> = ({
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle direct device file upload (FileReader to Data URL)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
+  // Handle direct device file upload (with automatic client-side compression to avoid QuotaExceededError)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (!result) return;
+    try {
+      const options =
+        mode === 'avatar'
+          ? { maxWidth: 512, maxHeight: 512, quality: 0.85 }
+          : { maxWidth: 1200, maxHeight: 600, quality: 0.82 };
+
+      const result = await compressImageFile(file, options);
+      const optimizedUrl = result.dataUrl;
 
       if (mode === 'avatar') {
-        const updated = { ...profileData, avatarUrl: result };
+        const updated = { ...profileData, avatarUrl: optimizedUrl };
         setProfileData(updated);
-        setTempAvatarUrl(result);
+        setTempAvatarUrl(optimizedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
       } else {
-        const updated = { ...profileData, coverUrl: result };
+        const updated = { ...profileData, coverUrl: optimizedUrl };
         setProfileData(updated);
-        setTempCoverUrl(result);
+        setTempCoverUrl(optimizedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
       }
-    };
-    reader.readAsDataURL(file);
-    // Reset target value so selecting the same photo triggers change
-    e.target.value = '';
+    } catch (err) {
+      console.warn('[ProfilePage] Compression failed, using fallback reader:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (!result) return;
+
+        if (mode === 'avatar') {
+          const updated = { ...profileData, avatarUrl: result };
+          setProfileData(updated);
+          setTempAvatarUrl(result);
+          if (onUpdateProfile) onUpdateProfile(updated);
+        } else {
+          const updated = { ...profileData, coverUrl: result };
+          setProfileData(updated);
+          setTempCoverUrl(result);
+          if (onUpdateProfile) onUpdateProfile(updated);
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      // Reset target value so selecting the same photo triggers change
+      e.target.value = '';
+    }
   };
 
-  // Filter posts authored by active employee
+  // Filter posts authored or reshared by active employee (like Twitter / X profile timeline)
   const userPosts = posts.filter(
     (p) =>
       (p.author?.id && activeEmployee.id && p.author.id === activeEmployee.id) ||
-      (p.author?.name || '').toLowerCase().trim() === activeEmployee.name.toLowerCase().trim()
+      (p.author?.name || '').toLowerCase().trim() === activeEmployee.name.toLowerCase().trim() ||
+      (p.resharedBy?.id && activeEmployee.id && p.resharedBy.id === activeEmployee.id) ||
+      (p.isReshared && isOwnProfile)
   );
 
   // Total reactions on user's posts
@@ -611,11 +652,18 @@ export const ProfilePage: React.FC<Props> = ({
                 currentUserId={loggedInUser.id}
                 currentUserName={loggedInUser.name}
                 currentUserRole={loggedInUser.role}
+                currentUserAvatar={loggedInUser.avatarUrl}
                 onLikeToggle={onLikeToggle}
                 onCommentClick={onOpenComments}
-                onBookmarkToggle={() => {}}
+                onBookmarkToggle={onBookmarkToggle || (() => {})}
                 onDeletePost={onDeletePost}
+                onEditPost={onEditPost}
                 onPostClick={onPostClick}
+                onVotePoll={onVotePoll}
+                onReactionSelect={onReactionSelect}
+                onReshareToggle={onReshareToggle}
+                onQuotePost={onQuotePost}
+                onSharePost={onSharePost}
               />
             ))}
           </div>

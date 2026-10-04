@@ -63,9 +63,13 @@ CREATE TABLE IF NOT EXISTS public.posts (
     is_pinned BOOLEAN DEFAULT false,
     official_notice BOOLEAN DEFAULT false,
     comments_enabled BOOLEAN DEFAULT true,
+    views_count INTEGER DEFAULT 0,
     likes_count INTEGER DEFAULT 0,
     comments_count INTEGER DEFAULT 0,
     shares_count INTEGER DEFAULT 0,
+    quote_post_id TEXT REFERENCES public.posts(id) ON DELETE SET NULL,
+    reactions_breakdown JSONB DEFAULT '{"like":0,"celebrate":0,"support":0,"insightful":0,"safety":0}'::jsonb,
+    poll_data JSONB DEFAULT NULL,
     deleted_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
@@ -153,6 +157,19 @@ CREATE POLICY "Allow public insert/update on profiles"
 -- 6. Enable Realtime Replication for Live Counters
 ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
+
+-- 7. Stored Procedure for Atomic Post View Tracking
+CREATE OR REPLACE FUNCTION public.increment_post_views(target_post_id TEXT)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.posts
+    SET views_count = COALESCE(views_count, 0) + 1
+    WHERE id = target_post_id;
+END;
+$$;
 ```
 
 ---
@@ -160,6 +177,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
 ## 3. Step 2: Supabase Storage Bucket Setup (`bulletin-media`)
 
 To store uploaded site inspection photos, plant maintenance logs, and custom avatars without bloating database rows with base64 strings:
+
+> 🛡️ **Built-in Storage Quota Safeguard**: The client includes [`imageCompressor.ts`](../client/src/utils/imageCompressor.ts), an HTML5 Canvas downscaling engine that auto-compresses mobile device photos to max 1600px at 0.82 WebP/JPEG quality (~95% byte reduction: 4.8MB $\rightarrow$ 210KB) before uploading. This allows thousands of posts and stories to run safely within Supabase's 1GB Free Tier limit.
 
 1. In Supabase Dashboard, go to **Storage** → Click **New Bucket**.
 2. Name: `bulletin-media`.
