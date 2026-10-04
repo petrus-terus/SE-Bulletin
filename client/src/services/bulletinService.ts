@@ -191,6 +191,11 @@ class BulletinService {
             comments_enabled: newPost.commentsEnabled,
             likes_count: 0,
             comments_count: 0,
+            poll_data: newPost.poll || null,
+            pdf_url: newPost.pdfUrl || null,
+            pdf_name: newPost.pdfName || null,
+            pdf_size: newPost.pdfSize || null,
+            quote_post_id: newPost.quotedPost ? newPost.quotedPost.id : null,
           },
         ]);
 
@@ -235,6 +240,32 @@ class BulletinService {
       }));
     } catch {
       return INITIAL_STORIES;
+    }
+  }
+
+  /**
+   * Persist a new 24h story to Supabase
+   */
+  async createStory(story: Story): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('stories').insert([
+          {
+            id: story.id,
+            department_id: story.departmentId,
+            department_name: story.departmentName,
+            author_name: story.authorName,
+            author_avatar: story.authorAvatar || '/user_face.png',
+            image_url: story.imageUrl,
+            caption: story.caption || '',
+          },
+        ]);
+        if (error) {
+          console.warn('[BulletinService] createStory warning:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BulletinService] Failed to sync story to Supabase:', err);
+      }
     }
   }
 
@@ -442,6 +473,12 @@ class BulletinService {
         if (updates.departmentName !== undefined) updatePayload.department = updates.departmentName;
         if (updates.departmentColor !== undefined) updatePayload.department_color = updates.departmentColor;
         if (updates.officialNotice !== undefined) updatePayload.official_notice = updates.officialNotice;
+        if (updates.isEdited !== undefined) updatePayload.is_edited = updates.isEdited;
+        if (updates.editedAt !== undefined) updatePayload.edited_at = updates.editedAt;
+        if (updates.poll !== undefined) updatePayload.poll_data = updates.poll;
+        if (updates.pdfUrl !== undefined) updatePayload.pdf_url = updates.pdfUrl;
+        if (updates.pdfName !== undefined) updatePayload.pdf_name = updates.pdfName;
+        if (updates.pdfSize !== undefined) updatePayload.pdf_size = updates.pdfSize;
 
         const { error } = await supabase.from('posts').update(updatePayload).eq('id', postId);
         if (error) {

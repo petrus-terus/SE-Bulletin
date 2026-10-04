@@ -671,12 +671,15 @@ export function App() {
       );
     }
 
+    await bulletinService.updatePost(postId, {
+      ...updatedData,
+      isEdited: true,
+      editedAt: new Date().toISOString(),
+    });
     setToast({
       message: 'Bulletin updated successfully',
       icon: 'check_circle',
     });
-
-    await bulletinService.updatePost(postId, updatedData);
     setEditingPost(null);
   };
 
@@ -1179,6 +1182,7 @@ export function App() {
           onClose={() => setIsCreateStoryOpen(false)}
           onSubmit={(newStory) => {
             setStories((prev) => [newStory, ...prev]);
+            bulletinService.createStory(newStory);
             setToast({
               message: '24h Story shared successfully!',
               icon: 'schedule',
