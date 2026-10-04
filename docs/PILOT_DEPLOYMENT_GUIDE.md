@@ -258,42 +258,62 @@ To store uploaded site inspection photos, plant maintenance logs, and custom ava
 > 🛡️ **Built-in Storage Quota Safeguard**: The client includes [`imageCompressor.ts`](../client/src/utils/imageCompressor.ts), an HTML5 Canvas downscaling engine that auto-compresses mobile device photos to max 1600px at 0.82 WebP/JPEG quality (~95% byte reduction: 4.8MB $\rightarrow$ 210KB) before uploading. This allows thousands of posts and stories to run safely within Supabase's 1GB Free Tier limit.
 
 1. In Supabase Dashboard, go to **Storage** → Click **New Bucket**.
-2. Name: `bulletin-media`.
-3. Toggle **Public bucket** to `ON` (enables staff to view images without authentication tokens).
-4. Save the bucket.
-5. In **Configuration > Policies**, add a policy for `bulletin-media`:
-   - Name: `Public Access and Uploads`
-   - Allowed operations: `SELECT` (Read) and `INSERT` (Upload).
-   - Target roles: `anon`, `authenticated`.
+2. Name: `bulletin-media` (must be exact).
+3. Toggle **Public bucket** to `ON`.
+4. Click **Save bucket**.
+5. Run the following SQL script in your **Supabase SQL Editor** to enable public uploads and reads:
+
+```sql
+-- Allow public uploads into bulletin-media bucket
+DROP POLICY IF EXISTS "Allow public uploads to bulletin-media" ON storage.objects;
+CREATE POLICY "Allow public uploads to bulletin-media"
+ON storage.objects FOR INSERT
+TO anon, authenticated
+WITH CHECK (bucket_id = 'bulletin-media');
+
+-- Allow public reads from bulletin-media bucket
+DROP POLICY IF EXISTS "Allow public read from bulletin-media" ON storage.objects;
+CREATE POLICY "Allow public read from bulletin-media"
+ON storage.objects FOR SELECT
+TO anon, authenticated
+USING (bucket_id = 'bulletin-media');
+```
 
 ---
 
-## 4. Step 3: Cloudflare Pages Deployment Guide
+## 4. Step 3: Cloudflare Workers & Static Assets Deployment Guide
 
-Deploying the client repository to Cloudflare Pages:
+Deploying the client repository to Cloudflare:
 
-1. Push your latest code to your Git provider (GitHub / GitLab).
+1. Push your latest code to your Git repository (`main` branch).
 2. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/) → Navigate to **Workers & Pages**.
-3. Click **Create application** → **Pages** → **Connect to Git**.
-4. Select the repository: `SE-Bulletin` (or your repository name).
-5. **Set Build Configuration**:
-   - **Framework Preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-   - **Root directory**: `client`
+3. Click **Create application** → **Connect to Git**.
+4. Select the repository: `petrus-terus/SE-Bulletin`.
+5. **Set Configuration**:
+   - **Project name**: `se-bulletin`
+   - **Build command**: `cd client && npm install && npm run build`
+   - **Deploy command**: `npx wrangler deploy` (default)
+   - **Preview command**: `npx wrangler preview` (default)
 6. **Set Environment Variables**:
-   Under **Environment variables (advanced)**, add:
-   - `VITE_SUPABASE_URL`: `https://your-project-id.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY`: `eyJhbGciOi...` (your public anon key from Supabase Dashboard > Project Settings > API)
-7. Click **Save and Deploy**.
+   Under **Advanced settings** (or Environment variables), add:
+   - `VITE_SUPABASE_URL`: `https://xxqrrqyncsxmhplcomns.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY`: `sb_publishable_...` (your public anon key)
+7. Click **Deploy**.
 
 ### SPA Routing & PWA Verification
-- Cloudflare Pages will automatically read [`client/public/_redirects`](../client/public/_redirects):
-  ```text
-  /*    /index.html   200
+- Cloudflare uses [`wrangler.jsonc`](../wrangler.jsonc) with native Single Page Application routing:
+  ```jsonc
+  {
+    "name": "se-bulletin",
+    "compatibility_date": "2024-11-01",
+    "assets": {
+      "directory": "./client/dist",
+      "not_found_handling": "single-page-application"
+    }
+  }
   ```
-  This guarantees direct page reloads (e.g. `/profile` or `/detail`) do not produce 404 errors.
-- Automatic HTTPS will activate the Service Worker and the **"Install SE Bulletin"** mobile install prompt.
+  This natively routes direct page reloads and deep links to `index.html` without infinite redirect loops.
+- Automatic HTTPS activates the Service Worker and the **"Install SE Bulletin"** mobile install prompt.
 
 ---
 
