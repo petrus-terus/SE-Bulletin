@@ -12,9 +12,9 @@ interface Props {
 export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  // Sign In state (Pre-filled with TEST_USER Admin credentials)
-  const [identifier, setIdentifier] = useState('TEST_USER');
-  const [password, setPassword] = useState('TestAdmin@2026');
+  // Sign In state (Defaults to clean empty inputs)
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -241,8 +241,6 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
             onClick={() => {
               setAuthMode('signin');
               setErrorMessage(null);
-              if (!identifier) setIdentifier('TEST_USER');
-              if (!password) setPassword('TestAdmin@2026');
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
@@ -383,6 +381,23 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
                 </>
               )}
             </button>
+
+            {/* Quick Demo Credentials Pill (for Pilot evaluators) */}
+            <div className={styles.demoFillContainer}>
+              <button
+                type="button"
+                className={styles.demoFillBtn}
+                onClick={() => {
+                  setIdentifier('TEST_USER');
+                  setPassword('TestAdmin@2026');
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  key
+                </span>
+                <span>Auto-fill Demo Account (TEST_USER)</span>
+              </button>
+            </div>
           </form>
         ) : (
           /* 2. SIGN UP FORM (Name, Email, Password - No ID Required) */

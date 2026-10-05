@@ -431,6 +431,42 @@
   transform: scale(0.98);
 }
 
+/* Demo Quick Fill Button */
+.demoFillContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.demoFillBtn {
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 8px;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.demoFillBtn:active {
+  transform: scale(0.98);
+  background: #F1F5F9;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .demoFillBtn:hover {
+    background: #F1F5F9;
+    color: #0055A4;
+    border-color: #93C5FD;
+  }
+}
+
 /* Footer Notice */
 .loginFooter {
   padding-top: 14px;
