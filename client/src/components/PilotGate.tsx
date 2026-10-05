@@ -74,7 +74,7 @@ export const PilotGate: React.FC<Props> = ({ onUnlock }) => {
           <span>Confidential Pilot Environment</span>
         </div>
 
-        <h1 className={styles.gateTitle}>Wisma SESB Pilot Access</h1>
+        <h1 className={styles.gateTitle}>SE-Bulletin Access</h1>
         <p className={styles.gateSubtitle}>
           This internal prototype is restricted to authorized Sabah Electricity staff. Please enter the pilot access passcode to proceed.
         </p>

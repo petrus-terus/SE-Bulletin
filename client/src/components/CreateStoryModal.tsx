@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { Employee, Story } from '../types/bulletin';
-import { compressImageFile } from '../utils/imageCompressor';
+import { bulletinService } from '../services/bulletinService';
 import styles from './CreateStoryModal.module.css';
 
 interface Props {
@@ -103,7 +103,7 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
   const [textStory, setTextStory] = useState('');
   const [selectedGradient, setSelectedGradient] = useState(SESB_GRADIENTS[0].gradient);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [compressedSize, setCompressedSize] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const captionInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,16 +113,13 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
 
     setIsCompressing(true);
     try {
-      const result = await compressImageFile(file, {
-        maxWidth: 1600,
-        maxHeight: 1600,
-        quality: 0.82,
-      });
-      setPhotoUrl(result.dataUrl);
-      setCompressedSize(`${result.compressedSizeFormatted} (-${result.savedPercentage}%)`);
+      const uploadedUrl = await bulletinService.uploadPhoto(file);
+      setPhotoUrl(uploadedUrl);
+      setUploadStatus('Cloud Ready');
     } catch (err) {
       console.warn('[CreateStoryModal] Compression error, using direct URL:', err);
       setPhotoUrl(URL.createObjectURL(file));
+      setUploadStatus('Offline Mode');
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -236,12 +233,12 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
               {photoUrl ? (
                 <>
                   <img src={photoUrl} alt="Story preview" className={styles.photoPreview} />
-                  {compressedSize && (
+                  {uploadStatus && (
                     <div className={styles.compressionBadge}>
                       <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
                         check_circle
                       </span>
-                      <span className="font-mono tabular-nums">{compressedSize}</span>
+                      <span className="font-mono tabular-nums">{uploadStatus}</span>
                     </div>
                   )}
 

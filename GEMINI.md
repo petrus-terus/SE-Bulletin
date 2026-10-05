@@ -110,6 +110,14 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
 - **Creation Flow Decoupling**: Keep 24-hour casual stories and formal corporate bulletins strictly separated. Casual status/dispatches belong in `CreateStoryModal.tsx` (fast 3-second WhatsApp/IG style), while formal department circulars belong in `CreateBulletinPage.tsx` with SESB quick templates.
 - **CSS Selector Class Parity & Avatar Dimensions**: Always ensure avatar image classes (e.g. `.authorAvatar`) have strict width, height (e.g. 40-44px), `flex-shrink: 0`, and `object-fit: cover` to prevent high-res corporate logos (up to 1200px) from blowing out mobile viewports.
 - **Supabase Row Level Security (RLS)**: Always verify that tables (`posts`, `comments`, `profiles`, `likes`) in Supabase have active RLS policies for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` so queries do not fail silently.
+- **Full-Lifecycle Cloud Sync & State Audit Protocol**:
+  Whenever creating, updating, or reviewing an interactive feature (bulletins, comments, stories, profiles, reactions, polls, bookmarks):
+  1. **Dual-Persistence Check**: Verify user actions invoke the remote database service (`bulletinService.*`) in addition to local React state so data survives page refresh and session switches.
+  2. **Detail / Sub-View State Parity**: Never isolate sub-view state (e.g. `PostDetailView`, `CommentDrawer`) with disconnected local arrays or preview-only slices. Bind sub-views to the reactive root thread (`commentsByPost`), and trigger cloud fetches (`bulletinService.getComments(...)`) whenever the sub-view opens.
+  3. **Realtime Payload Completeness**: In Supabase Realtime listeners (`INSERT`, `UPDATE`), verify that incoming payloads map all rich fields (`poll_data`, `pdf_url`, `pdf_name`, `reactions_breakdown`, `quote_post_id`, `views_count`, `reshares_count`), not just basic title/content.
+  4. **Initial Mount Fetch**: Verify every top-level feature state (`posts`, `stories`, `profiles`, `comments`) calls its corresponding `get*()` service in `useEffect(..., [])` on mount.
+  5. **Foreign Key Resolution**: In data mappers (e.g. `getPosts`), verify relational ID columns (e.g. `quote_post_id`) are resolved against cache/memory rather than expecting non-existent flat object columns.
+  6. **Counter Math Integrity**: Never add local state array lengths to server count fields (e.g. `localComments.length + post.commentsCount`) which causes double-counting. Always use the active collection length: `activeComments.length || post.commentsCount`.
 
 ---
 

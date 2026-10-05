@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import type { AppNotification, Comment, Employee, EmojiReactionType, Post, Story } from './types/bulletin';
+import type { AppNotification, Comment, CreatePostPayload, Employee, EmojiReactionType, Post, Story } from './types/bulletin';
 import { CURRENT_USER, DEPARTMENTS, INITIAL_POSTS, INITIAL_STORIES, getEmployeeByAuthor } from './services/mockData';
 import { bulletinService } from './services/bulletinService';
 import { getStoredNotifications, saveStoredNotifications } from './services/notificationService';
@@ -78,6 +78,33 @@ const ViewFallback = () => (
   </div>
 );
 
+const BOOKMARKED_STORAGE_KEY = 'sesb_bookmarked_ids';
+
+function getBookmarkedPostIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(BOOKMARKED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveBookmarkedPostId(postId: string, isSaved: boolean) {
+  try {
+    const ids = getBookmarkedPostIds();
+    if (isSaved) {
+      ids.add(postId);
+    } else {
+      ids.delete(postId);
+    }
+    localStorage.setItem(BOOKMARKED_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch (e) {
+    console.warn('[App] Failed to save bookmark ID:', e);
+  }
+}
+
 export function App() {
   const [currentUser, setCurrentUser] = useState<Employee>(() => {
     const saved = localStorage.getItem('sesb_user');
@@ -96,7 +123,13 @@ export function App() {
   const [isPilotUnlocked, setIsPilotUnlocked] = useState<boolean>(() => {
     return localStorage.getItem('sesb_pilot_unlocked') === 'true';
   });
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [posts, setPosts] = useState<Post[]>(() => {
+    const savedBookmarks = getBookmarkedPostIds();
+    return INITIAL_POSTS.map((p) => ({
+      ...p,
+      isBookmarked: savedBookmarks.has(p.id),
+    }));
+  });
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
     'post-101': [
       {
@@ -213,21 +246,58 @@ export function App() {
     });
   };
 
-  // 1. Initial Load from BulletinService / Supabase
+  // 1. Initial Load from BulletinService / Supabase (Posts & 24h Stories)
   useEffect(() => {
     bulletinService.getPosts().then((fetched) => {
       if (fetched && fetched.length > 0) {
-        setPosts(fetched);
+        const savedBookmarks = getBookmarkedPostIds();
+        setPosts(
+          fetched.map((p) => ({
+            ...p,
+            isBookmarked: savedBookmarks.has(p.id),
+          }))
+        );
+      }
+    });
+
+    bulletinService.getStories().then((cloudStories) => {
+      if (cloudStories && cloudStories.length > 0) {
+        setStories(cloudStories);
       }
     });
   }, []);
 
-  // 2. Real-time Cloud Synchronization (Posts, Likes, and Comments)
+  // 2. Real-time Cloud Synchronization (Posts, Stories, Likes, and Comments)
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
     const channel = supabase
       .channel('realtime:bulletin-live')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'stories' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row = payload.new as any;
+          let hoursRemaining = 24;
+          if (row.created_at) {
+            const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
+            hoursRemaining = Math.max(1, Math.round(24 - elapsed));
+          }
+          const liveStory: Story = {
+            id: row.id,
+            departmentId: row.department_id,
+            departmentName: row.department_name,
+            authorName: row.author_name,
+            authorAvatar: row.author_avatar || '/user_face.png',
+            hasUnread: true,
+            imageUrl: row.image_url,
+            caption: row.caption || '',
+            hoursRemaining,
+          };
+          setStories((prev) => [liveStory, ...prev.filter((s) => s.id !== liveStory.id)]);
+        }
+      )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
@@ -255,12 +325,20 @@ export function App() {
             likesCount: Number(row.likes_count || 0),
             commentsCount: Number(row.comments_count || 0),
             sharesCount: 0,
+            viewsCount: Number(row.views_count || 1),
+            resharesCount: Number(row.reshares_count || 0),
             isLiked: false,
             isBookmarked: false,
             departmentId: row.department_id || 'dept-ops',
             departmentName: row.department,
             departmentColor: row.department_color || '#0055A4',
             officialNotice: Boolean(row.official_notice),
+            poll: row.poll_data || row.poll || undefined,
+            pdfUrl: row.pdf_url || undefined,
+            pdfName: row.pdf_name || undefined,
+            pdfSize: row.pdf_size || undefined,
+            reactions: row.reactions_breakdown || undefined,
+            quotedPost: row.quote_post_id ? posts.find((p) => p.id === row.quote_post_id) : undefined,
           };
 
           setPosts((prev) => [livePost, ...prev.filter((p) => p.id !== livePost.id)]);
@@ -337,6 +415,7 @@ export function App() {
                     ? Boolean(row.official_notice)
                     : post.officialNotice,
                 poll: row.poll_data || row.poll || post.poll,
+                reactions: row.reactions_breakdown !== undefined ? row.reactions_breakdown : post.reactions,
                 pdfUrl: row.pdf_url !== undefined ? row.pdf_url : post.pdfUrl,
                 pdfName: row.pdf_name !== undefined ? row.pdf_name : post.pdfName,
                 pdfSize: row.pdf_size !== undefined ? row.pdf_size : post.pdfSize,
@@ -367,6 +446,7 @@ export function App() {
               likesCount: Number(row.likes_count ?? prev.likesCount),
               commentsCount: Number(row.comments_count ?? prev.commentsCount),
               poll: row.poll_data || row.poll || prev.poll,
+              reactions: row.reactions_breakdown !== undefined ? row.reactions_breakdown : prev.reactions,
               isEdited: row.is_edited !== undefined ? Boolean(row.is_edited) : prev.isEdited,
               editedAt: row.edited_at || prev.editedAt,
             };
@@ -523,24 +603,24 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Fetch cloud comments when CommentDrawer opens
-  const activeCommentPostId = activeCommentPost?.id;
+  // Fetch cloud comments when CommentDrawer or PostDetailView opens
+  const activeDetailOrCommentPostId = activeCommentPost?.id || selectedPostForDetail?.id;
   useEffect(() => {
-    if (!activeCommentPostId) return;
-    bulletinService.getComments(activeCommentPostId).then((cloudComments) => {
+    if (!activeDetailOrCommentPostId) return;
+    bulletinService.getComments(activeDetailOrCommentPostId).then((cloudComments) => {
       if (cloudComments && cloudComments.length > 0) {
         setCommentsByPost((prev) => {
-          const existing = prev[activeCommentPostId] || [];
+          const existing = prev[activeDetailOrCommentPostId] || [];
           const existingIds = new Set(existing.map((c) => c.id));
           const merged = [...existing, ...cloudComments.filter((c) => !existingIds.has(c.id))];
           return {
             ...prev,
-            [activeCommentPostId]: merged,
+            [activeDetailOrCommentPostId]: merged,
           };
         });
       }
     });
-  }, [activeCommentPostId]);
+  }, [activeDetailOrCommentPostId]);
 
   // Calculate post counts per official Bahagian
   const postCounts: Record<string, number> = {
@@ -584,12 +664,13 @@ export function App() {
     bulletinService.toggleLike(postId, nextCount);
   };
 
-  // Bookmark Toggle
+  // Bookmark Toggle with local persistence
   const handleBookmarkToggle = (postId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
           const nextSaved = !post.isBookmarked;
+          saveBookmarkedPostId(postId, nextSaved);
           setToast({
             message: nextSaved ? 'Saved to bookmarks' : 'Removed from bookmarks',
             icon: 'bookmark',
@@ -601,7 +682,7 @@ export function App() {
     );
   };
 
-  // Poll Vote Handler (Interactive Vote & Deselect)
+  // Poll Vote Handler (Interactive Vote & Deselect with Supabase Cloud Sync)
   const handleVotePoll = (postId: string, optionId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
@@ -623,14 +704,18 @@ export function App() {
               icon: 'undo',
             });
 
+            const updatedPoll = {
+              ...post.poll,
+              options: updatedOptions,
+              totalVotes,
+              userVotedOptionId: undefined,
+            };
+
+            bulletinService.updatePost(postId, { poll: updatedPoll });
+
             return {
               ...post,
-              poll: {
-                ...post.poll,
-                options: updatedOptions,
-                totalVotes,
-                userVotedOptionId: undefined,
-              },
+              poll: updatedPoll,
             };
           }
 
@@ -653,14 +738,18 @@ export function App() {
             icon: 'how_to_vote',
           });
 
+          const updatedPoll = {
+            ...post.poll,
+            options: updatedOptions,
+            totalVotes,
+            userVotedOptionId: optionId,
+          };
+
+          bulletinService.updatePost(postId, { poll: updatedPoll });
+
           return {
             ...post,
-            poll: {
-              ...post.poll,
-              options: updatedOptions,
-              totalVotes,
-              userVotedOptionId: optionId,
-            },
+            poll: updatedPoll,
           };
         }
         return post;
@@ -668,7 +757,7 @@ export function App() {
     );
   };
 
-  // Emoji Reaction Handler (😂, 🔥, 👏, 😭)
+  // Emoji Reaction Handler (😂, 🔥, 👏, 😭) with Supabase Cloud Sync
   const handleReactionSelect = (postId: string, reaction: EmojiReactionType) => {
     setPosts((prev) =>
       prev.map((post) => {
@@ -683,6 +772,11 @@ export function App() {
           updatedReactions[reaction] = (updatedReactions[reaction] || 0) + 1;
 
           const nextLikesCount = !post.isLiked ? post.likesCount + 1 : post.likesCount;
+
+          bulletinService.updatePost(postId, {
+            reactions: updatedReactions,
+            likesCount: nextLikesCount,
+          });
 
           const emojiMap: Record<EmojiReactionType, string> = {
             laugh: '😂',
@@ -709,7 +803,7 @@ export function App() {
     );
   };
 
-  // Reshare / Repost Toggle Handler (Twitter Style)
+  // Reshare / Repost Toggle Handler (Twitter Style) with Supabase Cloud Sync
   const handleReshareToggle = (postId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
@@ -718,6 +812,10 @@ export function App() {
           const nextCount = nextReshared
             ? (post.resharesCount || 0) + 1
             : Math.max(0, (post.resharesCount || 0) - 1);
+
+          bulletinService.updatePost(postId, {
+            resharesCount: nextCount,
+          });
 
           setToast({
             message: nextReshared ? 'Reposted to your profile & feed' : 'Removed repost',
@@ -743,44 +841,29 @@ export function App() {
     );
   };
 
-  // Quote Post Handler (Twitter Style)
-  const handleQuotePost = (quotedPost: Post, commentText: string) => {
-    const newQuotePost: Post = {
-      id: `post-quote-${Date.now()}`,
-      author: {
-        id: currentUser.id,
-        name: currentUser.name,
-        designation: currentUser.designation,
-        department: currentUser.department,
-        avatarUrl: currentUser.avatarUrl,
-        isVerified: true,
-      },
-      timestamp: 'Just now',
+  // Quote Post Handler (Twitter Style) with Supabase Cloud Sync
+  const handleQuotePost = async (quotedPost: Post, commentText: string) => {
+    const payload: CreatePostPayload = {
       title: '',
       content: commentText,
+      department: currentUser.department,
+      departmentId: currentUser.adminDepartments?.[0] || 'dept-ops',
       quotedPost: quotedPost,
-      location: currentUser.officeLocation || 'Bangunan KWASA',
-      isPinned: false,
-      commentsEnabled: true,
-      likesCount: 0,
-      commentsCount: 0,
-      sharesCount: 0,
-      resharesCount: 0,
-      viewsCount: 1,
-      isLiked: false,
-      isBookmarked: false,
-      isReshared: false,
-      departmentId: currentUser.adminDepartments?.[0] || 'dept-id',
-      departmentName: currentUser.department,
-      departmentColor: '#003E7A',
     };
+
+    const newQuotePost = await bulletinService.createPost(payload, currentUser);
+    const updatedReshares = (quotedPost.resharesCount || 0) + 1;
 
     setPosts((prev) => [
       newQuotePost,
       ...prev.map((p) =>
-        p.id === quotedPost.id ? { ...p, resharesCount: (p.resharesCount || 0) + 1 } : p
+        p.id === quotedPost.id ? { ...p, resharesCount: updatedReshares } : p
       ),
     ]);
+
+    bulletinService.updatePost(quotedPost.id, {
+      resharesCount: updatedReshares,
+    });
 
     setToast({
       message: 'Quote bulletin published!',
@@ -918,10 +1001,11 @@ export function App() {
     setEditingPost(null);
   };
 
-  // Update Profile Handler with local persistence and live cascade across bulletins/comments
+  // Update Profile Handler with local persistence, Supabase sync, and live cascade across bulletins/comments
   const handleUpdateProfile = (updatedUser: Employee) => {
     setCurrentUser(updatedUser);
     localStorage.setItem('sesb_user', JSON.stringify(updatedUser));
+    bulletinService.saveProfile(updatedUser);
 
     // Cascade updated name, designation, department, and avatar to user's authored bulletins
     setPosts((prevPosts) =>
@@ -1069,7 +1153,8 @@ export function App() {
           <Suspense fallback={<ViewFallback />}>
             <PostDetailView
               post={selectedPostForDetail}
-            onBack={() => setSelectedPostForDetail(null)}
+              comments={commentsByPost[selectedPostForDetail.id] || []}
+              onBack={() => setSelectedPostForDetail(null)}
             onAuthorClick={handleViewAuthorProfile}
             onLikeToggle={(postId) => {
               handleLikeToggle(postId);

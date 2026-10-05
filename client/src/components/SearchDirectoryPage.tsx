@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import type { Department, Post } from '../types/bulletin';
+import React, { useState, useEffect } from 'react';
+import type { Department, Employee, Post } from '../types/bulletin';
 import { ALL_EMPLOYEES, getRegisteredEmployees } from '../services/mockData';
+import { bulletinService } from '../services/bulletinService';
 import { FeedCard } from './FeedCard';
 import { Toast } from './Toast';
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
@@ -79,10 +80,44 @@ export const SearchDirectoryPage: React.FC<Props> = ({
   const scopeChipsRef = useHorizontalScroll<HTMLDivElement>();
   const trendingTagsRef = useHorizontalScroll<HTMLDivElement>();
 
-  const effectiveQuery = (selectedTag || query).trim().toLowerCase();
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
 
-  // Load full active employee directory (TEST_USER, CEO, plus any newly registered staff)
-  const allStaff: EmployeeRecord[] = [...ALL_EMPLOYEES, ...getRegisteredEmployees()].map((emp) => ({
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const effectiveQuery = (selectedTag || debouncedQuery).trim().toLowerCase();
+
+  // Active employee directory (seeded with local cache, updated live from Supabase)
+  const [staffEmployees, setStaffEmployees] = useState<Employee[]>(() => [
+    ...ALL_EMPLOYEES,
+    ...getRegisteredEmployees(),
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+    bulletinService.getProfiles().then((profiles) => {
+      if (isMounted && profiles.length > 0) {
+        setStaffEmployees(profiles);
+      }
+    });
+
+    const unsubscribe = bulletinService.subscribeToProfiles((profiles) => {
+      if (isMounted && profiles.length > 0) {
+        setStaffEmployees(profiles);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const allStaff: EmployeeRecord[] = staffEmployees.map((emp) => ({
     id: emp.id,
     name: emp.name,
     designation: emp.designation,

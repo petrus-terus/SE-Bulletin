@@ -1,5 +1,5 @@
 import type { CreatePostPayload, Employee, Post, Story } from '../types/bulletin';
-import { INITIAL_POSTS, INITIAL_STORIES } from './mockData';
+import { ALL_EMPLOYEES, INITIAL_POSTS, INITIAL_STORIES, getRegisteredEmployees } from './mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { compressImageFile } from '../utils/imageCompressor';
 
@@ -152,8 +152,23 @@ class BulletinService {
         editedAt: row.edited_at || undefined,
       }));
 
-      const cloudIds = new Set(cloudPosts.map((p) => p.id));
-      const combined = [...cloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
+      // Build a lookup map of all available posts to resolve quote_post_id
+      const postLookup = new Map<string, Post>();
+      INITIAL_POSTS.forEach((p) => postLookup.set(p.id, p));
+      cloudPosts.forEach((p) => postLookup.set(p.id, p));
+
+      // Resolve quoted posts if quote_post_id was persisted
+      const resolvedCloudPosts = cloudPosts.map((p, idx) => {
+        const rawRow = data[idx];
+        const quoteId = rawRow?.quote_post_id;
+        if (quoteId && !p.quotedPost && postLookup.has(quoteId)) {
+          return { ...p, quotedPost: postLookup.get(quoteId) };
+        }
+        return p;
+      });
+
+      const cloudIds = new Set(resolvedCloudPosts.map((p) => p.id));
+      const combined = [...resolvedCloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
       const localEdits = getEditedPosts();
       const combinedWithEdits = combined.map((p) =>
         localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
@@ -272,16 +287,27 @@ class BulletinService {
         return INITIAL_STORIES;
       }
 
-      return data.map((row) => ({
-        id: row.id,
-        departmentId: row.department_id,
-        departmentName: row.department_name,
-        authorName: row.author_name,
-        hasUnread: true,
-        imageUrl: row.image_url,
-        caption: row.caption || '',
-        hoursRemaining: 24,
-      }));
+      const cloudStories: Story[] = data.map((row) => {
+        let hoursRemaining = 24;
+        if (row.created_at) {
+          const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
+          hoursRemaining = Math.max(1, Math.round(24 - elapsed));
+        }
+        return {
+          id: row.id,
+          departmentId: row.department_id,
+          departmentName: row.department_name,
+          authorName: row.author_name,
+          authorAvatar: row.author_avatar || '/user_face.png',
+          hasUnread: true,
+          imageUrl: row.image_url,
+          caption: row.caption || '',
+          hoursRemaining,
+        };
+      });
+
+      const cloudIds = new Set(cloudStories.map((s) => s.id));
+      return [...cloudStories, ...INITIAL_STORIES.filter((s) => !cloudIds.has(s.id))];
     } catch {
       return INITIAL_STORIES;
     }
@@ -349,11 +375,20 @@ class BulletinService {
           if (data?.publicUrl) return data.publicUrl;
         }
       } catch (err) {
-        console.warn('[BulletinService] Storage upload failed, using object URL:', err);
+        console.warn('[BulletinService] Storage upload failed, using DataURL fallback:', err);
       }
     }
 
-    return URL.createObjectURL(uploadTarget);
+    try {
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(uploadTarget);
+      });
+      return dataUrl;
+    } catch {
+      return URL.createObjectURL(uploadTarget);
+    }
   }
 
   /**
@@ -553,6 +588,9 @@ class BulletinService {
         if (updates.isEdited !== undefined) updatePayload.is_edited = updates.isEdited;
         if (updates.editedAt !== undefined) updatePayload.edited_at = updates.editedAt;
         if (updates.poll !== undefined) updatePayload.poll_data = updates.poll;
+        if (updates.reactions !== undefined) updatePayload.reactions_breakdown = updates.reactions;
+        if (updates.likesCount !== undefined) updatePayload.likes_count = updates.likesCount;
+        if (updates.resharesCount !== undefined) updatePayload.reshares_count = updates.resharesCount;
         if (updates.pdfUrl !== undefined) updatePayload.pdf_url = updates.pdfUrl;
         if (updates.pdfName !== undefined) updatePayload.pdf_name = updates.pdfName;
         if (updates.pdfSize !== undefined) updatePayload.pdf_size = updates.pdfSize;
@@ -653,6 +691,145 @@ class BulletinService {
     }
 
     return true;
+  }
+
+  /**
+   * Fetch all staff profiles from Supabase profiles table (with fallback to local directory)
+   */
+  async getProfiles(): Promise<Employee[]> {
+    const localProfiles = [...ALL_EMPLOYEES, ...getRegisteredEmployees()];
+
+    if (!isSupabaseConfigured || !supabase) {
+      return localProfiles;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        if (error) console.warn('[BulletinService] Supabase getProfiles fallback:', error.message);
+        return localProfiles;
+      }
+
+      const cloudProfiles: Employee[] = data.map((row) => ({
+        id: row.id,
+        employeeId: row.employee_id || `SESB-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: row.name,
+        fullName: row.full_name || row.name,
+        designation: row.designation || 'Sabah Electricity Staff',
+        department: row.department || 'Operating',
+        email: row.email,
+        avatarUrl: row.avatar_url || '/user_face.png',
+        coverUrl: row.cover_url || '/grid_horizon_hero.jpg',
+        officeLocation: row.office_location || 'Wisma SESB HQ, Kota Kinabalu',
+        phoneExtension: row.phone_extension || 'Ext. 4102',
+        bio: row.bio || '',
+        role: row.role || 'GeneralStaff',
+        isVerified: row.is_verified ?? true,
+        isOnline: Boolean(row.is_online),
+      }));
+
+      // Cache cloud profiles locally for offline resilience
+      try {
+        const nonStatic = cloudProfiles.filter((p) => p.id !== 'user-test' && p.id !== 'user-ceo');
+        localStorage.setItem('sesb_registered_users', JSON.stringify(nonStatic));
+      } catch (e) {
+        // quota fallback
+      }
+
+      // Merge ensuring TEST_USER and CEO always exist cleanly
+      const mergedMap = new Map<string, Employee>();
+      for (const p of cloudProfiles) {
+        mergedMap.set(p.id, p);
+      }
+      for (const p of localProfiles) {
+        if (!mergedMap.has(p.id)) {
+          mergedMap.set(p.id, p);
+        }
+      }
+
+      return Array.from(mergedMap.values());
+    } catch (err) {
+      console.warn('[BulletinService] getProfiles network error:', err);
+      return localProfiles;
+    }
+  }
+
+  /**
+   * Save or update a staff profile (upserts to Supabase profiles table & updates local cache)
+   */
+  async saveProfile(employee: Employee): Promise<Employee> {
+    // 1. Always update local storage first for instant responsiveness & offline resilience
+    try {
+      const existing = getRegisteredEmployees();
+      const updated = existing.filter((u) => u.id !== employee.id);
+      updated.push(employee);
+      localStorage.setItem('sesb_registered_users', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('[BulletinService] Failed to cache profile locally:', err);
+    }
+
+    // 2. Upsert into Supabase public.profiles table if configured
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('profiles').upsert(
+          {
+            id: employee.id,
+            employee_id: employee.employeeId,
+            name: employee.name,
+            full_name: employee.fullName || employee.name,
+            designation: employee.designation,
+            department: employee.department,
+            email: employee.email,
+            avatar_url: employee.avatarUrl || '/user_face.png',
+            cover_url: employee.coverUrl || '/grid_horizon_hero.jpg',
+            office_location: employee.officeLocation || 'Wisma SESB HQ, Kota Kinabalu',
+            phone_extension: employee.phoneExtension || 'Ext. 4102',
+            bio: employee.bio || '',
+            role: employee.role || 'GeneralStaff',
+            is_verified: employee.isVerified ?? true,
+            is_online: employee.isOnline ?? false,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+
+        if (error) {
+          console.warn('[BulletinService] Supabase profile upsert error:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BulletinService] Network error saving profile to Supabase:', err);
+      }
+    }
+
+    return employee;
+  }
+
+  /**
+   * Subscribe to live profile changes across devices via Supabase Realtime
+   */
+  subscribeToProfiles(callback: (profiles: Employee[]) => void): () => void {
+    if (!isSupabaseConfigured || !supabase) return () => {};
+
+    const channel = supabase
+      .channel('public:profiles_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        async () => {
+          const fresh = await this.getProfiles();
+          callback(fresh);
+        }
+      )
+      .subscribe();
+
+    const client = supabase;
+    return () => {
+      client.removeChannel(channel);
+    };
   }
 }
 

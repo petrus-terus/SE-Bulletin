@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Employee } from '../types/bulletin';
-import { ALL_EMPLOYEES, getRegisteredEmployees } from '../services/mockData';
+import { ALL_EMPLOYEES } from '../services/mockData';
+import { bulletinService } from '../services/bulletinService';
 import styles from './LoginPage.module.css';
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  // Sign In state
+  // Sign In state (Pre-filled with TEST_USER Admin credentials)
   const [identifier, setIdentifier] = useState('TEST_USER');
   const [password, setPassword] = useState('TestAdmin@2026');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +28,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Handle Sign In Submission
-  const handleSignInSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -44,11 +45,8 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-
-      const registered = getRegisteredEmployees();
-      const allUsers = [...ALL_EMPLOYEES, ...registered];
+    try {
+      const allUsers = await bulletinService.getProfiles();
 
       // 1. Check for TEST_USER (Admin)
       if (
@@ -59,6 +57,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
         cleanInput === 'irfan@sesb.com.my'
       ) {
         const testUser = allUsers.find((u) => u.name === 'TEST_USER') || ALL_EMPLOYEES[0];
+        setIsLoading(false);
         onLogin(testUser);
         return;
       }
@@ -72,12 +71,13 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
       ) {
         const ceoUser = allUsers.find((u) => u.id === 'user-ceo') || ALL_EMPLOYEES[1];
         if (ceoUser) {
+          setIsLoading(false);
           onLogin(ceoUser);
           return;
         }
       }
 
-      // 3. Match against registered employees
+      // 3. Match against all registered employees (from Supabase or local cache)
       const matched = allUsers.find(
         (emp) =>
           emp.employeeId.toLowerCase() === cleanInput ||
@@ -85,16 +85,21 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
           emp.name.toLowerCase() === cleanInput
       );
 
+      setIsLoading(false);
       if (matched) {
         onLogin(matched);
       } else {
         setErrorMessage('User not found. If this is your first time, please use the "New Staff Sign Up" tab.');
       }
-    }, 350);
+    } catch (err) {
+      setIsLoading(false);
+      console.warn('[LoginPage] Sign in verification error:', err);
+      setErrorMessage('Unable to complete sign in. Please verify your credentials.');
+    }
   };
 
   // Handle Sign Up Submission (Name, Email, Password - No ID required)
-  const handleSignUpSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -108,7 +113,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
     }
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMessage('Please enter a valid corporate email address (e.g. name@sesb.com.my).');
+      setErrorMessage('Please enter a valid email address.');
       return;
     }
 
@@ -119,11 +124,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-
-      const existingUsers = getRegisteredEmployees();
+    try {
+      const existingUsers = await bulletinService.getProfiles();
       if (existingUsers.some((u) => u.email.toLowerCase() === cleanEmail)) {
+        setIsLoading(false);
         setErrorMessage('This email is already registered. Please sign in instead.');
         return;
       }
@@ -147,19 +151,20 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
         bio: 'Sabah Electricity team member energising Sabah with safety, reliability, and excellence.',
       };
 
-      try {
-        const updated = [...existingUsers, newUser];
-        localStorage.setItem('sesb_registered_users', JSON.stringify(updated));
-      } catch (err) {
-        console.warn('[LoginPage] Failed to save registered user:', err);
-      }
+      // Persist to Supabase public.profiles and localStorage cache
+      await bulletinService.saveProfile(newUser);
 
+      setIsLoading(false);
       if (onShowNotice) {
         onShowNotice(`Welcome ${cleanName}! Your account (${newStaffId}) is ready.`);
       }
 
       onLogin(newUser);
-    }, 400);
+    } catch (err) {
+      setIsLoading(false);
+      console.warn('[LoginPage] Registration error:', err);
+      setErrorMessage('Could not complete registration. Please try again.');
+    }
   };
 
   const handleForgotCredentials = () => {
@@ -184,21 +189,6 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
           }}
         />
         <div className={styles.heroGradientOverlay} />
-
-        {/* Top Telemetry & Status Bar */}
-        <div className={styles.heroTopRow}>
-          <div className={styles.telemetryPill}>
-            <span className={styles.pulseBeacon} />
-            <span className="font-mono tabular-nums">Grid Live (50.02 Hz)</span>
-          </div>
-
-          <div className={styles.intranetBadge}>
-            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-              lock
-            </span>
-            <span>Intranet Secure</span>
-          </div>
-        </div>
 
         {/* Hero Title & Welcome Banner */}
         <div className={styles.heroContent}>
@@ -251,6 +241,8 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
             onClick={() => {
               setAuthMode('signin');
               setErrorMessage(null);
+              if (!identifier) setIdentifier('TEST_USER');
+              if (!password) setPassword('TestAdmin@2026');
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
@@ -303,7 +295,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
             {/* Identifier Input */}
             <div className={styles.inputGroup}>
               <label htmlFor="staff-identifier" className={styles.inputLabel}>
-                Username or Corporate Email
+                Username or Email
               </label>
               <div className={styles.inputFieldWrapper}>
                 <span className={`material-symbols-outlined ${styles.inputIcon}`}>
@@ -417,10 +409,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
               </div>
             </div>
 
-            {/* Corporate Email */}
+            {/* Email */}
             <div className={styles.inputGroup}>
               <label htmlFor="signup-email" className={styles.inputLabel}>
-                Corporate Email
+                Email
               </label>
               <div className={styles.inputFieldWrapper}>
                 <span className={`material-symbols-outlined ${styles.inputIcon}`}>
@@ -430,7 +422,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin, onShowNotice }) => {
                   id="signup-email"
                   type="email"
                   className={styles.textInput}
-                  placeholder="e.g. dayang.ain@sesb.com.my"
+                  placeholder="e.g. name@sesb.com.my or name@email.com"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
                   autoCapitalize="none"

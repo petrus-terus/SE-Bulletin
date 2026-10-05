@@ -5,7 +5,7 @@ import { CURRENT_USER } from '../services/mockData';
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
 import { AchievementsDeck } from './AchievementsDeck';
 import { FeedCard } from './FeedCard';
-import { compressImageFile } from '../utils/imageCompressor';
+import { bulletinService } from '../services/bulletinService';
 import styles from './ProfilePage.module.css';
 
 interface Props {
@@ -107,33 +107,27 @@ export const ProfilePage: React.FC<Props> = ({
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle direct device file upload (with automatic client-side compression to avoid QuotaExceededError)
+  // Handle direct device file upload (with automatic Supabase Storage upload and client-side compression)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      const options =
-        mode === 'avatar'
-          ? { maxWidth: 512, maxHeight: 512, quality: 0.85 }
-          : { maxWidth: 1200, maxHeight: 600, quality: 0.82 };
-
-      const result = await compressImageFile(file, options);
-      const optimizedUrl = result.dataUrl;
+      const uploadedUrl = await bulletinService.uploadPhoto(file);
 
       if (mode === 'avatar') {
-        const updated = { ...profileData, avatarUrl: optimizedUrl };
+        const updated = { ...profileData, avatarUrl: uploadedUrl };
         setProfileData(updated);
-        setTempAvatarUrl(optimizedUrl);
+        setTempAvatarUrl(uploadedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
       } else {
-        const updated = { ...profileData, coverUrl: optimizedUrl };
+        const updated = { ...profileData, coverUrl: uploadedUrl };
         setProfileData(updated);
-        setTempCoverUrl(optimizedUrl);
+        setTempCoverUrl(uploadedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
       }
     } catch (err) {
-      console.warn('[ProfilePage] Compression failed, using fallback reader:', err);
+      console.warn('[ProfilePage] Upload failed, using fallback reader:', err);
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;

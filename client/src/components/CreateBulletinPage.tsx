@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import type { Department, CreatePostPayload, Employee, Post } from '../types/bulletin';
 import { CURRENT_USER } from '../services/mockData';
-import { compressImageFile } from '../utils/imageCompressor';
+import { bulletinService } from '../services/bulletinService';
 import styles from './CreateBulletinPage.module.css';
 
 interface Props {
@@ -111,26 +111,20 @@ export const CreateBulletinPage: React.FC<Props> = ({
     try {
       const compressedList: AttachedPhoto[] = await Promise.all(
         files.map(async (file, idx) => {
-          const result = await compressImageFile(file, {
-            maxWidth: 1600,
-            maxHeight: 1600,
-            quality: 0.82,
-          });
+          const uploadedUrl = await bulletinService.uploadPhoto(file);
 
           return {
             id: `photo-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
-            url: result.dataUrl,
+            url: uploadedUrl,
             name: file.name,
-            file: result.file,
-            compressedSizeFormatted: result.compressedSizeFormatted,
-            savedPercentage: result.savedPercentage,
+            file,
           };
         })
       );
 
       setPhotos((prev) => [...prev, ...compressedList]);
     } catch (err) {
-      console.warn('[CreateBulletinPage] Image compression fallback:', err);
+      console.warn('[CreateBulletinPage] Image compression/upload fallback:', err);
       const fallbackList: AttachedPhoto[] = files.map((file, idx) => ({
         id: `photo-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
         url: URL.createObjectURL(file),
@@ -148,7 +142,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     const sizeStr =
@@ -156,10 +150,17 @@ export const CreateBulletinPage: React.FC<Props> = ({
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.round(file.size / 1024)} KB`;
 
+    let pdfUrl = URL.createObjectURL(file);
+    try {
+      pdfUrl = await bulletinService.uploadPhoto(file);
+    } catch (err) {
+      console.warn('[CreateBulletinPage] PDF upload fallback:', err);
+    }
+
     setPdfFile({
       name: file.name,
       size: `${sizeStr} • Verified`,
-      url: URL.createObjectURL(file),
+      url: pdfUrl,
     });
     if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
   };

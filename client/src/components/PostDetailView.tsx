@@ -7,6 +7,7 @@ import styles from './PostDetailView.module.css';
 
 interface Props {
   post: Post;
+  comments?: Comment[];
   currentUserId?: string;
   currentUserName?: string;
   currentUserRole?: string;
@@ -24,6 +25,7 @@ interface Props {
 
 export const PostDetailView: React.FC<Props> = ({
   post,
+  comments,
   currentUserId,
   currentUserName,
   currentUserRole,
@@ -67,13 +69,17 @@ export const PostDetailView: React.FC<Props> = ({
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const [localComments, setLocalComments] = useState<Comment[]>(() => {
-    const list: Comment[] = [];
-    if (post.previewComment) {
-      list.push(post.previewComment);
+
+  // Derive active comment thread from props (cloud synchronized) with fallback to preview
+  const activeComments: Comment[] = React.useMemo(() => {
+    if (comments && comments.length > 0) {
+      return comments;
     }
-    return list;
-  });
+    if (post.previewComment) {
+      return [post.previewComment];
+    }
+    return [];
+  }, [comments, post.previewComment]);
 
   const handleLike = () => {
     onLikeToggle(post.id);
@@ -83,23 +89,6 @@ export const PostDetailView: React.FC<Props> = ({
     e.preventDefault();
     if (!commentInput.trim()) return;
 
-    const newComment: Comment = {
-      id: `c-local-${Date.now()}`,
-      authorName: currentUserName || 'TEST_USER',
-      department: 'Operating',
-      avatarUrl: '/user_face.png',
-      avatarInitials: (currentUserName || 'TU')
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
-      text: commentInput.trim(),
-      timestamp: 'Just now',
-      likesCount: 0,
-    };
-
-    setLocalComments((prev) => [...prev, newComment]);
     onAddComment(post.id, commentInput.trim());
     setCommentInput('');
   };
@@ -425,7 +414,7 @@ export const PostDetailView: React.FC<Props> = ({
                 chat_bubble_outline
               </span>
               <span className="tabular-nums font-mono">
-                {localComments.length + post.commentsCount}
+                {activeComments.length || post.commentsCount}
               </span>
             </span>
 
@@ -497,17 +486,17 @@ export const PostDetailView: React.FC<Props> = ({
           <div className={styles.discussionTitleGroup}>
             <h2 className={styles.discussionTitle}>Internal Discussion</h2>
             <span className="font-mono tabular-nums text-xs text-slate-500">
-              {localComments.length} active responses
+              {activeComments.length || post.commentsCount} active responses
             </span>
           </div>
 
           <div className={styles.commentsList}>
-            {localComments.length === 0 ? (
+            {activeComments.length === 0 ? (
               <p style={{ fontSize: 'var(--font-size-sm)', color: '#64748B', fontStyle: 'italic', padding: '12px 0' }}>
                 No comments yet. Be the first to share an update or question!
               </p>
             ) : (
-              localComments.map((comment) => (
+              activeComments.map((comment) => (
                 <div key={comment.id} className={styles.commentBubble}>
                   {comment.avatarUrl ? (
                     <img
