@@ -58,12 +58,13 @@ export const FeedCard: React.FC<Props> = ({
 
   const optionsWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Author or Admin can delete
-  const normalizedRole = (currentUserRole || '').toLowerCase();
-  const isAdmin =
-    normalizedRole.includes('admin') ||
-    normalizedRole === 'superadmin' ||
-    normalizedRole === 'departmentadmin';
+  // SuperAdmin Lockdown: TEST_USER is the sole global moderator capable of editing/deleting any post.
+  // All other registered users can ONLY edit and delete their own posts.
+  const isSuperAdmin = Boolean(
+    (currentUserName && currentUserName.trim().toUpperCase() === 'TEST_USER') ||
+    (currentUserId && currentUserId === 'user-test') ||
+    ((currentUserRole || '').toLowerCase() === 'superadmin' && currentUserName?.trim().toUpperCase() === 'TEST_USER')
+  );
 
   const isOwnPost = Boolean(
     (currentUserId && post.author.id === currentUserId) ||
@@ -71,7 +72,8 @@ export const FeedCard: React.FC<Props> = ({
       post.author.name &&
       post.author.name.trim().toLowerCase() === currentUserName.trim().toLowerCase())
   );
-  const canDelete = isOwnPost || isAdmin;
+  const canDelete = isSuperAdmin || isOwnPost;
+  const canEdit = isSuperAdmin || isOwnPost;
 
   // Dismiss options menu on outside click or escape
   useEffect(() => {
@@ -232,7 +234,7 @@ export const FeedCard: React.FC<Props> = ({
                 <span>{linkCopied ? 'Link Copied!' : 'Copy Link'}</span>
               </button>
 
-              {canDelete && onEditPost && (
+              {canEdit && onEditPost && (
                 <button
                   type="button"
                   className={styles.optionsMenuItem}

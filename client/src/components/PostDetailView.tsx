@@ -42,11 +42,13 @@ export const PostDetailView: React.FC<Props> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const normalizedRole = (currentUserRole || '').toLowerCase();
-  const isAdmin =
-    normalizedRole.includes('admin') ||
-    normalizedRole === 'superadmin' ||
-    normalizedRole === 'departmentadmin';
+  // SuperAdmin Lockdown: TEST_USER is the sole global moderator capable of editing/deleting any post.
+  // All other registered users can ONLY edit and delete their own posts.
+  const isSuperAdmin = Boolean(
+    (currentUserName && currentUserName.trim().toUpperCase() === 'TEST_USER') ||
+    (currentUserId && currentUserId === 'user-test') ||
+    ((currentUserRole || '').toLowerCase() === 'superadmin' && currentUserName?.trim().toUpperCase() === 'TEST_USER')
+  );
 
   const isOwnPost = Boolean(
     (currentUserId && post.author.id === currentUserId) ||
@@ -54,7 +56,8 @@ export const PostDetailView: React.FC<Props> = ({
       post.author.name &&
       post.author.name.trim().toLowerCase() === currentUserName.trim().toLowerCase())
   );
-  const canDelete = isOwnPost || isAdmin;
+  const canDelete = isSuperAdmin || isOwnPost;
+  const canEdit = isSuperAdmin || isOwnPost;
 
   const handleCopyLink = () => {
     const link = `${window.location.origin}/#post-${post.id}`;
@@ -82,10 +85,15 @@ export const PostDetailView: React.FC<Props> = ({
 
     const newComment: Comment = {
       id: `c-local-${Date.now()}`,
-      authorName: 'Mohd Irfan',
-      department: 'IT',
+      authorName: currentUserName || 'TEST_USER',
+      department: 'Operating',
       avatarUrl: '/user_face.png',
-      avatarInitials: 'MI',
+      avatarInitials: (currentUserName || 'TU')
+        .split(' ')
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase(),
       text: commentInput.trim(),
       timestamp: 'Just now',
       likesCount: 0,
@@ -158,7 +166,7 @@ export const PostDetailView: React.FC<Props> = ({
             </span>
           </button>
 
-          {canDelete && onEditPost && (
+          {canEdit && onEditPost && (
             <button
               type="button"
               className={styles.iconButton}

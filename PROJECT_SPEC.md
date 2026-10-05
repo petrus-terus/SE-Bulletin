@@ -225,6 +225,19 @@ sequenceDiagram
   - Uses HTML5 Offscreen/DOM Canvas to auto-downscale user photos to max 1600px at 0.82 quality WebP/JPEG before upload.
   - Reduces average field photo size from ~4.8MB down to ~210KB (~95% reduction).
   - Protects Supabase free tier (1GB storage limit) and prevents browser `localStorage` `QuotaExceededError` during offline mode or profile edits.
+- **Dynamic Notifications & Activity Hub (`NotificationsView.tsx`)**:
+  - Persistent activity log (`sesb_notifications`) synchronized with incoming Supabase Realtime alerts.
+  - Chronological grouping: *Today*, *This Week*, *Earlier*.
+  - Category filter pills: *All*, *Urgent / HSE*, *Reactions*, *Comments*, *Mentions*.
+  - Tap-to-navigate directly into referenced post details or discussion drawers.
+  - Unread badge counter synchronization across BottomNav and TopAppBar.
+- **Mobile Bundle Code-Splitting & High-Performance Architecture**:
+  - Dynamic `React.lazy()` chunking for secondary routes and overlay modals (`SearchDirectoryPage`, `ProfilePage`, `CreateBulletinPage`, `PostDetailView`, `NotificationsView`, `ImageViewerModal`, `SavedPostsDrawer`).
+  - `manualChunks` vendor separation for `@supabase/supabase-js` and `react`/`react-dom`.
+  - Initial JS bundle reduced from 676.4 kB to 158.8 kB (~76.5% reduction), optimizing First Contentful Paint across Sabah regional stations.
+- **Pilot Passcode Gate & Dual Authentication Flow**:
+  - Pre-auth confidential staging gate (`SEBULLETIN@2026` via `PilotGate.tsx`).
+  - Dual-mode authentication: Sign In (preconfigured for `TEST_USER` SuperAdmin and `CEO Office`) vs New Staff Sign Up (instant registration with Full Name, Corporate Email, and Password).
 
 ---
 

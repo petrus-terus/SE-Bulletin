@@ -149,3 +149,22 @@ export type TimeAmbiance = 'day' | 'dusk' | 'night';
 
 export type PostArchetype = 'status' | 'photo' | 'announcement';
 
+export type NotificationCategory = 'all' | 'urgent' | 'reaction' | 'comment' | 'mention' | 'general';
+
+export interface AppNotification {
+  id: string;
+  category: 'urgent' | 'reaction' | 'comment' | 'mention' | 'general';
+  title: string;
+  message: string;
+  timestamp: string;
+  createdAt: number;
+  isRead: boolean;
+  avatarUrl?: string;
+  avatarInitials?: string;
+  icon?: string;
+  iconColor?: string;
+  targetPostId?: string;
+  targetCommentId?: string;
+  actionUrl?: string;
+}
+

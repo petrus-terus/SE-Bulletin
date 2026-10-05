@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import type { Comment, Employee, EmojiReactionType, Post, Story } from './types/bulletin';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import type { AppNotification, Comment, Employee, EmojiReactionType, Post, Story } from './types/bulletin';
 import { CURRENT_USER, DEPARTMENTS, INITIAL_POSTS, INITIAL_STORIES, getEmployeeByAuthor } from './services/mockData';
 import { bulletinService } from './services/bulletinService';
+import { getStoredNotifications, saveStoredNotifications } from './services/notificationService';
 import { isSupabaseConfigured, supabase } from './services/supabaseClient';
 import { AppShell } from './components/AppShell';
 import { TopAppBar } from './components/TopAppBar';
@@ -12,24 +13,70 @@ import { FeedCard } from './components/FeedCard';
 import { BottomNav } from './components/BottomNav';
 import type { TabKey } from './components/BottomNav';
 import { CommentDrawer } from './components/CommentDrawer';
-import { CreateBulletinPage } from './components/CreateBulletinPage';
-import { CreateStoryModal } from './components/CreateStoryModal';
 import { TrendingSection } from './components/TrendingSection';
 import { SesiKnowledgeHubBanner } from './components/SesiKnowledgeHubBanner';
 import { CeoWisdomSection } from './components/CeoWisdomSection';
-import { SearchDirectoryPage } from './components/SearchDirectoryPage';
-import { ProfilePage } from './components/ProfilePage';
 import { DesktopSidebar } from './components/DesktopSidebar';
 import { DesktopWidgetsRail } from './components/DesktopWidgetsRail';
 import { Toast } from './components/Toast';
-import { PostDetailView } from './components/PostDetailView';
-import { ImageViewerModal } from './components/ImageViewerModal';
 import { LoginPage } from './components/LoginPage';
+import { PilotGate } from './components/PilotGate';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { BrandSidebarDrawer } from './components/BrandSidebarDrawer';
-import { SavedPostsDrawer } from './components/SavedPostsDrawer';
 import { ReshareBottomSheet } from './components/ReshareBottomSheet';
 import { QuoteBulletinModal } from './components/QuoteBulletinModal';
+
+// Code-split heavy routes and overlay modals for high-performance mobile loading
+const CreateBulletinPage = lazy(() =>
+  import('./components/CreateBulletinPage').then((m) => ({ default: m.CreateBulletinPage }))
+);
+const CreateStoryModal = lazy(() =>
+  import('./components/CreateStoryModal').then((m) => ({ default: m.CreateStoryModal }))
+);
+const SearchDirectoryPage = lazy(() =>
+  import('./components/SearchDirectoryPage').then((m) => ({ default: m.SearchDirectoryPage }))
+);
+const ProfilePage = lazy(() =>
+  import('./components/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
+const PostDetailView = lazy(() =>
+  import('./components/PostDetailView').then((m) => ({ default: m.PostDetailView }))
+);
+const NotificationsView = lazy(() =>
+  import('./components/NotificationsView').then((m) => ({ default: m.NotificationsView }))
+);
+const ImageViewerModal = lazy(() =>
+  import('./components/ImageViewerModal').then((m) => ({ default: m.ImageViewerModal }))
+);
+const SavedPostsDrawer = lazy(() =>
+  import('./components/SavedPostsDrawer').then((m) => ({ default: m.SavedPostsDrawer }))
+);
+
+const ViewFallback = () => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '360px',
+      width: '100%',
+    }}
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          border: '3px solid #E2E8F0',
+          borderTopColor: '#0055A4',
+          animation: 'spin 0.8s linear infinite',
+        }}
+      />
+      <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Loading view...</span>
+    </div>
+  </div>
+);
 
 export function App() {
   const [currentUser, setCurrentUser] = useState<Employee>(() => {
@@ -45,6 +92,9 @@ export function App() {
   });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('sesb_auth') === 'true';
+  });
+  const [isPilotUnlocked, setIsPilotUnlocked] = useState<boolean>(() => {
+    return localStorage.getItem('sesb_pilot_unlocked') === 'true';
   });
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
@@ -96,7 +146,43 @@ export function App() {
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
   const [selectedDeptId, setSelectedDeptId] = useState('dept-all');
   const [activeTab, setActiveTab] = useState<TabKey>('home');
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    return getStoredNotifications();
+  });
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleMarkAllNotificationsAsRead = () => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, isRead: true }));
+      saveStoredNotifications(updated);
+      return updated;
+    });
+    setToast({
+      message: 'All notifications marked as read',
+      icon: 'done_all',
+    });
+  };
+
+  const handleNotificationClick = (notif: AppNotification) => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n));
+      saveStoredNotifications(updated);
+      return updated;
+    });
+
+    if (notif.targetPostId) {
+      const targetPost = posts.find((p) => p.id === notif.targetPostId);
+      if (targetPost) {
+        if (notif.targetCommentId || notif.category === 'comment') {
+          setActiveCommentPost(targetPost);
+        } else {
+          setSelectedPostForDetail(targetPost);
+        }
+      }
+    }
+    setActiveTab('home');
+  };
+
   const [viewedProfileEmployee, setViewedProfileEmployee] = useState<Employee | null>(null);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
 
@@ -182,6 +268,34 @@ export function App() {
             message: `New bulletin: "${row.title.slice(0, 26)}..."`,
             icon: 'campaign',
           });
+
+          // Append to dynamic notifications
+          const newNotif: AppNotification = {
+            id: `notif-${Date.now()}`,
+            category: row.official_notice ? 'urgent' : 'general',
+            title: row.official_notice
+              ? `${row.department || 'SESB'} Official Notice`
+              : `${row.author_name || 'Staff'} published a bulletin`,
+            message: row.title,
+            timestamp: 'Just now',
+            createdAt: Date.now(),
+            isRead: false,
+            icon: row.official_notice ? 'security' : 'campaign',
+            iconColor: row.official_notice ? '#EF4444' : '#0055A4',
+            targetPostId: row.id,
+            avatarUrl: row.author_avatar || undefined,
+            avatarInitials: (row.author_name || 'SE')
+              .split(' ')
+              .map((n: string) => n[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase(),
+          };
+          setNotifications((prev) => {
+            const updated = [newNotif, ...prev];
+            saveStoredNotifications(updated);
+            return updated;
+          });
         }
       )
       .on(
@@ -190,17 +304,80 @@ export function App() {
         (payload) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const row = payload.new as any;
+          if (!row || !row.id) return;
+
           setPosts((prev) =>
-            prev.map((post) =>
-              post.id === row.id
-                ? {
-                    ...post,
-                    likesCount: Number(row.likes_count ?? post.likesCount),
-                    commentsCount: Number(row.comments_count ?? post.commentsCount),
-                  }
-                : post
-            )
+            prev.map((post) => {
+              if (post.id !== row.id) return post;
+              return {
+                ...post,
+                title: row.title !== undefined ? row.title : post.title,
+                content: row.content !== undefined ? row.content : post.content,
+                location: row.location !== undefined ? row.location : post.location,
+                imageUrl: row.image_url !== undefined ? row.image_url : post.imageUrl,
+                mediaUrls: Array.isArray(row.media_urls)
+                  ? row.media_urls
+                  : row.image_url
+                  ? [row.image_url]
+                  : post.mediaUrls,
+                isPinned: row.is_pinned !== undefined ? Boolean(row.is_pinned) : post.isPinned,
+                commentsEnabled:
+                  row.comments_enabled !== undefined
+                    ? Boolean(row.comments_enabled)
+                    : post.commentsEnabled,
+                likesCount: Number(row.likes_count ?? post.likesCount),
+                commentsCount: Number(row.comments_count ?? post.commentsCount),
+                viewsCount: Number(row.views_count ?? post.viewsCount),
+                resharesCount: Number(row.reshares_count ?? post.resharesCount),
+                departmentName: row.department || post.departmentName,
+                departmentId: row.department_id || post.departmentId,
+                departmentColor: row.department_color || post.departmentColor,
+                officialNotice:
+                  row.official_notice !== undefined
+                    ? Boolean(row.official_notice)
+                    : post.officialNotice,
+                poll: row.poll_data || row.poll || post.poll,
+                pdfUrl: row.pdf_url !== undefined ? row.pdf_url : post.pdfUrl,
+                pdfName: row.pdf_name !== undefined ? row.pdf_name : post.pdfName,
+                pdfSize: row.pdf_size !== undefined ? row.pdf_size : post.pdfSize,
+                isEdited: row.is_edited !== undefined ? Boolean(row.is_edited) : post.isEdited,
+                editedAt: row.edited_at || post.editedAt,
+              };
+            })
           );
+
+          setSelectedPostForDetail((prev) => {
+            if (!prev || prev.id !== row.id) return prev;
+            return {
+              ...prev,
+              title: row.title !== undefined ? row.title : prev.title,
+              content: row.content !== undefined ? row.content : prev.content,
+              location: row.location !== undefined ? row.location : prev.location,
+              imageUrl: row.image_url !== undefined ? row.image_url : prev.imageUrl,
+              mediaUrls: Array.isArray(row.media_urls)
+                ? row.media_urls
+                : row.image_url
+                ? [row.image_url]
+                : prev.mediaUrls,
+              isPinned: row.is_pinned !== undefined ? Boolean(row.is_pinned) : prev.isPinned,
+              commentsEnabled:
+                row.comments_enabled !== undefined
+                  ? Boolean(row.comments_enabled)
+                  : prev.commentsEnabled,
+              likesCount: Number(row.likes_count ?? prev.likesCount),
+              commentsCount: Number(row.comments_count ?? prev.commentsCount),
+              poll: row.poll_data || row.poll || prev.poll,
+              isEdited: row.is_edited !== undefined ? Boolean(row.is_edited) : prev.isEdited,
+              editedAt: row.edited_at || prev.editedAt,
+            };
+          });
+
+          if (row.is_edited) {
+            setToast({
+              message: `Updated: "${(row.title || 'Bulletin').slice(0, 26)}..."`,
+              icon: 'edit',
+            });
+          }
         }
       )
       .on(
@@ -250,6 +427,33 @@ export function App() {
             message: `${row.author_name}: "${row.text.slice(0, 24)}..."`,
             icon: 'chat',
           });
+
+          // Append to dynamic notifications
+          const commentNotif: AppNotification = {
+            id: `notif-c-${Date.now()}`,
+            category: 'comment',
+            title: `${row.author_name} commented`,
+            message: row.text,
+            timestamp: 'Just now',
+            createdAt: Date.now(),
+            isRead: false,
+            icon: 'chat',
+            iconColor: '#0055A4',
+            targetPostId: row.post_id,
+            targetCommentId: row.id,
+            avatarUrl: row.author_avatar || undefined,
+            avatarInitials: (row.author_name || 'SE')
+              .split(' ')
+              .map((n: string) => n[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase(),
+          };
+          setNotifications((prev) => {
+            const updated = [commentNotif, ...prev];
+            saveStoredNotifications(updated);
+            return updated;
+          });
         }
       )
       .on(
@@ -260,6 +464,37 @@ export function App() {
           const oldRow = payload.old as any;
           if (oldRow?.id) {
             setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
+            setSelectedPostForDetail((prev) => (prev?.id === oldRow.id ? null : prev));
+            setActiveCommentPost((prev) => (prev?.id === oldRow.id ? null : prev));
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'post_deleted' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const deletedId = (payload?.payload as any)?.id;
+          if (deletedId) {
+            setPosts((prev) => prev.filter((p) => p.id !== deletedId));
+            setSelectedPostForDetail((prev) => (prev?.id === deletedId ? null : prev));
+            setActiveCommentPost((prev) => (prev?.id === deletedId ? null : prev));
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'post_updated' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const updated = payload?.payload as any;
+          if (updated?.id) {
+            setPosts((prev) =>
+              prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+            );
+            setSelectedPostForDetail((prev) =>
+              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+            );
           }
         }
       )
@@ -755,6 +990,22 @@ export function App() {
     }
   };
 
+  // 0. Pre-Auth Pilot Passcode Gate (Confidential Staging Protection)
+  if (!isPilotUnlocked) {
+    return (
+      <>
+        <PilotGate onUnlock={() => setIsPilotUnlocked(true)} />
+        {toast && (
+          <Toast
+            message={toast.message}
+            icon={toast.icon}
+            onDismiss={() => setToast(null)}
+          />
+        )}
+      </>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <>
@@ -815,8 +1066,9 @@ export function App() {
         rightRail={<DesktopWidgetsRail />}
       >
         {selectedPostForDetail ? (
-          <PostDetailView
-            post={selectedPostForDetail}
+          <Suspense fallback={<ViewFallback />}>
+            <PostDetailView
+              post={selectedPostForDetail}
             onBack={() => setSelectedPostForDetail(null)}
             onAuthorClick={handleViewAuthorProfile}
             onLikeToggle={(postId) => {
@@ -893,7 +1145,8 @@ export function App() {
             }}
             onReshareClick={(p) => setActiveResharePost(p)}
           />
-        ) : (
+        </Suspense>
+      ) : (
           <>
             {activeTab === 'home' && (
           <>
@@ -1002,128 +1255,81 @@ export function App() {
 
         {/* Explore & Directory Tab View (Stitch Inspired) */}
         {activeTab === 'explore' && (
-          <SearchDirectoryPage
-            posts={posts}
-            departments={DEPARTMENTS}
-            currentUserId={currentUser.id}
-            currentUserName={currentUser.name}
-            currentUserRole={currentUser.role}
-            currentUserAvatar={currentUser.avatarUrl}
-            onLikeToggle={handleLikeToggle}
-            onOpenComments={(post) => setActiveCommentPost(post)}
-            onDeletePost={handleDeletePost}
-            onEditPost={(post) => setEditingPost(post)}
-            onPostClick={handleOpenPostDetail}
-            onViewProfile={handleViewAuthorProfile}
-            onBookmarkToggle={handleBookmarkToggle}
-            onVotePoll={handleVotePoll}
-            onReactionSelect={handleReactionSelect}
-            onReshareToggle={handleReshareToggle}
-            onQuotePost={handleQuotePost}
-            onSharePost={handleSharePost}
-            onReshareClick={(p) => setActiveResharePost(p)}
-          />
+          <Suspense fallback={<ViewFallback />}>
+            <SearchDirectoryPage
+              posts={posts}
+              departments={DEPARTMENTS}
+              currentUserId={currentUser.id}
+              currentUserName={currentUser.name}
+              currentUserRole={currentUser.role}
+              currentUserAvatar={currentUser.avatarUrl}
+              onLikeToggle={handleLikeToggle}
+              onOpenComments={(post) => setActiveCommentPost(post)}
+              onDeletePost={handleDeletePost}
+              onEditPost={(post) => setEditingPost(post)}
+              onPostClick={handleOpenPostDetail}
+              onViewProfile={handleViewAuthorProfile}
+              onBookmarkToggle={handleBookmarkToggle}
+              onVotePoll={handleVotePoll}
+              onReactionSelect={handleReactionSelect}
+              onReshareToggle={handleReshareToggle}
+              onQuotePost={handleQuotePost}
+              onSharePost={handleSharePost}
+              onReshareClick={(p) => setActiveResharePost(p)}
+            />
+          </Suspense>
         )}
 
         {/* Notifications Tab View */}
         {activeTab === 'notifications' && (
-          <section
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 'var(--radius-card)',
-              padding: '20px',
-              border: '1px solid var(--color-border-subtle)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>Notifications</h2>
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUnreadCount(0);
-                    setToast({ message: 'Marked all notifications as read', icon: 'done_all' });
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-primary-container)',
-                    fontSize: 'var(--font-size-xs)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Mark all as read
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', gap: '10px' }}>
-                <span className="material-symbols-outlined" style={{ color: '#1D4ED8' }}>campaign</span>
-                <div>
-                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Operations & Engineering posted an urgent bulletin</div>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: '#475569', marginTop: '2px' }}>Tenom Substation 132kV commissioning completed ahead of schedule.</div>
-                  <div className="tabular-nums font-mono" style={{ fontSize: 'var(--font-size-xs)', color: '#64748B', marginTop: '4px' }}>2 hours ago</div>
-                </div>
-              </div>
-
-              <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: '#F8FAFC', border: '1px solid var(--color-border-subtle)', display: 'flex', gap: '10px' }}>
-                <span className="material-symbols-outlined" style={{ color: '#10B981' }}>favorite</span>
-                <div>
-                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Siti Aminah liked your SCADA telemetry comment</div>
-                  <div className="tabular-nums font-mono" style={{ fontSize: 'var(--font-size-xs)', color: '#64748B', marginTop: '4px' }}>45 minutes ago</div>
-                </div>
-              </div>
-
-              <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: '#F8FAFC', border: '1px solid var(--color-border-subtle)', display: 'flex', gap: '10px' }}>
-                <span className="material-symbols-outlined" style={{ color: '#D97706' }}>security</span>
-                <div>
-                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>HSE Directorate published Directive SOP-2026-04</div>
-                  <div className="tabular-nums font-mono" style={{ fontSize: 'var(--font-size-xs)', color: '#64748B', marginTop: '4px' }}>4 hours ago</div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <Suspense fallback={<ViewFallback />}>
+            <NotificationsView
+              notifications={notifications}
+              onNotificationClick={handleNotificationClick}
+              onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+            />
+          </Suspense>
         )}
 
         {/* Facebook-Style Profile Tab View */}
         {activeTab === 'profile' && (
-          <ProfilePage
-            key={viewedProfileEmployee?.id || currentUser.id}
-            posts={posts}
-            currentUser={currentUser}
-            viewedEmployee={viewedProfileEmployee}
-            onBack={
-              viewedProfileEmployee && viewedProfileEmployee.id !== currentUser.id
-                ? () => {
-                    setViewedProfileEmployee(null);
-                    setActiveTab(previousTab);
-                  }
-                : undefined
-            }
-            onLikeToggle={handleLikeToggle}
-            onOpenComments={(post) => setActiveCommentPost(post)}
-            onDeletePost={handleDeletePost}
-            onEditPost={(post) => setEditingPost(post)}
-            onOpenCreate={() => setIsCreateOpen(true)}
-            onPostClick={handleOpenPostDetail}
-            onImageClick={(url, title) => setLightboxImage({ url, title })}
-            onCallExt={(emp) =>
-              setToast({
-                message: `Calling ${emp.name} (${emp.phoneExtension || 'Ext. 4102'})...`,
-                icon: 'phone_in_talk',
-              })
-            }
-            onLogout={handleLogout}
-            onUpdateProfile={handleUpdateProfile}
-            onBookmarkToggle={handleBookmarkToggle}
-            onVotePoll={handleVotePoll}
-            onReactionSelect={handleReactionSelect}
-            onReshareToggle={handleReshareToggle}
-            onQuotePost={handleQuotePost}
-            onSharePost={handleSharePost}
-          />
+          <Suspense fallback={<ViewFallback />}>
+            <ProfilePage
+              key={viewedProfileEmployee?.id || currentUser.id}
+              posts={posts}
+              currentUser={currentUser}
+              viewedEmployee={viewedProfileEmployee}
+              onBack={
+                viewedProfileEmployee && viewedProfileEmployee.id !== currentUser.id
+                  ? () => {
+                      setViewedProfileEmployee(null);
+                      setActiveTab(previousTab);
+                    }
+                  : undefined
+              }
+              onLikeToggle={handleLikeToggle}
+              onOpenComments={(post) => setActiveCommentPost(post)}
+              onDeletePost={handleDeletePost}
+              onEditPost={(post) => setEditingPost(post)}
+              onOpenCreate={() => setIsCreateOpen(true)}
+              onPostClick={handleOpenPostDetail}
+              onImageClick={(url, title) => setLightboxImage({ url, title })}
+              onCallExt={(emp) =>
+                setToast({
+                  message: `Calling ${emp.name} (${emp.phoneExtension || 'Ext. 4102'})...`,
+                  icon: 'phone_in_talk',
+                })
+              }
+              onLogout={handleLogout}
+              onUpdateProfile={handleUpdateProfile}
+              onBookmarkToggle={handleBookmarkToggle}
+              onVotePoll={handleVotePoll}
+              onReactionSelect={handleReactionSelect}
+              onReshareToggle={handleReshareToggle}
+              onQuotePost={handleQuotePost}
+              onSharePost={handleSharePost}
+            />
+          </Suspense>
         )}
           </>
         )}
@@ -1177,45 +1383,51 @@ export function App() {
 
       {/* WhatsApp / Instagram Style 24h Story Creator */}
       {isCreateStoryOpen && (
-        <CreateStoryModal
-          currentUser={currentUser}
-          onClose={() => setIsCreateStoryOpen(false)}
-          onSubmit={(newStory) => {
-            setStories((prev) => [newStory, ...prev]);
-            bulletinService.createStory(newStory);
-            setToast({
-              message: '24h Story shared successfully!',
-              icon: 'schedule',
-            });
-          }}
-        />
+        <Suspense fallback={null}>
+          <CreateStoryModal
+            currentUser={currentUser}
+            onClose={() => setIsCreateStoryOpen(false)}
+            onSubmit={(newStory) => {
+              setStories((prev) => [newStory, ...prev]);
+              bulletinService.createStory(newStory);
+              setToast({
+                message: '24h Story shared successfully!',
+                icon: 'schedule',
+              });
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Dedicated Full Page for Creating Bulletins (Stitch Inspired) */}
       {isCreateOpen && (
-        <CreateBulletinPage
-          departments={DEPARTMENTS}
-          currentUser={currentUser}
-          onClose={() => setIsCreateOpen(false)}
-          onSubmit={async (newPostData) => {
-            const newPost = await bulletinService.createPost(newPostData, currentUser);
-            handlePublishPost(newPost);
-            setIsCreateOpen(false);
-          }}
-        />
+        <Suspense fallback={<ViewFallback />}>
+          <CreateBulletinPage
+            departments={DEPARTMENTS}
+            currentUser={currentUser}
+            onClose={() => setIsCreateOpen(false)}
+            onSubmit={async (newPostData) => {
+              const newPost = await bulletinService.createPost(newPostData, currentUser);
+              handlePublishPost(newPost);
+              setIsCreateOpen(false);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Dedicated Full Page for Editing Bulletins */}
       {editingPost && (
-        <CreateBulletinPage
-          departments={DEPARTMENTS}
-          currentUser={currentUser}
-          initialPost={editingPost}
-          isEditMode={true}
-          onClose={() => setEditingPost(null)}
-          onSubmit={() => {}}
-          onUpdate={handleUpdatePost}
-        />
+        <Suspense fallback={<ViewFallback />}>
+          <CreateBulletinPage
+            departments={DEPARTMENTS}
+            currentUser={currentUser}
+            initialPost={editingPost}
+            isEditMode={true}
+            onClose={() => setEditingPost(null)}
+            onSubmit={() => {}}
+            onUpdate={handleUpdatePost}
+          />
+        </Suspense>
       )}
 
       {/* Sticky Bottom Navigation Bar with Elevated Center FAB */}
@@ -1232,12 +1444,14 @@ export function App() {
 
       {/* Fullscreen Gesture-Only Lightbox Image Viewer */}
       {lightboxImage && (
-        <ImageViewerModal
-          imageUrl={lightboxImage.url}
-          title={lightboxImage.title}
-          location={lightboxImage.location}
-          onClose={() => setLightboxImage(null)}
-        />
+        <Suspense fallback={null}>
+          <ImageViewerModal
+            imageUrl={lightboxImage.url}
+            title={lightboxImage.title}
+            location={lightboxImage.location}
+            onClose={() => setLightboxImage(null)}
+          />
+        </Suspense>
       )}
 
       {/* In-App Mobile PWA Install Banner (Android & iOS) */}
@@ -1257,16 +1471,18 @@ export function App() {
       />
 
       {/* Dedicated Saved Posts Slide-over Drawer */}
-      <SavedPostsDrawer
-        isOpen={isSavedPostsOpen}
-        onClose={() => setIsSavedPostsOpen(false)}
-        savedPosts={posts.filter((p) => p.isBookmarked)}
-        onPostClick={(post) => {
-          setIsSavedPostsOpen(false);
-          setSelectedPostForDetail(post);
-        }}
-        onRemoveBookmark={handleBookmarkToggle}
-      />
+      <Suspense fallback={null}>
+        <SavedPostsDrawer
+          isOpen={isSavedPostsOpen}
+          onClose={() => setIsSavedPostsOpen(false)}
+          savedPosts={posts.filter((p) => p.isBookmarked)}
+          onPostClick={(post) => {
+            setIsSavedPostsOpen(false);
+            setSelectedPostForDetail(post);
+          }}
+          onRemoveBookmark={handleBookmarkToggle}
+        />
+      </Suspense>
 
       {/* Apple HIG Spring Toast Feedback */}
       {toast && (

@@ -5,6 +5,7 @@ import { compressImageFile } from '../utils/imageCompressor';
 
 const DELETED_POSTS_STORAGE_KEY = 'sesb_deleted_posts';
 const VIEWED_POSTS_STORAGE_KEY = 'sesb_viewed_bulletin_ids';
+const EDITED_POSTS_STORAGE_KEY = 'sesb_edited_posts';
 
 function getViewedPostIds(): Set<string> {
   try {
@@ -48,6 +49,35 @@ function recordDeletedPostId(postId: string) {
   }
 }
 
+function getEditedPosts(): Record<string, Partial<Post>> {
+  try {
+    const raw = localStorage.getItem(EDITED_POSTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function recordEditedPost(postId: string, updates: Partial<Post>) {
+  try {
+    const current = getEditedPosts();
+    current[postId] = { ...(current[postId] || {}), ...updates };
+    localStorage.setItem(EDITED_POSTS_STORAGE_KEY, JSON.stringify(current));
+  } catch (e) {
+    console.warn('[BulletinService] Failed to record edited post locally:', e);
+  }
+}
+
+function removeEditedPost(postId: string) {
+  try {
+    const current = getEditedPosts();
+    delete current[postId];
+    localStorage.setItem(EDITED_POSTS_STORAGE_KEY, JSON.stringify(current));
+  } catch (e) {
+    console.warn('[BulletinService] Failed to remove edited post locally:', e);
+  }
+}
+
 /**
  * Universal Bulletin Service Layer (Repository Pattern)
  * 
@@ -63,7 +93,11 @@ class BulletinService {
     const deletedIds = getDeletedPostIds();
 
     if (!isSupabaseConfigured || !supabase) {
-      return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+      const localEdits = getEditedPosts();
+      const withEdits = INITIAL_POSTS.map((p) =>
+        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
+      );
+      return withEdits.filter((p) => !deletedIds.has(p.id));
     }
 
     try {
@@ -109,17 +143,23 @@ class BulletinService {
         departmentName: row.department,
         departmentColor: row.department_color || '#0055A4',
         officialNotice: Boolean(row.official_notice),
-        poll: row.poll || undefined,
+        poll: row.poll_data || row.poll || undefined,
         pdfUrl: row.pdf_url || undefined,
         pdfName: row.pdf_name || undefined,
         pdfSize: row.pdf_size || undefined,
         quotedPost: row.quoted_post || undefined,
+        isEdited: Boolean(row.is_edited),
+        editedAt: row.edited_at || undefined,
       }));
 
       const cloudIds = new Set(cloudPosts.map((p) => p.id));
       const combined = [...cloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
+      const localEdits = getEditedPosts();
+      const combinedWithEdits = combined.map((p) =>
+        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
+      );
       // Ensure pinned bulletins stay at the very top of the feed
-      const sorted = combined.sort((a, b) => {
+      const sorted = combinedWithEdits.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
         return 0;
@@ -127,7 +167,11 @@ class BulletinService {
       return sorted.filter((p) => !deletedIds.has(p.id));
     } catch (err) {
       console.warn('[BulletinService] Offline / connection error, using local data:', err);
-      return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+      const localEdits = getEditedPosts();
+      const withEdits = INITIAL_POSTS.map((p) =>
+        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
+      );
+      return withEdits.filter((p) => !deletedIds.has(p.id));
     }
   }
 
@@ -429,8 +473,23 @@ class BulletinService {
   async deletePost(postId: string): Promise<boolean> {
     // 1. Immediately record deletion tombstone in local persistence
     recordDeletedPostId(postId);
+    removeEditedPost(postId);
 
-    // 2. Sync to Supabase cloud if configured
+    // 2. Broadcast immediately over realtime channel so other connected tabs/devices update instantly
+    if (supabase) {
+      try {
+        const liveChannel = supabase.channel('realtime:bulletin-live');
+        liveChannel.send({
+          type: 'broadcast',
+          event: 'post_deleted',
+          payload: { id: postId },
+        });
+      } catch (bErr) {
+        console.warn('[BulletinService] broadcast post_deleted warning:', bErr);
+      }
+    }
+
+    // 3. Sync to Supabase cloud if configured
     if (isSupabaseConfigured && supabase) {
       try {
         // Delete associated comments first to maintain referential integrity
@@ -455,6 +514,24 @@ class BulletinService {
    * Update an existing post by ID
    */
   async updatePost(postId: string, updates: Partial<Post>): Promise<boolean> {
+    // 1. Immediately record in local storage so page refreshes and offline mode preserve edits
+    recordEditedPost(postId, updates);
+
+    // 2. Broadcast immediately over realtime channel so other connected tabs/devices update instantly
+    if (supabase) {
+      try {
+        const liveChannel = supabase.channel('realtime:bulletin-live');
+        liveChannel.send({
+          type: 'broadcast',
+          event: 'post_updated',
+          payload: { id: postId, ...updates },
+        });
+      } catch (bErr) {
+        console.warn('[BulletinService] broadcast post_updated warning:', bErr);
+      }
+    }
+
+    // 3. Sync to Supabase cloud if configured
     if (isSupabaseConfigured && supabase) {
       try {
         const updatePayload: Record<string, any> = {};
@@ -480,10 +557,48 @@ class BulletinService {
         if (updates.pdfName !== undefined) updatePayload.pdf_name = updates.pdfName;
         if (updates.pdfSize !== undefined) updatePayload.pdf_size = updates.pdfSize;
 
-        const { error } = await supabase.from('posts').update(updatePayload).eq('id', postId);
+        const { data: updatedRows, error } = await supabase
+          .from('posts')
+          .update(updatePayload)
+          .eq('id', postId)
+          .select('id');
+
         if (error) {
           console.warn('[BulletinService] updatePost error:', error.message);
-          return false;
+        } else if (!updatedRows || updatedRows.length === 0) {
+          // If post does not exist in Supabase yet (was a seed post from INITIAL_POSTS), upsert it!
+          const seedPost = INITIAL_POSTS.find((p) => p.id === postId);
+          if (seedPost) {
+            const merged = { ...seedPost, ...updates };
+            await supabase.from('posts').insert([
+              {
+                id: merged.id,
+                title: merged.title,
+                content: merged.content,
+                author_id: merged.author.id,
+                author_name: merged.author.name,
+                author_role: merged.author.designation,
+                author_avatar: merged.author.avatarUrl,
+                department: merged.departmentName,
+                department_id: merged.departmentId,
+                department_color: merged.departmentColor,
+                location: merged.location,
+                image_url: merged.imageUrl,
+                media_urls: merged.mediaUrls || [],
+                is_pinned: merged.isPinned,
+                official_notice: merged.officialNotice,
+                comments_enabled: merged.commentsEnabled,
+                likes_count: merged.likesCount,
+                comments_count: merged.commentsCount,
+                poll_data: merged.poll || null,
+                pdf_url: merged.pdfUrl || null,
+                pdf_name: merged.pdfName || null,
+                pdf_size: merged.pdfSize || null,
+                is_edited: true,
+                edited_at: updates.editedAt || 'Just now (edited)',
+              },
+            ]);
+          }
         }
         return true;
       } catch (err) {

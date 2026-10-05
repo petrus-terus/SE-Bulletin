@@ -204,7 +204,10 @@ CREATE POLICY "Allow public insert/update on profiles"
     ON public.profiles FOR ALL
     USING (true);
 
--- 7. Enable Realtime Replication for Live Counters (Safe Check)
+-- 7. Enable Realtime Replication for Live Counters & Content (Safe Check)
+ALTER TABLE public.posts REPLICA IDENTITY FULL;
+ALTER TABLE public.comments REPLICA IDENTITY FULL;
+
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -340,3 +343,19 @@ Before distributing the link to Sabah Electricity colleagues:
   - Open the app on two devices simultaneously.
   - Like a post on Device A → verify reaction counter updates on Device B within ~500ms via WebSockets.
   - Add a comment on Device A → verify comment appears in the drawer on Device B.
+  - Edit or delete a post on Device A → verify change reflects instantly on Device B without manual page reload.
+
+---
+
+## 6. Pilot Access Gate & Account Credentials Reference
+
+### Pre-Auth Security Gate
+To prevent unauthorized public discovery on the Cloudflare Pages pilot URL:
+- **Pilot Passcode**: `SEBULLETIN@2026` (stored in `localStorage` under `sesb_pilot_unlocked`)
+
+### Built-in Accounts
+| Account | Username / Email | Password | Role | Permissions |
+|---|---|---|---|---|
+| **TEST_USER** *(SuperAdmin)* | `TEST_USER` / `test@sesb.com.my` | `TestAdmin@2026` *(or `SEBULLETIN@2026`)* | SuperAdmin | Author of all migrated bulletins & stories; **Global moderation rights** to edit/delete any post across the platform (including CEO posts). |
+| **CEO Office** | `CEO` / `ceo.office@sesb.com.my` | `CeoOffice@2026` *(or `SEBULLETIN@2026`)* | SuperAdmin | Author of the official IDD Coffee Machine poll bulletin; executive profile. |
+| **New Staff Sign Up** | *Any Sabah Electricity name & email* | *User-defined* | GeneralStaff | Auto-registered via the "New Staff Sign Up" tab; can author new posts/stories, and edit/delete **only their own** posts. |

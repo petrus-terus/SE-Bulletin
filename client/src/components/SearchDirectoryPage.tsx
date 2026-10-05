@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Department, Post } from '../types/bulletin';
-import { ALL_EMPLOYEES } from '../services/mockData';
+import { ALL_EMPLOYEES, getRegisteredEmployees } from '../services/mockData';
 import { FeedCard } from './FeedCard';
 import { Toast } from './Toast';
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
@@ -18,19 +18,6 @@ interface EmployeeRecord {
   avatarUrl: string;
   isOnline: boolean;
 }
-
-const MOCK_EMPLOYEES: EmployeeRecord[] = ALL_EMPLOYEES.map((emp) => ({
-  id: emp.id,
-  name: emp.name,
-  designation: emp.designation,
-  department: emp.department,
-  departmentId: emp.adminDepartments?.[0] || 'dept-ops',
-  staffId: emp.employeeId,
-  extension: emp.phoneExtension || 'Ext. 4100',
-  email: emp.email,
-  avatarUrl: emp.avatarUrl,
-  isOnline: Boolean(emp.isOnline),
-}));
 
 const TRENDING_QUERIES = [
   '#SOP2026',
@@ -94,8 +81,22 @@ export const SearchDirectoryPage: React.FC<Props> = ({
 
   const effectiveQuery = (selectedTag || query).trim().toLowerCase();
 
+  // Load full active employee directory (TEST_USER, CEO, plus any newly registered staff)
+  const allStaff: EmployeeRecord[] = [...ALL_EMPLOYEES, ...getRegisteredEmployees()].map((emp) => ({
+    id: emp.id,
+    name: emp.name,
+    designation: emp.designation,
+    department: emp.department,
+    departmentId: emp.adminDepartments?.[0] || 'dept-ops',
+    staffId: emp.employeeId,
+    extension: emp.phoneExtension || 'Ext. 4100',
+    email: emp.email,
+    avatarUrl: emp.avatarUrl,
+    isOnline: Boolean(emp.isOnline),
+  }));
+
   // Filter Employees
-  const filteredEmployees = MOCK_EMPLOYEES.filter((emp) => {
+  const filteredEmployees = allStaff.filter((emp) => {
     if (activeCategory === 'circulars' || activeCategory === 'departments') return false;
     if (!effectiveQuery) return true;
     return (
