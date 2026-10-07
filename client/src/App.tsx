@@ -200,9 +200,9 @@ export function App() {
       const targetPost = posts.find((p) => p.id === notif.targetPostId);
       if (targetPost) {
         if (notif.targetCommentId || notif.category === 'comment') {
-          setActiveCommentPost(targetPost);
+          setActiveCommentPostId(targetPost.id);
         } else {
-          setSelectedPostForDetail(targetPost);
+          setSelectedPostId(targetPost.id);
         }
       }
     }
@@ -212,22 +212,28 @@ export function App() {
   const [viewedProfileEmployee, setViewedProfileEmployee] = useState<Employee | null>(null);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
 
-  // Modals & Drawers
+  // Modals & Drawers State (ID based to prevent state desync with feed)
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
   const [isBrandSidebarOpen, setIsBrandSidebarOpen] = useState(false);
   const [isSavedPostsOpen, setIsSavedPostsOpen] = useState(false);
-  const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
-  const [activeResharePost, setActiveResharePost] = useState<Post | null>(null);
-  const [activeQuotePost, setActiveQuotePost] = useState<Post | null>(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const [activeResharePostId, setActiveResharePostId] = useState<string | null>(null);
+  const [activeQuotePostId, setActiveQuotePostId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
-  const [selectedPostForDetail, setSelectedPostForDetail] = useState<Post | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{
     url: string;
     title?: string;
     location?: string | null;
   } | null>(null);
+
+  // Derived Reactive Entities (Single Source of Truth)
+  const selectedPostForDetail = selectedPostId ? posts.find((p) => p.id === selectedPostId) || null : null;
+  const activeCommentPost = activeCommentPostId ? posts.find((p) => p.id === activeCommentPostId) || null : null;
+  const activeResharePost = activeResharePostId ? posts.find((p) => p.id === activeResharePostId) || null : null;
+  const activeQuotePost = activeQuotePostId ? posts.find((p) => p.id === activeQuotePostId) || null : null;
 
   // Corporate Staff Logout Handler
   const handleLogout = async () => {
@@ -467,33 +473,6 @@ export function App() {
             })
           );
 
-          setSelectedPostForDetail((prev) => {
-            if (!prev || prev.id !== row.id) return prev;
-            return {
-              ...prev,
-              title: row.title !== undefined ? row.title : prev.title,
-              content: row.content !== undefined ? row.content : prev.content,
-              location: row.location !== undefined ? row.location : prev.location,
-              imageUrl: row.image_url !== undefined ? row.image_url : prev.imageUrl,
-              mediaUrls: Array.isArray(row.media_urls)
-                ? row.media_urls
-                : row.image_url
-                ? [row.image_url]
-                : prev.mediaUrls,
-              isPinned: row.is_pinned !== undefined ? Boolean(row.is_pinned) : prev.isPinned,
-              commentsEnabled:
-                row.comments_enabled !== undefined
-                  ? Boolean(row.comments_enabled)
-                  : prev.commentsEnabled,
-              likesCount: Number(row.likes_count ?? prev.likesCount),
-              commentsCount: Number(row.comments_count ?? prev.commentsCount),
-              poll: row.poll_data || row.poll || prev.poll,
-              reactions: row.reactions_breakdown !== undefined ? row.reactions_breakdown : prev.reactions,
-              isEdited: row.is_edited !== undefined ? Boolean(row.is_edited) : prev.isEdited,
-              editedAt: row.edited_at || prev.editedAt,
-            };
-          });
-
           if (row.is_edited) {
             setToast({
               message: `Updated: "${(row.title || 'Bulletin').slice(0, 26)}..."`,
@@ -586,8 +565,8 @@ export function App() {
           const oldRow = payload.old as any;
           if (oldRow?.id) {
             setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
-            setSelectedPostForDetail((prev) => (prev?.id === oldRow.id ? null : prev));
-            setActiveCommentPost((prev) => (prev?.id === oldRow.id ? null : prev));
+            setSelectedPostId((curr) => (curr === oldRow.id ? null : curr));
+            setActiveCommentPostId((curr) => (curr === oldRow.id ? null : curr));
           }
         }
       )
@@ -599,8 +578,8 @@ export function App() {
           const deletedId = (payload?.payload as any)?.id;
           if (deletedId) {
             setPosts((prev) => prev.filter((p) => p.id !== deletedId));
-            setSelectedPostForDetail((prev) => (prev?.id === deletedId ? null : prev));
-            setActiveCommentPost((prev) => (prev?.id === deletedId ? null : prev));
+            setSelectedPostId((curr) => (curr === deletedId ? null : curr));
+            setActiveCommentPostId((curr) => (curr === deletedId ? null : curr));
           }
         }
       )
@@ -613,9 +592,6 @@ export function App() {
           if (updated?.id) {
             setPosts((prev) =>
               prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
-            );
-            setSelectedPostForDetail((prev) =>
-              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
             );
           }
         }
@@ -639,8 +615,8 @@ export function App() {
     const emp = getEmployeeByAuthor(author);
     setViewedProfileEmployee(emp);
     setPreviousTab(activeTab);
-    setSelectedPostForDetail(null);
-    setActiveCommentPost(null);
+    setSelectedPostId(null);
+    setActiveCommentPostId(null);
     setActiveTab('profile');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -1000,11 +976,17 @@ export function App() {
     const postToDelete = posts.find(p => p.id === postId);
     
     setPosts((prev) => prev.filter((p) => p.id !== postId));
-    if (selectedPostForDetail?.id === postId) {
-      setSelectedPostForDetail(null);
+    if (selectedPostId === postId) {
+      setSelectedPostId(null);
     }
-    if (activeCommentPost?.id === postId) {
-      setActiveCommentPost(null);
+    if (activeCommentPostId === postId) {
+      setActiveCommentPostId(null);
+    }
+    if (activeResharePostId === postId) {
+      setActiveResharePostId(null);
+    }
+    if (activeQuotePostId === postId) {
+      setActiveQuotePostId(null);
     }
 
     try {
@@ -1042,19 +1024,6 @@ export function App() {
       })
     );
 
-    if (selectedPostForDetail?.id === postId) {
-      setSelectedPostForDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...updatedData,
-              isEdited: true,
-              editedAt: new Date().toISOString(),
-            }
-          : null
-      );
-    }
-
     try {
       await bulletinService.updatePost(postId, {
         ...updatedData,
@@ -1069,7 +1038,6 @@ export function App() {
     } catch (err) {
       if (oldPost) {
         setPosts((prev) => prev.map((p) => (p.id === postId ? oldPost : p)));
-        if (selectedPostForDetail?.id === postId) setSelectedPostForDetail(oldPost);
       }
       setToast({
         message: 'Failed to update bulletin',
@@ -1149,13 +1117,8 @@ export function App() {
       setPosts((prev) =>
         prev.map((p) => (p.id === post.id ? { ...p, viewsCount: updatedViews } : p))
       );
-      setSelectedPostForDetail({
-        ...post,
-        viewsCount: updatedViews,
-      });
-    } else {
-      setSelectedPostForDetail(post);
     }
+    setSelectedPostId(post.id);
   };
 
   // 0. Pre-Auth Pilot Passcode Gate (Confidential Staging Protection)
@@ -1211,7 +1174,7 @@ export function App() {
           <DesktopSidebar
             activeTab={activeTab}
             onTabChange={(tab) => {
-              setSelectedPostForDetail(null);
+              setSelectedPostId(null);
               if (tab === 'profile') setViewedProfileEmployee(null);
               setActiveTab(tab);
             }}
@@ -1227,82 +1190,22 @@ export function App() {
             <PostDetailView
               post={selectedPostForDetail}
               comments={commentsByPost[selectedPostForDetail.id] || []}
-              onBack={() => setSelectedPostForDetail(null)}
-            onAuthorClick={handleViewAuthorProfile}
-            onLikeToggle={(postId) => {
-              handleLikeToggle(postId);
-              setSelectedPostForDetail((prev) =>
-                prev && prev.id === postId
-                  ? {
-                      ...prev,
-                      isLiked: !prev.isLiked,
-                      likesCount: !prev.isLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
-                    }
-                  : prev
-              );
-            }}
-            onBookmarkToggle={(postId) => {
-              handleBookmarkToggle(postId);
-              setSelectedPostForDetail((prev) =>
-                prev && prev.id === postId ? { ...prev, isBookmarked: !prev.isBookmarked } : prev
-              );
-            }}
-            currentUserId={currentUser.id}
-            currentUserName={currentUser.name}
-            currentUserRole={currentUser.role}
-            onDeletePost={handleDeletePost}
-            onEditPost={(post) => setEditingPost(post)}
-            onImageClick={(imageUrl, title, location) => {
-              setLightboxImage({ url: imageUrl, title, location });
-            }}
-            onAddComment={(postId, text) => {
-              handleAddComment(postId, text);
-              setSelectedPostForDetail((prev) =>
-                prev && prev.id === postId
-                  ? { ...prev, commentsCount: prev.commentsCount + 1 }
-                  : prev
-              );
-            }}
-            onVotePoll={(postId, optionId) => {
-              handleVotePoll(postId, optionId);
-              setSelectedPostForDetail((prev) => {
-                if (prev && prev.id === postId && prev.poll) {
-                  const currentVoted = prev.poll.userVotedOptionId;
-                  if (currentVoted === optionId) {
-                    const updatedOptions = prev.poll.options.map((opt) => {
-                      if (opt.id === optionId) return { ...opt, votes: Math.max(0, opt.votes - 1) };
-                      return opt;
-                    });
-                    return {
-                      ...prev,
-                      poll: {
-                        ...prev.poll,
-                        options: updatedOptions,
-                        totalVotes: Math.max(0, prev.poll.totalVotes - 1),
-                        userVotedOptionId: undefined,
-                      },
-                    };
-                  }
-                  const updatedOptions = prev.poll.options.map((opt) => {
-                    if (opt.id === optionId) return { ...opt, votes: opt.votes + 1 };
-                    if (currentVoted && opt.id === currentVoted) return { ...opt, votes: Math.max(0, opt.votes - 1) };
-                    return opt;
-                  });
-                  return {
-                    ...prev,
-                    poll: {
-                      ...prev.poll,
-                      options: updatedOptions,
-                      totalVotes: currentVoted ? prev.poll.totalVotes : prev.poll.totalVotes + 1,
-                      userVotedOptionId: optionId,
-                    },
-                  };
-                }
-                return prev;
-              });
-            }}
-            onReshareClick={(p) => setActiveResharePost(p)}
-          />
+              onBack={() => setSelectedPostId(null)}
+              onAuthorClick={handleViewAuthorProfile}
+              onLikeToggle={handleLikeToggle}
+              onBookmarkToggle={handleBookmarkToggle}
+              currentUserId={currentUser.id}
+              currentUserName={currentUser.name}
+              currentUserRole={currentUser.role}
+              onDeletePost={handleDeletePost}
+              onEditPost={(post) => setEditingPost(post)}
+              onImageClick={(imageUrl, title, location) => {
+                setLightboxImage({ url: imageUrl, title, location });
+              }}
+              onAddComment={handleAddComment}
+              onVotePoll={handleVotePoll}
+              onReshareClick={(p: Post) => setActiveResharePostId(p.id)}
+            />
         </Suspense>
       ) : (
           <>
@@ -1325,7 +1228,7 @@ export function App() {
             <TrendingSection
               posts={posts}
               onSelectPost={handleOpenPostDetail}
-              onOpenComments={(post) => setActiveCommentPost(post)}
+              onOpenComments={(post) => setActiveCommentPostId(post.id)}
             />
 
             {/* 2.1 CEO Wisdom Section */}
@@ -1333,7 +1236,7 @@ export function App() {
               ceoPost={latestCeoPost}
               onVotePoll={handleVotePoll}
               onLikeToggle={handleLikeToggle}
-              onCommentClick={(p) => setActiveCommentPost(p)}
+              onCommentClick={(p) => setActiveCommentPostId(p.id)}
               onBookmarkToggle={handleBookmarkToggle}
               onPostClick={handleOpenPostDetail}
               onViewCeoProfile={() =>
@@ -1392,7 +1295,7 @@ export function App() {
                       currentUserRole={currentUser.role}
                       currentUserAvatar={currentUser.avatarUrl}
                       onLikeToggle={handleLikeToggle}
-                      onCommentClick={(p) => setActiveCommentPost(p)}
+                      onCommentClick={(p) => setActiveCommentPostId(p.id)}
                       onBookmarkToggle={handleBookmarkToggle}
                       onDeletePost={handleDeletePost}
                       onEditPost={(post) => setEditingPost(post)}
@@ -1403,7 +1306,7 @@ export function App() {
                       onReshareToggle={handleReshareToggle}
                       onQuotePost={handleQuotePost}
                       onSharePost={handleSharePost}
-                      onReshareClick={(p) => setActiveResharePost(p)}
+                      onReshareClick={(p) => setActiveResharePostId(p.id)}
                     />
                   </ErrorBoundary>
                 ))
@@ -1423,7 +1326,7 @@ export function App() {
               currentUserRole={currentUser.role}
               currentUserAvatar={currentUser.avatarUrl}
               onLikeToggle={handleLikeToggle}
-              onOpenComments={(post) => setActiveCommentPost(post)}
+              onOpenComments={(post) => setActiveCommentPostId(post.id)}
               onDeletePost={handleDeletePost}
               onEditPost={(post) => setEditingPost(post)}
               onPostClick={handleOpenPostDetail}
@@ -1434,7 +1337,7 @@ export function App() {
               onReshareToggle={handleReshareToggle}
               onQuotePost={handleQuotePost}
               onSharePost={handleSharePost}
-              onReshareClick={(p) => setActiveResharePost(p)}
+              onReshareClick={(p) => setActiveResharePostId(p.id)}
             />
           </Suspense>
         )}
@@ -1467,7 +1370,7 @@ export function App() {
                   : undefined
               }
               onLikeToggle={handleLikeToggle}
-              onOpenComments={(post) => setActiveCommentPost(post)}
+              onOpenComments={(post) => setActiveCommentPostId(post.id)}
               onDeletePost={handleDeletePost}
               onEditPost={(post) => setEditingPost(post)}
               onOpenCreate={() => setIsCreateOpen(true)}
@@ -1500,7 +1403,7 @@ export function App() {
           post={activeCommentPost}
           currentUser={currentUser}
           isOpen={activeCommentPost !== null}
-          onClose={() => setActiveCommentPost(null)}
+          onClose={() => setActiveCommentPostId(null)}
           onAddComment={handleAddComment}
           comments={commentsByPost[activeCommentPost.id] || []}
           onAuthorClick={(name, dept) => handleViewAuthorProfile({ name, department: dept })}
@@ -1512,15 +1415,15 @@ export function App() {
         <ReshareBottomSheet
           isOpen={Boolean(activeResharePost)}
           isReshared={activeResharePost.isReshared}
-          onClose={() => setActiveResharePost(null)}
+          onClose={() => setActiveResharePostId(null)}
           onRepost={() => {
             handleReshareToggle(activeResharePost.id);
-            setActiveResharePost(null);
+            setActiveResharePostId(null);
           }}
           onQuote={() => {
-            const target = activeResharePost;
-            setActiveResharePost(null);
-            setActiveQuotePost(target);
+            const targetId = activeResharePost.id;
+            setActiveResharePostId(null);
+            setActiveQuotePostId(targetId);
           }}
         />
       )}
@@ -1532,10 +1435,10 @@ export function App() {
           quotedPost={activeQuotePost}
           currentUserAvatar={currentUser.avatarUrl}
           currentUserName={currentUser.name}
-          onClose={() => setActiveQuotePost(null)}
+          onClose={() => setActiveQuotePostId(null)}
           onSubmit={(commentText) => {
             handleQuotePost(activeQuotePost, commentText);
-            setActiveQuotePost(null);
+            setActiveQuotePostId(null);
           }}
         />
       )}
@@ -1593,7 +1496,7 @@ export function App() {
       <BottomNav
         activeTab={activeTab}
         onTabChange={(tab) => {
-          setSelectedPostForDetail(null);
+          setSelectedPostId(null);
           if (tab === 'profile') setViewedProfileEmployee(null);
           setActiveTab(tab);
         }}
@@ -1637,7 +1540,7 @@ export function App() {
           savedPosts={posts.filter((p) => p.isBookmarked)}
           onPostClick={(post) => {
             setIsSavedPostsOpen(false);
-            setSelectedPostForDetail(post);
+            setSelectedPostId(post.id);
           }}
           onRemoveBookmark={handleBookmarkToggle}
         />
