@@ -588,7 +588,7 @@ class BulletinService {
             .from('posts')
             .select('views_count')
             .eq('id', postId)
-            .single();
+            .maybeSingle();
 
           if (currentPost) {
             await supabase
@@ -619,7 +619,10 @@ class BulletinService {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        // maybeSingle: a signed-in user with no profile row is a valid
+        // "not provisioned yet" state, not an error. .single() surfaces
+        // PGRST116 as HTTP 406 for that expected case.
+        .maybeSingle();
 
       if (error || !data) return null;
 
