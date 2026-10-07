@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, Comment } from '@/types/bulletin';
-import { InteractivePollCard } from '@/features/post/InteractivePollCard';
+import { InteractivePollCard } from '@/shared/InteractivePollCard';
 import { formatCompactNumber } from '@/utils/format';
 import styles from './PostDetailView.module.css';
 

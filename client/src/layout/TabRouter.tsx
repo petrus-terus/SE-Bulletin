@@ -8,7 +8,7 @@ import { TrendingSection } from '@/features/feed/TrendingSection';
 import { CeoWisdomSection } from '@/features/feed/CeoWisdomSection';
 import { StoriesBar } from '@/features/stories/StoriesBar';
 import { DepartmentFilters } from '@/features/feed/DepartmentFilters';
-import { FeedCard } from '@/features/feed/FeedCard';
+import { FeedCard } from '@/shared/FeedCard';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
 
 // Lazy-loaded tab sub-pages

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Department, Employee, Post } from '@/types/bulletin';
 import { ALL_EMPLOYEES, getRegisteredEmployees } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
-import { FeedCard } from '@/features/feed/FeedCard';
+import { FeedCard } from '@/shared/FeedCard';
 import { Toast } from '@/ui/Toast';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './SearchDirectoryPage.module.css';
