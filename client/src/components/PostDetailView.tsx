@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, Comment } from '../types/bulletin';
 import { InteractivePollCard } from './InteractivePollCard';
-import { formatCompactNumber } from '../utils/imageCompressor';
+import { formatCompactNumber } from '@/utils/format';
 import styles from './PostDetailView.module.css';
 
 interface Props {

@@ -4,7 +4,7 @@ import type { EmojiReactionType, Post } from '../types/bulletin';
 import { InteractivePollCard } from './InteractivePollCard';
 import { ReshareBottomSheet } from './ReshareBottomSheet';
 import { QuoteBulletinModal } from './QuoteBulletinModal';
-import { formatCompactNumber } from '../utils/imageCompressor';
+import { formatCompactNumber } from '@/utils/format';
 import styles from './FeedCard.module.css';
 
 interface Props {

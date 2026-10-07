@@ -37,7 +37,7 @@ function markPostIdAsViewed(postId: string) {
     const ids = getViewedPostIds();
     ids.add(postId);
     sessionStorage.setItem(VIEWED_POSTS_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch (e) {
+  } catch {
     console.warn('[BulletinService] Failed to record viewed post ID:', e);
   }
 }
@@ -690,7 +690,7 @@ class BulletinService {
       try {
         const nonStatic = cloudProfiles.filter((p) => p.id !== 'user-test' && p.id !== 'user-ceo');
         localStorage.setItem('sesb_registered_users', JSON.stringify(nonStatic));
-      } catch (e) {
+      } catch {
         // quota fallback
       }
 

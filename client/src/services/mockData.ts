@@ -1,4 +1,4 @@
-import type { Department, Employee, Post, Story } from '../types/bulletin';
+import type { Employee, Post, Story } from '../types/bulletin';
 
 export const CURRENT_USER: Employee = {
   id: 'user-test',
@@ -78,117 +78,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
   };
 }
 
-/**
- * The 12 Canonical Bahagian of Sabah Electricity Sdn. Bhd. (SESB)
- * Source: Official SESB Organizational Chart (20 August 2026)
- */
-export const DEPARTMENTS: Department[] = [
-  {
-    id: 'dept-all',
-    code: 'ALL',
-    name: 'All Bahagian',
-    color: '#0055A4',
-    icon: 'dynamic_feed',
-    followerCount: 3200,
-  },
-  {
-    id: 'dept-ceo',
-    code: 'CEO',
-    name: 'Chief Executive Officer (CEO) Office',
-    color: '#003E7A',
-    icon: 'corporate_fare',
-    followerCount: 1650,
-  },
-  {
-    id: 'dept-sb',
-    code: 'SB',
-    name: 'Single Buyer',
-    color: '#1A7A5A',
-    icon: 'handshake',
-    followerCount: 780,
-  },
-  {
-    id: 'dept-gso',
-    code: 'GSO',
-    name: 'Grid System Operator',
-    color: '#0055A4',
-    icon: 'electrical_services',
-    followerCount: 1240,
-  },
-  {
-    id: 'dept-mp',
-    code: 'MP',
-    name: 'Major Project',
-    color: '#006C4D',
-    icon: 'foundation',
-    followerCount: 910,
-  },
-  {
-    id: 'dept-ops',
-    code: 'OPS',
-    name: 'Operating',
-    color: '#0055A4',
-    icon: 'bolt',
-    followerCount: 2850,
-  },
-  {
-    id: 'dept-ss',
-    code: 'SS',
-    name: 'Strategy & Sustainability',
-    color: '#10B981',
-    colorText: '#0B0F17',
-    icon: 'eco',
-    followerCount: 960,
-  },
-  {
-    id: 'dept-cs',
-    code: 'CS',
-    name: 'Corporate Services',
-    color: '#F59E0B',
-    icon: 'shield_with_heart',
-    followerCount: 1420,
-  },
-  {
-    id: 'dept-cc',
-    code: 'CC',
-    name: 'Corporate Communication',
-    color: '#0055A4',
-    icon: 'campaign',
-    followerCount: 1890,
-  },
-  {
-    id: 'dept-fin',
-    code: 'FIN',
-    name: 'Finance',
-    color: '#1A7A5A',
-    icon: 'account_balance',
-    followerCount: 820,
-  },
-  {
-    id: 'dept-hr',
-    code: 'HR',
-    name: 'Human Resources',
-    color: '#006C4D',
-    icon: 'diversity_3',
-    followerCount: 1350,
-  },
-  {
-    id: 'dept-id',
-    code: 'ID',
-    name: 'Information & Digital',
-    color: '#003E7A',
-    icon: 'terminal',
-    followerCount: 1100,
-  },
-  {
-    id: 'dept-proc',
-    code: 'PROC',
-    name: 'Procurement',
-    color: '#64748B',
-    icon: 'shopping_cart_checkout',
-    followerCount: 740,
-  },
-];
+export { DEPARTMENTS } from '../data/departments';
 
 export const INITIAL_STORIES: Story[] = [
   {
