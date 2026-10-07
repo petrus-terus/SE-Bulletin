@@ -248,12 +248,19 @@ export function usePostActions({
     const newQuotePost = await bulletinService.createPost(payload, currentUser);
     const updatedReshares = (quotedPost.resharesCount || 0) + 1;
 
-    setPosts((prev) => [
-      newQuotePost,
-      ...prev.map((p) =>
-        p.id === quotedPost.id ? { ...p, resharesCount: updatedReshares } : p
-      ),
-    ]);
+    // Dedupe: realtime INSERT may have already added this quote post.
+    setPosts((prev) =>
+      prev.some((p) => p.id === newQuotePost.id)
+        ? prev.map((p) =>
+            p.id === quotedPost.id ? { ...p, resharesCount: updatedReshares } : p
+          )
+        : [
+            newQuotePost,
+            ...prev.map((p) =>
+              p.id === quotedPost.id ? { ...p, resharesCount: updatedReshares } : p
+            ),
+          ]
+    );
 
     bulletinService.updatePost(quotedPost.id, {
       resharesCount: updatedReshares,
@@ -336,7 +343,11 @@ export function usePostActions({
 
   // Publish New Post Handler
   const handlePublishPost = (newPost: Post) => {
-    setPosts((prev) => [newPost, ...prev]);
+    // Realtime INSERT may have already delivered this post — dedupe to avoid
+    // duplicate React keys (the same id appearing twice in the feed).
+    setPosts((prev) =>
+      prev.some((p) => p.id === newPost.id) ? prev : [newPost, ...prev]
+    );
     setToast({
       message: 'Bulletin posted successfully',
       icon: 'campaign',
