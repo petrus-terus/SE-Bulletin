@@ -39,6 +39,8 @@ Thumbs.db
 [Dd]esktop.ini
 .DS_Store
 
-# Temporary scratch
+# Temporary scratch & audit artifacts
 *.tmp
 *.log
+output/
+scratch/

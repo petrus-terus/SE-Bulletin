@@ -127,25 +127,9 @@ export const ProfilePage: React.FC<Props> = ({
         if (onUpdateProfile) onUpdateProfile(updated);
       }
     } catch (err) {
-      console.warn('[ProfilePage] Upload failed, using fallback reader:', err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        if (!result) return;
-
-        if (mode === 'avatar') {
-          const updated = { ...profileData, avatarUrl: result };
-          setProfileData(updated);
-          setTempAvatarUrl(result);
-          if (onUpdateProfile) onUpdateProfile(updated);
-        } else {
-          const updated = { ...profileData, coverUrl: result };
-          setProfileData(updated);
-          setTempCoverUrl(result);
-          if (onUpdateProfile) onUpdateProfile(updated);
-        }
-      };
-      reader.readAsDataURL(file);
+      console.error('[ProfilePage] Upload failed:', err);
+      // Ideally show a toast here, but we'll let the user know upload failed.
+      alert('Failed to upload image. Please check your connection and try again.');
     } finally {
       // Reset target value so selecting the same photo triggers change
       e.target.value = '';

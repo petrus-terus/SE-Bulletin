@@ -19,12 +19,12 @@ const SESB_GRADIENTS = [
 /**
  * Creates an image dataURL from a gradient and text content so it can be previewed anywhere
  */
-function createTextCardImage(text: string, gradient: string, authorName: string, deptName: string): string {
+function createTextCardImage(text: string, gradient: string, authorName: string, deptName: string): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
+  if (!ctx) return Promise.reject(new Error("No canvas context"));
 
   // Background
   const linear = ctx.createLinearGradient(0, 0, 1080, 1920);
@@ -93,7 +93,15 @@ function createTextCardImage(text: string, gradient: string, authorName: string,
   ctx.font = 'bold 32px sans-serif';
   ctx.fillText('Sabah Electricity • 24h Story', 540, 1780);
 
-  return canvas.toDataURL('image/jpeg', 0.85);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Canvas toBlob failed"));
+      }
+    }, 'image/jpeg', 0.85);
+  });
 }
 
 export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubmit }) => {
@@ -117,30 +125,40 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
       setPhotoUrl(uploadedUrl);
       setUploadStatus('Cloud Ready');
     } catch (err) {
-      console.warn('[CreateStoryModal] Compression error, using direct URL:', err);
-      setPhotoUrl(URL.createObjectURL(file));
-      setUploadStatus('Offline Mode');
+      console.error('[CreateStoryModal] Upload failed:', err);
+      setUploadStatus('Upload Failed');
+      alert('Failed to upload image. Please try again.');
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     let finalImageUrl = photoUrl;
     let finalCaption = caption.trim();
 
-    if (mode === 'text') {
-      if (!textStory.trim()) return;
-      finalCaption = textStory.trim();
-      finalImageUrl = createTextCardImage(
-        finalCaption,
-        selectedGradient,
-        currentUser.name,
-        currentUser.department
-      );
-    } else {
-      if (!finalImageUrl) return;
+    setIsCompressing(true);
+    try {
+      if (mode === 'text') {
+        if (!textStory.trim()) return;
+        finalCaption = textStory.trim();
+        const blob = await createTextCardImage(
+          finalCaption,
+          selectedGradient,
+          currentUser.name,
+          currentUser.department
+        );
+        const file = new File([blob], 'text-story.jpg', { type: 'image/jpeg' });
+        finalImageUrl = await bulletinService.uploadPhoto(file);
+      } else {
+        if (!finalImageUrl) return;
+      }
+    } catch (err) {
+      console.error('Failed to create or upload text story:', err);
+      alert('Failed to publish story. Please check your connection.');
+      setIsCompressing(false);
+      return;
     }
 
     const newStory: Story = {

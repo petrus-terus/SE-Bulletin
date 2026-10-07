@@ -93,9 +93,10 @@ CREATE TABLE public.posts (
 );
 
 -- 2. Create Comments Table
-CREATE TABLE public.comments (
+CREATE TABLE IF NOT EXISTS public.comments (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     post_id TEXT NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    author_id TEXT,
     author_name TEXT NOT NULL,
     author_avatar TEXT DEFAULT '/user_face.png',
     department TEXT NOT NULL,
@@ -105,11 +106,15 @@ CREATE TABLE public.comments (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Migration for existing databases that provisioned comments without author_id:
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS author_id TEXT;
+
 -- 3. Create Stories Table (24-Hour Casual Updates)
 CREATE TABLE public.stories (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     department_id TEXT NOT NULL,
     department_name TEXT NOT NULL,
+    author_id TEXT,
     author_name TEXT NOT NULL,
     author_avatar TEXT DEFAULT '/user_face.png',
     image_url TEXT NOT NULL,
@@ -144,65 +149,82 @@ ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 6. Create Permissive Policies for Pilot
+-- 6. Clean Grants & Strict RLS Policies for Pilot
+REVOKE ALL ON TABLE public.posts FROM anon, authenticated;
+REVOKE ALL ON TABLE public.comments FROM anon, authenticated;
+REVOKE ALL ON TABLE public.stories FROM anon, authenticated;
+REVOKE ALL ON TABLE public.profiles FROM anon, authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.posts TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.comments TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.stories TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.profiles TO authenticated;
+
+-- Protect the role column in profiles
+REVOKE UPDATE (role) ON TABLE public.profiles FROM authenticated;
+
 -- Posts Policies
 DROP POLICY IF EXISTS "Allow public select on active posts" ON public.posts;
-CREATE POLICY "Allow public select on active posts"
-    ON public.posts FOR SELECT
+CREATE POLICY "Allow select on active posts"
+    ON public.posts FOR SELECT TO authenticated
     USING (deleted_at IS NULL);
 
 DROP POLICY IF EXISTS "Allow public insert on posts" ON public.posts;
-CREATE POLICY "Allow public insert on posts"
-    ON public.posts FOR INSERT
-    WITH CHECK (true);
+CREATE POLICY "Allow insert on posts"
+    ON public.posts FOR INSERT TO authenticated
+    WITH CHECK ( auth.uid()::text = author_id );
 
 DROP POLICY IF EXISTS "Allow public update on posts" ON public.posts;
-CREATE POLICY "Allow public update on posts"
-    ON public.posts FOR UPDATE
-    USING (true);
+CREATE POLICY "Allow update on posts"
+    ON public.posts FOR UPDATE TO authenticated
+    USING ( auth.uid()::text = author_id OR (SELECT role FROM profiles WHERE id = auth.uid()::text) IN ('SuperAdmin', 'DepartmentAdmin') );
 
 DROP POLICY IF EXISTS "Allow public delete on posts" ON public.posts;
-CREATE POLICY "Allow public delete on posts"
-    ON public.posts FOR DELETE
-    USING (true);
+CREATE POLICY "Allow delete on posts"
+    ON public.posts FOR DELETE TO authenticated
+    USING ( auth.uid()::text = author_id OR (SELECT role FROM profiles WHERE id = auth.uid()::text) IN ('SuperAdmin', 'DepartmentAdmin') );
 
 -- Comments Policies
 DROP POLICY IF EXISTS "Allow public select on comments" ON public.comments;
-CREATE POLICY "Allow public select on comments"
-    ON public.comments FOR SELECT
+CREATE POLICY "Allow select on comments"
+    ON public.comments FOR SELECT TO authenticated
     USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert on comments" ON public.comments;
-CREATE POLICY "Allow public insert on comments"
-    ON public.comments FOR INSERT
-    WITH CHECK (true);
+CREATE POLICY "Allow insert on comments"
+    ON public.comments FOR INSERT TO authenticated
+    WITH CHECK ( auth.uid()::text = author_id AND EXISTS (SELECT 1 FROM public.posts WHERE id = post_id AND comments_enabled = true) );
 
 DROP POLICY IF EXISTS "Allow public delete on comments" ON public.comments;
-CREATE POLICY "Allow public delete on comments"
-    ON public.comments FOR DELETE
-    USING (true);
+CREATE POLICY "Allow delete on comments"
+    ON public.comments FOR DELETE TO authenticated
+    USING ( auth.uid()::text = author_id OR (SELECT role FROM profiles WHERE id = auth.uid()::text) IN ('SuperAdmin', 'DepartmentAdmin') );
 
 -- Stories Policies
 DROP POLICY IF EXISTS "Allow public select on stories" ON public.stories;
-CREATE POLICY "Allow public select on stories"
-    ON public.stories FOR SELECT
+CREATE POLICY "Allow select on stories"
+    ON public.stories FOR SELECT TO authenticated
     USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert on stories" ON public.stories;
-CREATE POLICY "Allow public insert on stories"
-    ON public.stories FOR INSERT
-    WITH CHECK (true);
+CREATE POLICY "Allow insert on stories"
+    ON public.stories FOR INSERT TO authenticated
+    WITH CHECK ( auth.uid()::text = author_id );
 
 -- Profiles Policies
 DROP POLICY IF EXISTS "Allow public select on profiles" ON public.profiles;
-CREATE POLICY "Allow public select on profiles"
-    ON public.profiles FOR SELECT
+CREATE POLICY "Allow select on profiles"
+    ON public.profiles FOR SELECT TO authenticated
     USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert/update on profiles" ON public.profiles;
-CREATE POLICY "Allow public insert/update on profiles"
-    ON public.profiles FOR ALL
-    USING (true);
+CREATE POLICY "Allow insert/update on profiles"
+    ON public.profiles FOR UPDATE TO authenticated
+    USING ( auth.uid()::text = id );
+
+CREATE POLICY "Allow insert on profiles"
+    ON public.profiles FOR INSERT TO authenticated
+    WITH CHECK ( auth.uid()::text = id );
 
 -- 7. Enable Realtime Replication for Live Counters & Content (Safe Check)
 ALTER TABLE public.posts REPLICA IDENTITY FULL;
@@ -259,6 +281,23 @@ BEGIN
     WHERE id = target_post_id;
 END;
 $$;
+
+-- 9. Domain Enforcement Hook (Before User Created)
+CREATE OR REPLACE FUNCTION public.check_user_domain()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.email NOT LIKE '%@sesb.com.my' THEN
+        RAISE EXCEPTION 'Only @sesb.com.my corporate emails are allowed to register.';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Note: You must bind this trigger to auth.users in the Supabase Dashboard SQL Editor
+-- since auth schema might require superuser. 
+-- CREATE TRIGGER on_auth_user_created
+-- BEFORE INSERT ON auth.users
+-- FOR EACH ROW EXECUTE FUNCTION public.check_user_domain();
 ```
 
 ---
@@ -276,12 +315,18 @@ To store uploaded site inspection photos, plant maintenance logs, and custom ava
 5. Run the following SQL script in your **Supabase SQL Editor** to enable public uploads and reads:
 
 ```sql
--- Allow public uploads into bulletin-media bucket
+-- Configure bulletin-media bucket limits (Requires superuser / direct SQL)
+UPDATE storage.buckets 
+SET file_size_limit = 10485760, 
+    allowed_mime_types = ARRAY['image/webp', 'image/jpeg', 'application/pdf'] 
+WHERE id = 'bulletin-media';
+
+-- Allow authenticated uploads into bulletin-media bucket
 DROP POLICY IF EXISTS "Allow public uploads to bulletin-media" ON storage.objects;
-CREATE POLICY "Allow public uploads to bulletin-media"
+CREATE POLICY "Allow auth uploads to bulletin-media"
 ON storage.objects FOR INSERT
-TO anon, authenticated
-WITH CHECK (bucket_id = 'bulletin-media');
+TO authenticated
+WITH CHECK (bucket_id = 'bulletin-media' AND (auth.role() = 'authenticated'));
 
 -- Allow public reads from bulletin-media bucket
 DROP POLICY IF EXISTS "Allow public read from bulletin-media" ON storage.objects;

@@ -2,10 +2,24 @@ import type { CreatePostPayload, Employee, Post, Story } from '../types/bulletin
 import { ALL_EMPLOYEES, INITIAL_POSTS, INITIAL_STORIES, getRegisteredEmployees } from './mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { compressImageFile } from '../utils/imageCompressor';
+import { z } from 'zod';
 
-const DELETED_POSTS_STORAGE_KEY = 'sesb_deleted_posts';
+const PollOptionSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  votes: z.number().default(0),
+});
+
+const PollDataSchema = z.object({
+  id: z.string(),
+  question: z.string(),
+  options: z.array(PollOptionSchema),
+  totalVotes: z.number().default(0),
+  expiresText: z.string().optional(),
+  userVotedId: z.string().optional(),
+});
+
 const VIEWED_POSTS_STORAGE_KEY = 'sesb_viewed_bulletin_ids';
-const EDITED_POSTS_STORAGE_KEY = 'sesb_edited_posts';
 
 function getViewedPostIds(): Set<string> {
   try {
@@ -28,55 +42,7 @@ function markPostIdAsViewed(postId: string) {
   }
 }
 
-function getDeletedPostIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DELETED_POSTS_STORAGE_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch {
-    return new Set();
-  }
-}
 
-function recordDeletedPostId(postId: string) {
-  try {
-    const ids = getDeletedPostIds();
-    ids.add(postId);
-    localStorage.setItem(DELETED_POSTS_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch (e) {
-    console.warn('[BulletinService] Failed to record deleted post ID:', e);
-  }
-}
-
-function getEditedPosts(): Record<string, Partial<Post>> {
-  try {
-    const raw = localStorage.getItem(EDITED_POSTS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function recordEditedPost(postId: string, updates: Partial<Post>) {
-  try {
-    const current = getEditedPosts();
-    current[postId] = { ...(current[postId] || {}), ...updates };
-    localStorage.setItem(EDITED_POSTS_STORAGE_KEY, JSON.stringify(current));
-  } catch (e) {
-    console.warn('[BulletinService] Failed to record edited post locally:', e);
-  }
-}
-
-function removeEditedPost(postId: string) {
-  try {
-    const current = getEditedPosts();
-    delete current[postId];
-    localStorage.setItem(EDITED_POSTS_STORAGE_KEY, JSON.stringify(current));
-  } catch (e) {
-    console.warn('[BulletinService] Failed to remove edited post locally:', e);
-  }
-}
 
 /**
  * Universal Bulletin Service Layer (Repository Pattern)
@@ -89,27 +55,26 @@ class BulletinService {
   /**
    * Fetch all bulletins/posts
    */
-  async getPosts(): Promise<Post[]> {
-    const deletedIds = getDeletedPostIds();
-
+  async getPosts(cursor?: string, limit: number = 20): Promise<Post[]> {
     if (!isSupabaseConfigured || !supabase) {
-      const localEdits = getEditedPosts();
-      const withEdits = INITIAL_POSTS.map((p) =>
-        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
-      );
-      return withEdits.filter((p) => !deletedIds.has(p.id));
+      return import.meta.env.DEV ? INITIAL_POSTS : [];
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('posts')
         .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error || !data || data.length === 0) {
-        if (error) console.warn('[BulletinService] Supabase getPosts fallback:', error.message);
-        return INITIAL_POSTS.filter((p) => !deletedIds.has(p.id));
+        .order('created_at', { ascending: false })
+        .limit(limit);
+        
+      if (cursor) {
+        query = query.lt('created_at', cursor);
       }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
 
       const cloudPosts: Post[] = data.map((row) => ({
         id: row.id,
@@ -143,7 +108,13 @@ class BulletinService {
         departmentName: row.department,
         departmentColor: row.department_color || '#0055A4',
         officialNotice: Boolean(row.official_notice),
-        poll: row.poll_data || row.poll || undefined,
+        poll: row.poll_data || row.poll ? (() => {
+          const raw = row.poll_data || row.poll;
+          const parsed = PollDataSchema.safeParse(raw);
+          if (parsed.success) return parsed.data;
+          console.warn('[BulletinService] Dropping malformed poll_data on post', row.id, parsed.error);
+          return undefined;
+        })() : undefined,
         pdfUrl: row.pdf_url || undefined,
         pdfName: row.pdf_name || undefined,
         pdfSize: row.pdf_size || undefined,
@@ -154,7 +125,9 @@ class BulletinService {
 
       // Build a lookup map of all available posts to resolve quote_post_id
       const postLookup = new Map<string, Post>();
-      INITIAL_POSTS.forEach((p) => postLookup.set(p.id, p));
+      if (import.meta.env.DEV) {
+        INITIAL_POSTS.forEach((p) => postLookup.set(p.id, p));
+      }
       cloudPosts.forEach((p) => postLookup.set(p.id, p));
 
       // Resolve quoted posts if quote_post_id was persisted
@@ -167,26 +140,20 @@ class BulletinService {
         return p;
       });
 
-      const cloudIds = new Set(resolvedCloudPosts.map((p) => p.id));
-      const combined = [...resolvedCloudPosts, ...INITIAL_POSTS.filter((p) => !cloudIds.has(p.id))];
-      const localEdits = getEditedPosts();
-      const combinedWithEdits = combined.map((p) =>
-        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
-      );
+      const combinedWithEdits = import.meta.env.DEV
+        ? [...resolvedCloudPosts, ...INITIAL_POSTS.filter((p) => !postLookup.has(p.id))]
+        : resolvedCloudPosts;
+
       // Ensure pinned bulletins stay at the very top of the feed
       const sorted = combinedWithEdits.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
         return 0;
       });
-      return sorted.filter((p) => !deletedIds.has(p.id));
+      return sorted;
     } catch (err) {
-      console.warn('[BulletinService] Offline / connection error, using local data:', err);
-      const localEdits = getEditedPosts();
-      const withEdits = INITIAL_POSTS.map((p) =>
-        localEdits[p.id] ? { ...p, ...localEdits[p.id] } : p
-      );
-      return withEdits.filter((p) => !deletedIds.has(p.id));
+      console.error('[BulletinService] Failed to load posts from Supabase:', err);
+      throw err;
     }
   }
 
@@ -230,12 +197,12 @@ class BulletinService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('posts').insert([
+        const { data, error } = await supabase.from('posts').insert([
           {
             id: newPost.id,
             title: newPost.title,
             content: newPost.content,
-            author_id: null,
+            author_id: (await supabase.auth.getUser()).data.user?.id || null,
             author_name: currentUser.name,
             author_role: currentUser.designation,
             author_avatar: currentUser.avatarUrl,
@@ -256,13 +223,20 @@ class BulletinService {
             pdf_size: newPost.pdfSize || null,
             quote_post_id: newPost.quotedPost ? newPost.quotedPost.id : null,
           },
-        ]);
+        ]).select().single();
 
         if (error) {
-          console.warn('[BulletinService] Supabase createPost insert warning:', error.message);
+          console.error('[BulletinService] Supabase createPost insert error:', error.message);
+          throw error;
+        }
+
+        if (data) {
+          newPost.id = data.id;
+          newPost.timestamp = new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
       } catch (err) {
-        console.warn('[BulletinService] Failed to sync post to Supabase, continuing locally:', err);
+        console.error('[BulletinService] Failed to sync post to Supabase:', err);
+        throw err;
       }
     }
 
@@ -281,6 +255,7 @@ class BulletinService {
       const { data, error } = await supabase
         .from('stories')
         .select('*')
+        .gt('created_at', new Date(Date.now() - 864e5).toISOString())
         .order('created_at', { ascending: false });
 
       if (error || !data || data.length === 0) {
@@ -291,7 +266,7 @@ class BulletinService {
         let hoursRemaining = 24;
         if (row.created_at) {
           const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
-          hoursRemaining = Math.max(1, Math.round(24 - elapsed));
+          hoursRemaining = Math.round(24 - elapsed);
         }
         return {
           id: row.id,
@@ -324,6 +299,7 @@ class BulletinService {
             id: story.id,
             department_id: story.departmentId,
             department_name: story.departmentName,
+            author_id: (await supabase.auth.getUser()).data.user?.id || null,
             author_name: story.authorName,
             author_avatar: story.authorAvatar || '/user_face.png',
             image_url: story.imageUrl,
@@ -331,10 +307,12 @@ class BulletinService {
           },
         ]);
         if (error) {
-          console.warn('[BulletinService] createStory warning:', error.message);
+          console.error('[BulletinService] createStory error:', error.message);
+          throw error;
         }
       } catch (err) {
-        console.warn('[BulletinService] Failed to sync story to Supabase:', err);
+        console.error('[BulletinService] Failed to sync story to Supabase:', err);
+        throw err;
       }
     }
   }
@@ -370,25 +348,22 @@ class BulletinService {
           upsert: false,
         });
 
-        if (!error) {
-          const { data } = supabase.storage.from('bulletin-media').getPublicUrl(fileName);
-          if (data?.publicUrl) return data.publicUrl;
+        if (error) {
+          console.error('[BulletinService] Storage upload failed:', error.message);
+          throw new Error(`Upload failed: ${error.message}`);
         }
-      } catch (err) {
-        console.warn('[BulletinService] Storage upload failed, using DataURL fallback:', err);
-      }
-    }
 
-    try {
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(uploadTarget);
-      });
-      return dataUrl;
-    } catch {
-      return URL.createObjectURL(uploadTarget);
+        const { data } = supabase.storage.from('bulletin-media').getPublicUrl(fileName);
+        if (data?.publicUrl) return data.publicUrl;
+      } catch (err) {
+        console.error('[BulletinService] Storage upload failed:', err);
+        throw err;
+      }
+    } else {
+      throw new Error('Supabase is not configured. Cannot upload media.');
     }
+    
+    throw new Error('Failed to retrieve public URL after upload.');
   }
 
   /**
@@ -458,28 +433,36 @@ class BulletinService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('comments').insert([
-          {
-            id: newComment.id,
-            post_id: postId,
-            author_name: newComment.authorName,
-            author_avatar: newComment.avatarUrl || null,
-            department: newComment.department,
-            text: newComment.text,
-          },
-        ]);
+        const commentPayload: Record<string, any> = {
+          id: newComment.id,
+          post_id: postId,
+          author_name: newComment.authorName,
+          author_avatar: newComment.avatarUrl || null,
+          avatar_initials: newComment.avatarInitials || 'SE',
+          department: newComment.department,
+          text: newComment.text,
+        };
+
+        const { data, error } = await supabase.from('comments').insert([commentPayload]).select().single();
 
         if (error) {
-          console.warn('[BulletinService] Supabase addComment warning:', error.message);
-        } else {
-          // Increment comment count on the post
-          await supabase
-            .from('posts')
-            .update({ comments_count: currentCommentsCount + 1 })
-            .eq('id', postId);
+          console.error('[BulletinService] Supabase addComment error:', error.message);
+          throw error;
         }
+        
+        if (data) {
+          newComment.id = data.id;
+          newComment.timestamp = new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Increment comment count on the post
+        await supabase
+          .from('posts')
+          .update({ comments_count: currentCommentsCount + 1 })
+          .eq('id', postId);
       } catch (err) {
-        console.warn('[BulletinService] addComment sync error:', err);
+        console.error('[BulletinService] addComment sync error:', err);
+        throw err;
       }
     }
 
@@ -489,13 +472,17 @@ class BulletinService {
   /**
    * Update post like count in Supabase
    */
-  async toggleLike(postId: string, nextLikesCount: number): Promise<void> {
+  async toggleLike(postId: string, isLiked: boolean): Promise<void> {
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase
-          .from('posts')
-          .update({ likes_count: nextLikesCount })
-          .eq('id', postId);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        if (isLiked) {
+          await supabase.from('post_likes').upsert({ post_id: postId, user_id: user.id });
+        } else {
+          await supabase.from('post_likes').delete().match({ post_id: postId, user_id: user.id });
+        }
       } catch (err) {
         console.warn('[BulletinService] toggleLike sync error:', err);
       }
@@ -506,40 +493,17 @@ class BulletinService {
    * Delete a post by ID (and cascade delete its comments)
    */
   async deletePost(postId: string): Promise<boolean> {
-    // 1. Immediately record deletion tombstone in local persistence
-    recordDeletedPostId(postId);
-    removeEditedPost(postId);
-
-    // 2. Broadcast immediately over realtime channel so other connected tabs/devices update instantly
-    if (supabase) {
-      try {
-        const liveChannel = supabase.channel('realtime:bulletin-live');
-        liveChannel.send({
-          type: 'broadcast',
-          event: 'post_deleted',
-          payload: { id: postId },
-        });
-      } catch (bErr) {
-        console.warn('[BulletinService] broadcast post_deleted warning:', bErr);
-      }
-    }
-
-    // 3. Sync to Supabase cloud if configured
     if (isSupabaseConfigured && supabase) {
       try {
-        // Delete associated comments first to maintain referential integrity
-        await supabase.from('comments').delete().eq('post_id', postId);
-        
-        // Delete the post itself
         const { error } = await supabase.from('posts').delete().eq('id', postId);
         if (error) {
-          console.warn('[BulletinService] deletePost error:', error.message);
-          return false;
+          console.error('[BulletinService] deletePost error:', error.message);
+          throw error;
         }
         return true;
       } catch (err) {
-        console.warn('[BulletinService] deletePost sync error:', err);
-        return false;
+        console.error('[BulletinService] deletePost sync error:', err);
+        throw err;
       }
     }
     return true;
@@ -549,24 +513,6 @@ class BulletinService {
    * Update an existing post by ID
    */
   async updatePost(postId: string, updates: Partial<Post>): Promise<boolean> {
-    // 1. Immediately record in local storage so page refreshes and offline mode preserve edits
-    recordEditedPost(postId, updates);
-
-    // 2. Broadcast immediately over realtime channel so other connected tabs/devices update instantly
-    if (supabase) {
-      try {
-        const liveChannel = supabase.channel('realtime:bulletin-live');
-        liveChannel.send({
-          type: 'broadcast',
-          event: 'post_updated',
-          payload: { id: postId, ...updates },
-        });
-      } catch (bErr) {
-        console.warn('[BulletinService] broadcast post_updated warning:', bErr);
-      }
-    }
-
-    // 3. Sync to Supabase cloud if configured
     if (isSupabaseConfigured && supabase) {
       try {
         const updatePayload: Record<string, any> = {};
@@ -595,53 +541,19 @@ class BulletinService {
         if (updates.pdfName !== undefined) updatePayload.pdf_name = updates.pdfName;
         if (updates.pdfSize !== undefined) updatePayload.pdf_size = updates.pdfSize;
 
-        const { data: updatedRows, error } = await supabase
+        const { error } = await supabase
           .from('posts')
           .update(updatePayload)
-          .eq('id', postId)
-          .select('id');
+          .eq('id', postId);
 
         if (error) {
-          console.warn('[BulletinService] updatePost error:', error.message);
-        } else if (!updatedRows || updatedRows.length === 0) {
-          // If post does not exist in Supabase yet (was a seed post from INITIAL_POSTS), upsert it!
-          const seedPost = INITIAL_POSTS.find((p) => p.id === postId);
-          if (seedPost) {
-            const merged = { ...seedPost, ...updates };
-            await supabase.from('posts').insert([
-              {
-                id: merged.id,
-                title: merged.title,
-                content: merged.content,
-                author_id: merged.author.id,
-                author_name: merged.author.name,
-                author_role: merged.author.designation,
-                author_avatar: merged.author.avatarUrl,
-                department: merged.departmentName,
-                department_id: merged.departmentId,
-                department_color: merged.departmentColor,
-                location: merged.location,
-                image_url: merged.imageUrl,
-                media_urls: merged.mediaUrls || [],
-                is_pinned: merged.isPinned,
-                official_notice: merged.officialNotice,
-                comments_enabled: merged.commentsEnabled,
-                likes_count: merged.likesCount,
-                comments_count: merged.commentsCount,
-                poll_data: merged.poll || null,
-                pdf_url: merged.pdfUrl || null,
-                pdf_name: merged.pdfName || null,
-                pdf_size: merged.pdfSize || null,
-                is_edited: true,
-                edited_at: updates.editedAt || 'Just now (edited)',
-              },
-            ]);
-          }
+          console.error('[BulletinService] updatePost error:', error.message);
+          throw error;
         }
         return true;
       } catch (err) {
-        console.warn('[BulletinService] updatePost sync error:', err);
-        return false;
+        console.error('[BulletinService] updatePost sync error:', err);
+        throw err;
       }
     }
     return true;
@@ -694,9 +606,50 @@ class BulletinService {
   }
 
   /**
+   * Fetch a single profile by ID
+   */
+  async getProfile(userId: string): Promise<Employee | null> {
+    if (!isSupabaseConfigured || !supabase) {
+      const localProfiles = [...ALL_EMPLOYEES, ...getRegisteredEmployees()];
+      return localProfiles.find(p => p.id === userId) || null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) return null;
+
+      return {
+        id: data.id,
+        employeeId: data.employee_id || `SESB-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: data.name,
+        fullName: data.full_name || data.name,
+        designation: data.designation || 'Sabah Electricity Staff',
+        department: data.department || 'Operating',
+        email: data.email,
+        avatarUrl: data.avatar_url || '/user_face.png',
+        coverUrl: data.cover_url || '/grid_horizon_hero.jpg',
+        officeLocation: data.office_location || 'Wisma SESB HQ, Kota Kinabalu',
+        phoneExtension: data.phone_extension || 'Ext. 4102',
+        bio: data.bio || '',
+        role: (data.role as any) || 'GeneralStaff',
+        adminDepartments: data.admin_departments || [],
+        isVerified: true,
+      };
+    } catch (err) {
+      console.warn('[BulletinService] getProfile error:', err);
+      return null;
+    }
+  }
+
+  /**
    * Fetch all staff profiles from Supabase profiles table (with fallback to local directory)
    */
-  async getProfiles(): Promise<Employee[]> {
+  async getProfiles(limit: number = 50): Promise<Employee[]> {
     const localProfiles = [...ALL_EMPLOYEES, ...getRegisteredEmployees()];
 
     if (!isSupabaseConfigured || !supabase) {
@@ -707,7 +660,8 @@ class BulletinService {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
       if (error || !data || data.length === 0) {
         if (error) console.warn('[BulletinService] Supabase getProfiles fallback:', error.message);
@@ -762,20 +716,9 @@ class BulletinService {
    * Save or update a staff profile (upserts to Supabase profiles table & updates local cache)
    */
   async saveProfile(employee: Employee): Promise<Employee> {
-    // 1. Always update local storage first for instant responsiveness & offline resilience
-    try {
-      const existing = getRegisteredEmployees();
-      const updated = existing.filter((u) => u.id !== employee.id);
-      updated.push(employee);
-      localStorage.setItem('sesb_registered_users', JSON.stringify(updated));
-    } catch (err) {
-      console.warn('[BulletinService] Failed to cache profile locally:', err);
-    }
-
-    // 2. Upsert into Supabase public.profiles table if configured
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('profiles').upsert(
+        const { data, error } = await supabase.from('profiles').upsert(
           {
             id: employee.id,
             employee_id: employee.employeeId,
@@ -795,13 +738,22 @@ class BulletinService {
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'id' }
-        );
+        ).select().single();
 
         if (error) {
-          console.warn('[BulletinService] Supabase profile upsert error:', error.message);
+          console.error('[BulletinService] Supabase profile upsert error:', error.message);
+          throw error;
+        }
+
+        if (data) {
+          return {
+            ...employee,
+            id: data.id,
+          };
         }
       } catch (err) {
-        console.warn('[BulletinService] Network error saving profile to Supabase:', err);
+        console.error('[BulletinService] Network error saving profile to Supabase:', err);
+        throw err;
       }
     }
 

@@ -8,7 +8,7 @@ const enableSsl = process.env.VITE_SSL === 'true';
 export default defineConfig({
   plugins: [react(), ...(enableSsl ? [basicSsl()] : [])],
   server: {
-    port: 3001,
+    port: 5173,
     host: true,
     proxy: {
       '/api/market/tnb': {

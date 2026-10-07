@@ -144,8 +144,9 @@ export const CommentDrawer: React.FC<Props> = ({
             <input
               ref={inputRef}
               type="text"
+              maxLength={5000}
               className={styles.inputField}
-              placeholder="Write a comment as Mohd Irfan..."
+              placeholder={`Write a comment as ${currentUser.name}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
             />

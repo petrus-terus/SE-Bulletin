@@ -25,6 +25,7 @@ import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { BrandSidebarDrawer } from './components/BrandSidebarDrawer';
 import { ReshareBottomSheet } from './components/ReshareBottomSheet';
 import { QuoteBulletinModal } from './components/QuoteBulletinModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Code-split heavy routes and overlay modals for high-performance mobile loading
 const CreateBulletinPage = lazy(() =>
@@ -106,77 +107,69 @@ function saveBookmarkedPostId(postId: string, isSaved: boolean) {
 }
 
 export function App() {
-  const [currentUser, setCurrentUser] = useState<Employee>(() => {
-    const saved = localStorage.getItem('sesb_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return CURRENT_USER;
-      }
-    }
-    return CURRENT_USER;
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('sesb_auth') === 'true';
-  });
+  const [currentUser, setCurrentUser] = useState<Employee | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isPilotUnlocked, setIsPilotUnlocked] = useState<boolean>(() => {
     return localStorage.getItem('sesb_pilot_unlocked') === 'true';
   });
   const [posts, setPosts] = useState<Post[]>(() => {
+    if (!import.meta.env.DEV) return [];
     const savedBookmarks = getBookmarkedPostIds();
     return INITIAL_POSTS.map((p) => ({
       ...p,
       isBookmarked: savedBookmarks.has(p.id),
     }));
   });
-  const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({
-    'post-101': [
-      {
-        id: 'c1',
-        authorName: 'Siti Aminah',
-        department: 'HR',
-        avatarInitials: 'SA',
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
-        text: 'Congratulations team! Exemplary safety compliance during the shut-in window.',
-        timestamp: '1h ago',
-        likesCount: 14,
-      },
-      {
-        id: 'c2',
-        authorName: 'Mohd Irfan',
-        department: 'IT',
-        avatarInitials: 'MI',
-        avatarUrl: CURRENT_USER.avatarUrl,
-        text: 'Grid telemetry sensors are streaming real-time SCADA telemetry back to Wisma SESB server room without any packet drops.',
-        timestamp: '45m ago',
-        likesCount: 7,
-      },
-    ],
-    'post-102': [
-      {
-        id: 'c3',
-        authorName: 'Ir. Raymond Chin',
-        department: 'OPS',
-        avatarInitials: 'RC',
-        text: 'Noted. Transmission crews across Tenom and Papar have been briefed on SOP-2026-04.',
-        timestamp: '2h ago',
-        likesCount: 5,
-      },
-    ],
-    'post-103': [
-      {
-        id: 'c4',
-        authorName: 'Ir. Raymond Chin',
-        department: 'OPS',
-        avatarInitials: 'RC',
-        text: 'Engineering team has formed 4 relay groups. Looking forward to it!',
-        timestamp: '3h ago',
-        likesCount: 8,
-      },
-    ],
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>(() => {
+    if (!import.meta.env.DEV) return {} as Record<string, Comment[]>;
+    return {
+      'post-101': [
+        {
+          id: 'c1',
+          authorName: 'Siti Aminah',
+          department: 'HR',
+          avatarInitials: 'SA',
+          avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
+          text: 'Congratulations team! Exemplary safety compliance during the shut-in window.',
+          timestamp: '1h ago',
+          likesCount: 14,
+        },
+        {
+          id: 'c2',
+          authorName: 'Mohd Irfan',
+          department: 'IT',
+          avatarInitials: 'MI',
+          avatarUrl: CURRENT_USER.avatarUrl,
+          text: 'Grid telemetry sensors are streaming real-time SCADA telemetry back to Wisma SESB server room without any packet drops.',
+          timestamp: '45m ago',
+          likesCount: 7,
+        },
+      ],
+      'post-102': [
+        {
+          id: 'c3',
+          authorName: 'Ir. Raymond Chin',
+          department: 'OPS',
+          avatarInitials: 'RC',
+          text: 'Noted. Transmission crews across Tenom and Papar have been briefed on SOP-2026-04.',
+          timestamp: '2h ago',
+          likesCount: 5,
+        },
+      ],
+      'post-103': [
+        {
+          id: 'c4',
+          authorName: 'Ir. Raymond Chin',
+          department: 'OPS',
+          avatarInitials: 'RC',
+          text: 'Engineering team has formed 4 relay groups. Looking forward to it!',
+          timestamp: '3h ago',
+          likesCount: 8,
+        },
+      ],
+    };
   });
-  const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
+  const [stories, setStories] = useState<Story[]>(import.meta.env.DEV ? INITIAL_STORIES : []);
   const [selectedDeptId, setSelectedDeptId] = useState('dept-all');
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -237,14 +230,63 @@ export function App() {
   } | null>(null);
 
   // Corporate Staff Logout Handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (supabase) await supabase.auth.signOut();
     setIsAuthenticated(false);
-    localStorage.removeItem('sesb_auth');
+    setCurrentUser(null);
     setToast({
       message: 'Logged out. Ready for new staff login.',
       icon: 'logout',
     });
   };
+
+  // 0. Supabase Auth State Listener
+  useEffect(() => {
+    if (!supabase) return;
+
+    const syncSessionUser = (user: import('@supabase/supabase-js').User | undefined) => {
+      if (user) {
+        setIsAuthenticated(true);
+        bulletinService.getProfile(user.id).then(matched => {
+          if (matched) {
+            setCurrentUser(matched);
+          } else {
+            const fallbackUser: Employee = {
+              id: user.id,
+              employeeId: 'SESB-' + user.id.slice(0, 4).toUpperCase(),
+              name: user.email ? user.email.split('@')[0] : 'SESB Staff',
+              fullName: user.email || 'SESB Staff',
+              designation: 'Sabah Electricity Staff',
+              department: 'Operations',
+              email: user.email || 'staff@sesb.com.my',
+              avatarUrl: '/user_face.png',
+              coverUrl: '/grid_horizon_hero.jpg',
+              officeLocation: 'Wisma SESB HQ, Kota Kinabalu',
+              phoneExtension: 'Ext. 4102',
+              bio: 'Sabah Electricity Staff Member',
+              role: 'GeneralStaff',
+              adminDepartments: [],
+              isVerified: true,
+            };
+            setCurrentUser(fallbackUser);
+          }
+        });
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      syncSessionUser(session?.user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      syncSessionUser(session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // 1. Initial Load from BulletinService / Supabase (Posts & 24h Stories)
   useEffect(() => {
@@ -645,12 +687,12 @@ export function App() {
 
   // Optimistic Like Handler with Supabase Cloud Sync
   const handleLikeToggle = (postId: string) => {
-    let nextCount = 0;
+    let nextIsLiked = false;
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
-          const nextIsLiked = !post.isLiked;
-          nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
+          nextIsLiked = !post.isLiked;
+          const nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
           return {
             ...post,
             isLiked: nextIsLiked,
@@ -661,7 +703,7 @@ export function App() {
       })
     );
 
-    bulletinService.toggleLike(postId, nextCount);
+    bulletinService.toggleLike(postId, nextIsLiked);
   };
 
   // Bookmark Toggle with local persistence
@@ -805,6 +847,7 @@ export function App() {
 
   // Reshare / Repost Toggle Handler (Twitter Style) with Supabase Cloud Sync
   const handleReshareToggle = (postId: string) => {
+    if (!currentUser) return;
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -843,6 +886,7 @@ export function App() {
 
   // Quote Post Handler (Twitter Style) with Supabase Cloud Sync
   const handleQuotePost = async (quotedPost: Post, commentText: string) => {
+    if (!currentUser) return;
     const payload: CreatePostPayload = {
       title: '',
       content: commentText,
@@ -895,42 +939,50 @@ export function App() {
 
   // Add Comment Handler with Supabase Cloud Sync
   const handleAddComment = async (postId: string, commentText: string) => {
+    if (!currentUser) return;
     const targetPost = posts.find((p) => p.id === postId);
     const currentCount = targetPost ? targetPost.commentsCount : 0;
 
-    const newComment = await bulletinService.addComment(
-      postId,
-      commentText,
-      currentUser,
-      currentCount
-    );
+    try {
+      const newComment = await bulletinService.addComment(
+        postId,
+        commentText,
+        currentUser,
+        currentCount
+      );
 
-    setCommentsByPost((prev) => {
-      const existing = prev[postId] || [];
-      if (existing.some((c) => c.id === newComment.id)) return prev;
-      return {
-        ...prev,
-        [postId]: [...existing, newComment],
-      };
-    });
+      setCommentsByPost((prev) => {
+        const existing = prev[postId] || [];
+        if (existing.some((c) => c.id === newComment.id)) return prev;
+        return {
+          ...prev,
+          [postId]: [...existing, newComment],
+        };
+      });
 
-    setPosts((prev) =>
-      prev.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            commentsCount: post.commentsCount + 1,
-            previewComment: newComment,
-          };
-        }
-        return post;
-      })
-    );
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              commentsCount: post.commentsCount + 1,
+              previewComment: newComment,
+            };
+          }
+          return post;
+        })
+      );
 
-    setToast({
-      message: 'Comment posted',
-      icon: 'chat',
-    });
+      setToast({
+        message: 'Comment posted',
+        icon: 'chat',
+      });
+    } catch (err) {
+      setToast({
+        message: 'Failed to post comment',
+        icon: 'error',
+      });
+    }
   };
 
   // Publish New Post Handler (4A)
@@ -945,6 +997,8 @@ export function App() {
 
   // Delete Post Handler (with optimistic removal and Supabase cloud sync)
   const handleDeletePost = async (postId: string) => {
+    const postToDelete = posts.find(p => p.id === postId);
+    
     setPosts((prev) => prev.filter((p) => p.id !== postId));
     if (selectedPostForDetail?.id === postId) {
       setSelectedPostForDetail(null);
@@ -952,16 +1006,28 @@ export function App() {
     if (activeCommentPost?.id === postId) {
       setActiveCommentPost(null);
     }
-    setToast({
-      message: 'Bulletin deleted',
-      icon: 'delete',
-    });
 
-    await bulletinService.deletePost(postId);
+    try {
+      await bulletinService.deletePost(postId);
+      setToast({
+        message: 'Bulletin deleted',
+        icon: 'delete',
+      });
+    } catch (err) {
+      if (postToDelete) {
+        setPosts((prev) => [postToDelete, ...prev].sort((a, b) => b.id.localeCompare(a.id))); // rough re-insert
+      }
+      setToast({
+        message: 'Failed to delete bulletin',
+        icon: 'error',
+      });
+    }
   };
 
   // Update Post Handler (with optimistic update, edited timestamp, and Supabase cloud sync)
   const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
+    const oldPost = posts.find((p) => p.id === postId);
+
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
         if (p.id === postId) {
@@ -989,25 +1055,37 @@ export function App() {
       );
     }
 
-    await bulletinService.updatePost(postId, {
-      ...updatedData,
-      isEdited: true,
-      editedAt: new Date().toISOString(),
-    });
-    setToast({
-      message: 'Bulletin updated successfully',
-      icon: 'check_circle',
-    });
-    setEditingPost(null);
+    try {
+      await bulletinService.updatePost(postId, {
+        ...updatedData,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+      });
+      setToast({
+        message: 'Bulletin updated successfully',
+        icon: 'check_circle',
+      });
+      setEditingPost(null);
+    } catch (err) {
+      if (oldPost) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? oldPost : p)));
+        if (selectedPostForDetail?.id === postId) setSelectedPostForDetail(oldPost);
+      }
+      setToast({
+        message: 'Failed to update bulletin',
+        icon: 'error',
+      });
+    }
   };
 
   // Update Profile Handler with local persistence, Supabase sync, and live cascade across bulletins/comments
-  const handleUpdateProfile = (updatedUser: Employee) => {
-    setCurrentUser(updatedUser);
-    localStorage.setItem('sesb_user', JSON.stringify(updatedUser));
-    bulletinService.saveProfile(updatedUser);
+  const handleUpdateProfile = async (updatedUser: Employee) => {
+    if (!currentUser) return;
+    try {
+      const savedUser = await bulletinService.saveProfile(updatedUser);
+      setCurrentUser(savedUser);
 
-    // Cascade updated name, designation, department, and avatar to user's authored bulletins
+      // Cascade updated name, designation, department, and avatar to user's authored bulletins
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
         const isAuthored =
@@ -1055,6 +1133,12 @@ export function App() {
       message: 'Profile updated successfully',
       icon: 'manage_accounts',
     });
+    } catch (err) {
+      setToast({
+        message: 'Failed to update profile',
+        icon: 'error',
+      });
+    }
   };
 
   // Open Post Detail with deduplicated view count tracking
@@ -1090,20 +1174,10 @@ export function App() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !currentUser) {
     return (
       <>
         <LoginPage
-          onLogin={(employee) => {
-            setCurrentUser(employee);
-            setIsAuthenticated(true);
-            localStorage.setItem('sesb_auth', 'true');
-            localStorage.setItem('sesb_user', JSON.stringify(employee));
-            setToast({
-              message: `Welcome back, ${employee.name}`,
-              icon: 'verified_user',
-            });
-          }}
           onShowNotice={(msg) => setToast({ message: msg, icon: 'info' })}
         />
         {toast && (
@@ -1113,7 +1187,6 @@ export function App() {
             onDismiss={() => setToast(null)}
           />
         )}
-        <PwaInstallPrompt />
       </>
     );
   }
@@ -1311,27 +1384,28 @@ export function App() {
                 </div>
               ) : (
                 feedPosts.map((post) => (
-                  <FeedCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUser.id}
-                    currentUserName={currentUser.name}
-                    currentUserRole={currentUser.role}
-                    currentUserAvatar={currentUser.avatarUrl}
-                    onLikeToggle={handleLikeToggle}
-                    onCommentClick={(p) => setActiveCommentPost(p)}
-                    onBookmarkToggle={handleBookmarkToggle}
-                    onDeletePost={handleDeletePost}
-                    onEditPost={(post) => setEditingPost(post)}
-                    onPostClick={handleOpenPostDetail}
-                    onAuthorClick={handleViewAuthorProfile}
-                    onVotePoll={handleVotePoll}
-                    onReactionSelect={handleReactionSelect}
-                    onReshareToggle={handleReshareToggle}
-                    onQuotePost={handleQuotePost}
-                    onSharePost={handleSharePost}
-                    onReshareClick={(p) => setActiveResharePost(p)}
-                  />
+                  <ErrorBoundary key={post.id}>
+                    <FeedCard
+                      post={post}
+                      currentUserId={currentUser.id}
+                      currentUserName={currentUser.name}
+                      currentUserRole={currentUser.role}
+                      currentUserAvatar={currentUser.avatarUrl}
+                      onLikeToggle={handleLikeToggle}
+                      onCommentClick={(p) => setActiveCommentPost(p)}
+                      onBookmarkToggle={handleBookmarkToggle}
+                      onDeletePost={handleDeletePost}
+                      onEditPost={(post) => setEditingPost(post)}
+                      onPostClick={handleOpenPostDetail}
+                      onAuthorClick={handleViewAuthorProfile}
+                      onVotePoll={handleVotePoll}
+                      onReactionSelect={handleReactionSelect}
+                      onReshareToggle={handleReshareToggle}
+                      onQuotePost={handleQuotePost}
+                      onSharePost={handleSharePost}
+                      onReshareClick={(p) => setActiveResharePost(p)}
+                    />
+                  </ErrorBoundary>
                 ))
               )}
             </section>

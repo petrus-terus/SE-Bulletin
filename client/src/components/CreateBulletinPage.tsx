@@ -124,14 +124,8 @@ export const CreateBulletinPage: React.FC<Props> = ({
 
       setPhotos((prev) => [...prev, ...compressedList]);
     } catch (err) {
-      console.warn('[CreateBulletinPage] Image compression/upload fallback:', err);
-      const fallbackList: AttachedPhoto[] = files.map((file, idx) => ({
-        id: `photo-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
-        url: URL.createObjectURL(file),
-        name: file.name,
-        file,
-      }));
-      setPhotos((prev) => [...prev, ...fallbackList]);
+      console.error('[CreateBulletinPage] Image upload failed:', err);
+      alert('Failed to upload some images. Please check your connection.');
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -150,11 +144,13 @@ export const CreateBulletinPage: React.FC<Props> = ({
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.round(file.size / 1024)} KB`;
 
-    let pdfUrl = URL.createObjectURL(file);
+    let pdfUrl = '';
     try {
       pdfUrl = await bulletinService.uploadPhoto(file);
     } catch (err) {
-      console.warn('[CreateBulletinPage] PDF upload fallback:', err);
+      console.error('[CreateBulletinPage] PDF upload failed:', err);
+      alert('Failed to upload PDF. Please check your connection.');
+      return;
     }
 
     setPdfFile({
@@ -462,13 +458,14 @@ export const CreateBulletinPage: React.FC<Props> = ({
               placeholder="Write your bulletin content or announcement here..."
               value={content}
               onChange={handleContentChange}
+              maxLength={5000}
               rows={6}
             />
 
             {/* Formatting Toolbar (Cleaned up, right-aligned counter) */}
             <div className={styles.formattingToolbar}>
               <div className={styles.charCount}>
-                <span className="font-mono tabular-nums">{charCount}</span> / 1200
+                <span className="font-mono tabular-nums">{charCount}</span> / 5000
               </div>
             </div>
           </div>
