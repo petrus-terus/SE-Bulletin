@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { Employee, EmojiReactionType, Post } from '../types/bulletin';
-import { CURRENT_USER } from '../services/mockData';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
-import { AchievementsDeck } from './AchievementsDeck';
-import { FeedCard } from './FeedCard';
-import { bulletinService } from '../services/bulletinService';
+import type { Employee, EmojiReactionType, Post } from '@/types/bulletin';
+import { CURRENT_USER } from '@/services/mockData';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
+import { AchievementsDeck } from '@/features/profile/AchievementsDeck';
+import { FeedCard } from '@/features/feed/FeedCard';
+import { bulletinService } from '@/services/bulletinService';
 import styles from './ProfilePage.module.css';
 
 interface Props {

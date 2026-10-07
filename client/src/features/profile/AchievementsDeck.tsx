@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './AchievementsDeck.module.css';
 
 interface Props {

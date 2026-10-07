@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { Employee } from '../types/bulletin';
+import type { Employee } from '@/types/bulletin';
 import styles from './BrandSidebarDrawer.module.css';
 
 interface Props {

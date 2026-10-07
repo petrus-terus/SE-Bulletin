@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import type { Post } from '../types/bulletin';
+import type { Post } from '@/types/bulletin';
 import styles from './QuoteBulletinModal.module.css';
 
 interface Props {

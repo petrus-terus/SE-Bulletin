@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PollData } from '../types/bulletin';
+import type { PollData } from '@/types/bulletin';
 import styles from './InteractivePollCard.module.css';
 
 interface Props {

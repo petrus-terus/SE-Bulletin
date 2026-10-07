@@ -1,4 +1,4 @@
-import type { Employee, Post, Story } from '../types/bulletin';
+import type { Employee, Post, Story } from '@/types/bulletin';
 
 export const CURRENT_USER: Employee = {
   id: 'user-test',
@@ -78,7 +78,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
   };
 }
 
-export { DEPARTMENTS } from '../data/departments';
+export { DEPARTMENTS } from '@/data/departments';
 
 export const INITIAL_STORIES: Story[] = [
   {

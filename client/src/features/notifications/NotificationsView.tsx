@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { AppNotification, NotificationCategory } from '../types/bulletin';
+import type { AppNotification, NotificationCategory } from '@/types/bulletin';
 import styles from './NotificationsView.module.css';
 
 interface Props {

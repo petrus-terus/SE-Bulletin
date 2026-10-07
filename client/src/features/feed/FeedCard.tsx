@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { EmojiReactionType, Post } from '../types/bulletin';
-import { InteractivePollCard } from './InteractivePollCard';
-import { ReshareBottomSheet } from './ReshareBottomSheet';
-import { QuoteBulletinModal } from './QuoteBulletinModal';
+import type { EmojiReactionType, Post } from '@/types/bulletin';
+import { InteractivePollCard } from '@/features/post/InteractivePollCard';
+import { ReshareBottomSheet } from '@/features/post/ReshareBottomSheet';
+import { QuoteBulletinModal } from '@/features/post/QuoteBulletinModal';
 import { formatCompactNumber } from '@/utils/format';
 import styles from './FeedCard.module.css';
 

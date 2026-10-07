@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import type { Employee, Story } from '../types/bulletin';
-import { StoryViewerModal } from './StoryViewerModal';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
+import type { Employee, Story } from '@/types/bulletin';
+import { StoryViewerModal } from '@/features/stories/StoryViewerModal';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './StoriesBar.module.css';
 
 interface Props {

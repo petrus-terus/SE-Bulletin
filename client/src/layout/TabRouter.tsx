@@ -1,25 +1,25 @@
 import React, { lazy, Suspense } from 'react';
 import type { AppNotification, Employee, EmojiReactionType, Post, Story } from '@/types/bulletin';
 import { DEPARTMENTS } from '@/data/departments';
-import type { TabKey } from './BottomNav';
-import { KinabaluSkylineHero } from './KinabaluSkylineHero';
-import { SesiKnowledgeHubBanner } from './SesiKnowledgeHubBanner';
-import { TrendingSection } from './TrendingSection';
-import { CeoWisdomSection } from './CeoWisdomSection';
-import { StoriesBar } from './StoriesBar';
-import { DepartmentFilters } from './DepartmentFilters';
-import { FeedCard } from './FeedCard';
-import { ErrorBoundary } from './ErrorBoundary';
+import type { TabKey } from '@/layout/BottomNav';
+import { KinabaluSkylineHero } from '@/features/feed/KinabaluSkylineHero';
+import { SesiKnowledgeHubBanner } from '@/features/feed/SesiKnowledgeHubBanner';
+import { TrendingSection } from '@/features/feed/TrendingSection';
+import { CeoWisdomSection } from '@/features/feed/CeoWisdomSection';
+import { StoriesBar } from '@/features/stories/StoriesBar';
+import { DepartmentFilters } from '@/features/feed/DepartmentFilters';
+import { FeedCard } from '@/features/feed/FeedCard';
+import { ErrorBoundary } from '@/ui/ErrorBoundary';
 
 // Lazy-loaded tab sub-pages
 const SearchDirectoryPage = lazy(() =>
-  import('./SearchDirectoryPage').then((m) => ({ default: m.SearchDirectoryPage }))
+  import('@/features/directory/SearchDirectoryPage').then((m) => ({ default: m.SearchDirectoryPage }))
 );
 const NotificationsView = lazy(() =>
-  import('./NotificationsView').then((m) => ({ default: m.NotificationsView }))
+  import('@/features/notifications/NotificationsView').then((m) => ({ default: m.NotificationsView }))
 );
 const ProfilePage = lazy(() =>
-  import('./ProfilePage').then((m) => ({ default: m.ProfilePage }))
+  import('@/features/profile/ProfilePage').then((m) => ({ default: m.ProfilePage }))
 );
 
 const ViewFallback = () => (

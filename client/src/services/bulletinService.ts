@@ -1,7 +1,7 @@
-import type { CreatePostPayload, Employee, Post, Story } from '../types/bulletin';
+import type { CreatePostPayload, Employee, Post, Story } from '@/types/bulletin';
 import { ALL_EMPLOYEES, INITIAL_POSTS, INITIAL_STORIES, getRegisteredEmployees } from './mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
-import { compressImageFile } from '../utils/imageCompressor';
+import { compressImageFile } from '@/utils/imageCompressor';
 import { z } from 'zod';
 
 const PollOptionSchema = z.object({
@@ -37,7 +37,7 @@ function markPostIdAsViewed(postId: string) {
     const ids = getViewedPostIds();
     ids.add(postId);
     sessionStorage.setItem(VIEWED_POSTS_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch {
+  } catch (e) {
     console.warn('[BulletinService] Failed to record viewed post ID:', e);
   }
 }

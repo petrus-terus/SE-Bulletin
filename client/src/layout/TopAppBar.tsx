@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Employee } from '../types/bulletin';
+import type { Employee } from '@/types/bulletin';
 import styles from './TopAppBar.module.css';
 
 interface Props {

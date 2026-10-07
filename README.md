@@ -27,23 +27,23 @@ It combines the fluid, engaging experience of modern consumer social networks wi
    - **Dynamic Lighting Ambiance**: Switchable between ☀️ **Daylight**, 🌅 **Dusk / Sunset**, and 🌙 **Night** (illuminated office windows).
    - **Live Bursa Malaysia Market Ticker (TNB 5347.KL)**: Real-time intraday interactive chart canvas with touch scrubber, magnetic floating price tooltip, and day range indicator.
 2. **Decoupled 24-Hour Story Flow & Viewer**:
-   - Fast, zero-friction WhatsApp/Instagram-style story creator ([CreateStoryModal.tsx](client/src/components/CreateStoryModal.tsx)) with Photo Mode (instant client compression) and Text Card Mode across 4 SESB brand gradients (Kinabalu Forest, Sabah Blue, Sunset Amber, Night Grid).
+   - Fast, zero-friction WhatsApp/Instagram-style story creator ([CreateStoryModal.tsx](client/src/features/stories/CreateStoryModal.tsx)) with Photo Mode (instant client compression) and Text Card Mode across 4 SESB brand gradients (Kinabalu Forest, Sabah Blue, Sunset Amber, Night Grid).
    - 5-second auto-advancing full-screen **Story Viewer** with progress bars, keyboard navigation, and pause-on-press.
 3. **Interactive Bulletin Feed & Discussions**:
    - Department filter pills with live post count badges.
    - Author avatars, verified badges, station location tags, and official notice banners.
    - **Views Counter Metric**: Eye icon with `viewsCount` in `font-mono tabular-nums`, tracked with `sessionStorage` deduplication (`sesb_viewed_bulletin_ids`).
-   - **Optimistic Interactions & Reactions**: Tactile heart like pop or long-press dock ([EmojiReactionDock.tsx](client/src/components/EmojiReactionDock.tsx)) with 5 professional reactions (Like, Celebrate, Support, Insightful, Safety).
-   - **Reshare & Quote Reposts**: Share bottom sheet ([ReshareBottomSheet.tsx](client/src/components/ReshareBottomSheet.tsx)) offering 1-tap instant repost or custom quote commentary with embedded card preview ([QuoteBulletinModal.tsx](client/src/components/QuoteBulletinModal.tsx)).
-   - **Interactive Poll Cards**: Real-time single-choice voting with animated percentage distribution bars ([InteractivePollCard.tsx](client/src/components/InteractivePollCard.tsx)).
+   - **Optimistic Interactions & Reactions**: Tactile heart like pop or long-press dock ([EmojiReactionDock.tsx](client/src/features/post/EmojiReactionDock.tsx)) with 5 professional reactions (Like, Celebrate, Support, Insightful, Safety).
+   - **Reshare & Quote Reposts**: Share bottom sheet ([ReshareBottomSheet.tsx](client/src/features/post/ReshareBottomSheet.tsx)) offering 1-tap instant repost or custom quote commentary with embedded card preview ([QuoteBulletinModal.tsx](client/src/features/post/QuoteBulletinModal.tsx)).
+   - **Interactive Poll Cards**: Real-time single-choice voting with animated percentage distribution bars ([InteractivePollCard.tsx](client/src/features/post/InteractivePollCard.tsx)).
    - **Threaded Discussion Drawer**: Slide-up bottom drawer with live comment updates and sticky reply input.
-   - **CEO Wisdom & SESI Knowledge Hub**: Leadership quote banner ([CeoWisdomSection.tsx](client/src/components/CeoWisdomSection.tsx)) and corporate crest card ([SesiKnowledgeHubBanner.tsx](client/src/components/SesiKnowledgeHubBanner.tsx)).
+   - **CEO Wisdom & SESI Knowledge Hub**: Leadership quote banner ([CeoWisdomSection.tsx](client/src/features/feed/CeoWisdomSection.tsx)) and corporate crest card ([SesiKnowledgeHubBanner.tsx](client/src/features/feed/SesiKnowledgeHubBanner.tsx)).
 4. **Brand Logo Slide-out Menu**:
-   - Tapping the top Sabah Electricity logo opens a navigation drawer ([BrandSidebarDrawer.tsx](client/src/components/BrandSidebarDrawer.tsx)) with active user badge, shortcut to Saved Posts, and Log Out.
+   - Tapping the top Sabah Electricity logo opens a navigation drawer ([BrandSidebarDrawer.tsx](client/src/layout/BrandSidebarDrawer.tsx)) with active user badge, shortcut to Saved Posts, and Log Out.
 5. **Saved Posts Drawer**:
-   - Dedicated slide-out drawer ([SavedPostsDrawer.tsx](client/src/components/SavedPostsDrawer.tsx)) to review and manage bookmarked bulletins.
+   - Dedicated slide-out drawer ([SavedPostsDrawer.tsx](client/src/features/post/SavedPostsDrawer.tsx)) to review and manage bookmarked bulletins.
 6. **Bulletin Studio & SESB Quick Templates**:
-   - Dedicated creation suite ([CreateBulletinPage.tsx](client/src/components/CreateBulletinPage.tsx)) featuring fixed 44px avatar layout, official notice toggle, client-side compression meter, and **4 1-Tap SESB Quick Templates** (🚨 Keselamatan Goal Zero, ⚡ Penyelenggaraan Grid, 📢 Hebahan Rasmi HQ, 📊 Undian Warga Kerja).
+   - Dedicated creation suite ([CreateBulletinPage.tsx](client/src/features/create/CreateBulletinPage.tsx)) featuring fixed 44px avatar layout, official notice toggle, client-side compression meter, and **4 1-Tap SESB Quick Templates** (🚨 Keselamatan Goal Zero, ⚡ Penyelenggaraan Grid, 📢 Hebahan Rasmi HQ, 📊 Undian Warga Kerja).
 7. **Client-Side Canvas Image Compression Engine**:
    - High-efficiency downscaling ([imageCompressor.ts](client/src/utils/imageCompressor.ts)) reducing mobile camera uploads by ~95% (4.8MB $\rightarrow$ 210KB) to safeguard Supabase free storage quotas and prevent `localStorage` overflow.
 8. **Employee Directory Search**:

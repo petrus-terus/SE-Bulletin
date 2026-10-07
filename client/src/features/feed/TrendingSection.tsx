@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Post } from '../types/bulletin';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
+import type { Post } from '@/types/bulletin';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './TrendingSection.module.css';
 
 interface Props {

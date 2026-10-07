@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Employee } from '../types/bulletin';
-import type { TabKey } from './BottomNav';
+import type { Employee } from '@/types/bulletin';
+import type { TabKey } from '@/layout/BottomNav';
 import styles from './DesktopSidebar.module.css';
 
 interface Props {

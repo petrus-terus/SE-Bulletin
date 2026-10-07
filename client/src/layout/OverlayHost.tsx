@@ -2,25 +2,25 @@ import React, { lazy, Suspense } from 'react';
 import type { Comment, Employee, Post, Story } from '@/types/bulletin';
 import { DEPARTMENTS } from '@/data/departments';
 import { bulletinService } from '@/services/bulletinService';
-import { CommentDrawer } from './CommentDrawer';
-import { ReshareBottomSheet } from './ReshareBottomSheet';
-import { QuoteBulletinModal } from './QuoteBulletinModal';
-import { BrandSidebarDrawer } from './BrandSidebarDrawer';
-import { PwaInstallPrompt } from './PwaInstallPrompt';
-import { Toast } from './Toast';
+import { CommentDrawer } from '@/features/post/CommentDrawer';
+import { ReshareBottomSheet } from '@/features/post/ReshareBottomSheet';
+import { QuoteBulletinModal } from '@/features/post/QuoteBulletinModal';
+import { BrandSidebarDrawer } from '@/layout/BrandSidebarDrawer';
+import { PwaInstallPrompt } from '@/ui/PwaInstallPrompt';
+import { Toast } from '@/ui/Toast';
 
 // Lazy-loaded heavy overlay modals & sheets
 const CreateBulletinPage = lazy(() =>
-  import('./CreateBulletinPage').then((m) => ({ default: m.CreateBulletinPage }))
+  import('@/features/create/CreateBulletinPage').then((m) => ({ default: m.CreateBulletinPage }))
 );
 const CreateStoryModal = lazy(() =>
-  import('./CreateStoryModal').then((m) => ({ default: m.CreateStoryModal }))
+  import('@/features/stories/CreateStoryModal').then((m) => ({ default: m.CreateStoryModal }))
 );
 const ImageViewerModal = lazy(() =>
-  import('./ImageViewerModal').then((m) => ({ default: m.ImageViewerModal }))
+  import('@/ui/ImageViewerModal').then((m) => ({ default: m.ImageViewerModal }))
 );
 const SavedPostsDrawer = lazy(() =>
-  import('./SavedPostsDrawer').then((m) => ({ default: m.SavedPostsDrawer }))
+  import('@/features/post/SavedPostsDrawer').then((m) => ({ default: m.SavedPostsDrawer }))
 );
 
 const ViewFallback = () => (

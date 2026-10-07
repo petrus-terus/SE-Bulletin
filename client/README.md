@@ -29,48 +29,31 @@ For optimal mobile testing, set DevTools viewport to **iPhone 14/15 Pro (393 × 
 ```
 client/
 ├── public/                 # Static assets, PWA manifest, service worker (sw.js), brand logos
-│   ├── _redirects          # Cloudflare Pages SPA rewrite rule (/* /index.html 200)
 │   ├── manifest.json       # PWA web app manifest with standalone display configuration
 │   └── sw.js               # Service worker for offline shell caching
 ├── src/
-│   ├── components/         # Clean modular UI components (Pure CSS modules)
-│   │   ├── TopAppBar.tsx            # Sticky header with Sabah Electricity branding & navigation trigger
-│   │   ├── BrandSidebarDrawer.tsx   # Slide-out brand menu (Profile info, Saved Posts, Logout)
-│   │   ├── SavedPostsDrawer.tsx     # Bookmarked bulletins drawer
-│   │   ├── KinabaluSkylineHero.tsx  # Dynamic time-of-day vector art & real-time TNB market chart
-│   │   ├── StoriesBar.tsx           # 24-hour department updates carousel
-│   │   ├── CreateStoryModal.tsx     # Fast WhatsApp/IG-style 24h story creator (Photo & Text modes)
-│   │   ├── StoryViewerModal.tsx     # 5-second auto-advancing story modal
-│   │   ├── FeedCard.tsx             # Post card with views count, optimistic reactions, reshares, comments
-│   │   ├── EmojiReactionDock.tsx    # LinkedIn-style 5-emoji reaction dock (Like, Celebrate, Support, Insightful, Safety)
-│   │   ├── ReshareBottomSheet.tsx   # Instant repost & Quote Bulletin action sheet
-│   │   ├── QuoteBulletinModal.tsx   # Quote repost composer with embedded post preview card
-│   │   ├── InteractivePollCard.tsx  # Live single-choice voting with animated percentages
-│   │   ├── CeoWisdomSection.tsx     # Leadership executive quotes & portrait banner
-│   │   ├── SesiKnowledgeHubBanner.tsx # SESI training, academy & SOP corporate banner
-│   │   ├── CommentDrawer.tsx        # Threaded discussion drawer with sticky input
-│   │   ├── CreateBulletinPage.tsx   # Bulletin Studio with 4 SESB 1-tap quick templates & auto-compress meter
-│   │   ├── SearchDirectoryPage.tsx  # Employee directory with filter chips & instant search
-│   │   ├── ProfilePage.tsx          # Staff profile view & edit modal (Bangunan KWASA location)
-│   │   ├── ErrorBoundary.tsx        # Resilient React error boundary
-│   │   └── PwaInstallPrompt.tsx     # iOS 3-step guide & Android 1-click install banner
-│   ├── utils/
-│   │   └── imageCompressor.ts       # HTML5 Canvas client-side downscaling engine (~95% byte reduction)
-│   ├── hooks/
-│   │   └── useHorizontalScroll.ts   # Mouse wheel-to-horizontal-scroll hook for carousels
-│   ├── services/
-│   │   ├── bulletinService.ts       # Unified API service (Supabase with mock fallback & view tracking)
-│   │   ├── supabaseClient.ts        # Supabase client singleton & auth state
-│   │   ├── marketService.ts         # Bursa Malaysia (TNB 5347.KL) live intraday quote provider
-│   │   └── mockData.ts              # Authentic Sabah Electricity seed dataset
-│   ├── types/
-│   │   └── bulletin.ts              # TypeScript domain interfaces (Post, Employee, Department, Story)
-│   ├── index.css                    # Design tokens (colors, typography, spacing, WCAG AAA resets)
-│   ├── App.tsx                      # Root state coordinator & tab router
-│   └── main.tsx                     # React 19 entry point & Service Worker registration
+│   ├── features/           # Domain feature slices
+│   │   ├── feed/           # KinabaluSkylineHero, FeedCard, CeoWisdomSection, SesiKnowledgeHubBanner, DepartmentFilters, TrendingSection
+│   │   ├── post/           # PostDetailView, CommentDrawer, InteractivePollCard, EmojiReactionDock, ReshareBottomSheet, QuoteBulletinModal, SavedPostsDrawer
+│   │   ├── stories/        # StoriesBar, StoryViewerModal, CreateStoryModal
+│   │   ├── create/         # CreateBulletinPage (Bulletin Studio with quick templates)
+│   │   ├── directory/      # SearchDirectoryPage (Staff directory & search)
+│   │   ├── profile/        # ProfilePage, AchievementsDeck
+│   │   └── notifications/  # NotificationsView
+│   ├── layout/             # Shell, framing & navigation (AppShell, TopAppBar, BottomNav, TabRouter, OverlayHost, DesktopSidebar, BrandSidebarDrawer)
+│   ├── ui/                 # Reusable system UI (Toast, ErrorBoundary, PilotGate, LoginPage, PwaInstallPrompt, ImageViewerModal)
+│   ├── components/         # Backward-compatibility barrel re-exporting modules
+│   ├── hooks/              # Custom React hooks (usePostActions, useRealtimeSync, useHorizontalScroll)
+│   ├── services/           # Services (bulletinService, bookmarkStorage, notificationService, marketService, mockData)
+│   ├── data/               # Static datasets (departments.ts)
+│   ├── utils/              # Pure utilities (format.ts, imageCompressor.ts)
+│   ├── types/              # TypeScript domain interfaces (Post, Employee, Department, Story)
+│   ├── index.css           # Design tokens (colors, typography, spacing, WCAG AAA resets)
+│   ├── App.tsx             # Root state coordinator (~480 lines)
+│   └── main.tsx            # React 19 entry point & Service Worker registration
 ├── .env.example            # Environment variables template
 ├── package.json
-└── vite.config.ts          # Vite configuration with proxy for market API and port 3001
+└── vite.config.ts          # Vite configuration with path aliases (@/*) and market API proxy
 ```
 
 ---

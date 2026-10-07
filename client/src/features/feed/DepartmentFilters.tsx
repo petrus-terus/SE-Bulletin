@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Department } from '../types/bulletin';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
+import type { Department } from '@/types/bulletin';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './DepartmentFilters.module.css';
 
 interface Props {

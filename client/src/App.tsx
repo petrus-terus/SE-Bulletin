@@ -7,21 +7,21 @@ import { getStoredNotifications, saveStoredNotifications } from '@/services/noti
 import { supabase } from '@/services/supabaseClient';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { usePostActions } from '@/hooks/usePostActions';
-import { AppShell } from '@/components/AppShell';
-import { TopAppBar } from '@/components/TopAppBar';
-import { BottomNav } from '@/components/BottomNav';
-import type { TabKey } from '@/components/BottomNav';
-import { DesktopSidebar } from '@/components/DesktopSidebar';
-import { DesktopWidgetsRail } from '@/components/DesktopWidgetsRail';
-import { LoginPage } from '@/components/LoginPage';
-import { PilotGate } from '@/components/PilotGate';
-import { Toast } from '@/components/Toast';
-import { TabRouter } from '@/components/TabRouter';
-import { OverlayHost } from '@/components/OverlayHost';
+import { AppShell } from '@/layout/AppShell';
+import { TopAppBar } from '@/layout/TopAppBar';
+import { BottomNav } from '@/layout/BottomNav';
+import type { TabKey } from '@/layout/BottomNav';
+import { DesktopSidebar } from '@/layout/DesktopSidebar';
+import { DesktopWidgetsRail } from '@/layout/DesktopWidgetsRail';
+import { LoginPage } from '@/ui/LoginPage';
+import { PilotGate } from '@/ui/PilotGate';
+import { Toast } from '@/ui/Toast';
+import { TabRouter } from '@/layout/TabRouter';
+import { OverlayHost } from '@/layout/OverlayHost';
 
 // Lazy-loaded heavy detail view
 const PostDetailView = lazy(() =>
-  import('@/components/PostDetailView').then((m) => ({ default: m.PostDetailView }))
+  import('@/features/post/PostDetailView').then((m) => ({ default: m.PostDetailView }))
 );
 
 const ViewFallback = () => (

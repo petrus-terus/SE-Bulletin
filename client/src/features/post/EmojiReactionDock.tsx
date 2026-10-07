@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { EmojiReactionType } from '../types/bulletin';
+import type { EmojiReactionType } from '@/types/bulletin';
 import styles from './EmojiReactionDock.module.css';
 
 interface Props {

@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Post } from '../types/bulletin';
-import { InteractivePollCard } from './InteractivePollCard';
+import type { Post } from '@/types/bulletin';
+import { InteractivePollCard } from '@/features/post/InteractivePollCard';
 import styles from './CeoWisdomSection.module.css';
 
 interface Props {

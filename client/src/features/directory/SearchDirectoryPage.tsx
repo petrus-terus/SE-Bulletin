@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { Department, Employee, Post } from '../types/bulletin';
-import { ALL_EMPLOYEES, getRegisteredEmployees } from '../services/mockData';
-import { bulletinService } from '../services/bulletinService';
-import { FeedCard } from './FeedCard';
-import { Toast } from './Toast';
-import { useHorizontalScroll } from '../hooks/useHorizontalScroll';
+import type { Department, Employee, Post } from '@/types/bulletin';
+import { ALL_EMPLOYEES, getRegisteredEmployees } from '@/services/mockData';
+import { bulletinService } from '@/services/bulletinService';
+import { FeedCard } from '@/features/feed/FeedCard';
+import { Toast } from '@/ui/Toast';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './SearchDirectoryPage.module.css';
 
 interface EmployeeRecord {
@@ -44,7 +44,7 @@ interface Props {
   onViewProfile?: (employee: { id: string; name: string; avatarUrl: string; designation: string; department: string; email: string; extension?: string; staffId?: string }) => void;
   onBookmarkToggle?: (postId: string) => void;
   onVotePoll?: (postId: string, optionId: string) => void;
-  onReactionSelect?: (postId: string, reaction: import('../types/bulletin').EmojiReactionType) => void;
+  onReactionSelect?: (postId: string, reaction: import('@/types/bulletin').EmojiReactionType) => void;
   onReshareToggle?: (postId: string) => void;
   onQuotePost?: (quotedPost: Post, commentText: string) => void;
   onSharePost?: (post: Post) => void;

@@ -1,4 +1,4 @@
-import type { AppNotification } from '../types/bulletin';
+import type { AppNotification } from '@/types/bulletin';
 
 const NOTIFICATIONS_STORAGE_KEY = 'sesb_notifications';
 

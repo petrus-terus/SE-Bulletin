@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import type { Department, CreatePostPayload, Employee, Post } from '../types/bulletin';
-import { CURRENT_USER } from '../services/mockData';
-import { bulletinService } from '../services/bulletinService';
+import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
+import { CURRENT_USER } from '@/services/mockData';
+import { bulletinService } from '@/services/bulletinService';
 import styles from './CreateBulletinPage.module.css';
 
 interface Props {

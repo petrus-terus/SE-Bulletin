@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { Post } from '../types/bulletin';
+import type { Post } from '@/types/bulletin';
 import styles from './SavedPostsDrawer.module.css';
 
 interface Props {

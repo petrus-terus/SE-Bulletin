@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { Story } from '../types/bulletin';
+import type { Story } from '@/types/bulletin';
 import styles from './StoryViewerModal.module.css';
 
 interface Props {

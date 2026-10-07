@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Comment, Employee, Post } from '../types/bulletin';
+import type { Comment, Employee, Post } from '@/types/bulletin';
 import styles from './CommentDrawer.module.css';
 
 interface Props {

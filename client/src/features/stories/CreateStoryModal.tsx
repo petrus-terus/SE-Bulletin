@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import type { Employee, Story } from '../types/bulletin';
-import { bulletinService } from '../services/bulletinService';
+import type { Employee, Story } from '@/types/bulletin';
+import { bulletinService } from '@/services/bulletinService';
 import styles from './CreateStoryModal.module.css';
 
 interface Props {

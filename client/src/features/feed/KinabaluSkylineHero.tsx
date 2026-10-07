@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchTenagaMarketData, type TenagaMarketData } from '../services/marketService';
+import { fetchTenagaMarketData, type TenagaMarketData } from '@/services/marketService';
 import styles from './KinabaluSkylineHero.module.css';
 
 interface Props {
