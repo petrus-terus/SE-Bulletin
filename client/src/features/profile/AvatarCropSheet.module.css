@@ -1,0 +1,289 @@
+/**
+ * Avatar crop sheet.
+ *
+ * Motion is intentionally inherited from the existing profile modal language:
+ * global `fadeInBackdrop` / `scaleInSheet` keyframes driven by `--ease-expo`
+ * (cubic-bezier(0.16, 1, 0.3, 1)). No new curves, no new durations.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 130; /* above the edit-profile modal (120) */
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: calc(16px + var(--safe-area-bottom, 0px));
+  overscroll-behavior: contain;
+  animation: fadeInBackdrop 180ms ease-out both;
+}
+
+.sheet {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-card, 16px);
+  width: 100%;
+  max-width: 420px;
+  /* dvh, not vh: 90vh is the tallest viewport and overflows behind the URL bar. */
+  max-height: min(90dvh, 640px);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.25),
+    0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  animation: scaleInSheet 200ms var(--ease-expo) both;
+}
+
+.header {
+  padding: 16px 20px 10px;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl, 18px);
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.stage {
+  position: relative;
+  width: min(100%, 300px);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  flex-shrink: 0;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  /* The crop surface owns pan, pinch and wheel — the page must not also scroll. */
+  touch-action: none;
+}
+
+.stageLoader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs, 12px);
+}
+
+.stageSpinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(0, 85, 164, 0.2);
+  border-top-color: var(--color-brand-blue, #0055A4);
+  animation: spin 700ms linear infinite;
+}
+
+.zoomRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+
+.zoomIcon {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.zoomValue {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums; /* keeps the row from jittering while dragging */
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted);
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.zoomSlider {
+  flex: 1;
+  min-width: 0;
+  height: 44px; /* touch target */
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.zoomSlider:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: 999px; /* reads as a focus pill, not a text field */
+}
+
+.zoomSlider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--color-primary-container);
+  border: 2px solid var(--color-surface-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
+.zoomSlider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.zoomSlider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-primary-container);
+  border: 2px solid var(--color-surface-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
+.errorSlot {
+  min-height: 34px;
+  padding: 8px 20px 0;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-alert-red);
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + var(--safe-area-bottom, 0px));
+  border-top: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.cancelBtn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-body);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
+}
+
+.confirmBtn {
+  min-height: 44px;
+  padding: 8px 20px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-primary-container);
+  border: none;
+  color: #ffffff;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 128px; /* label swap never reflows the button */
+  box-shadow: 0 2px 6px rgba(0, 85, 164, 0.25);
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cancelBtn:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .confirmBtn:hover {
+    background: var(--color-primary-hover);
+  }
+}
+
+.cancelBtn:active,
+.confirmBtn:active {
+  transform: scale(0.96);
+}
+
+.cancelBtn:disabled,
+.confirmBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  animation: spin 700ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .sheet {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    transition: none;
+  }
+
+  .cancelBtn:active,
+  .confirmBtn:active {
+    transform: none;
+  }
+
+  /* Colour-only feedback keeps the busy state legible without motion. */
+  .spinner,
+  .stageSpinner {
+    animation: none;
+    border-top-color: rgba(255, 255, 255, 0.9);
+  }
+}

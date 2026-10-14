@@ -4,8 +4,11 @@ import type { Employee, EmojiReactionType, Post } from '@/types/bulletin';
 import { CURRENT_USER } from '@/services/mockData';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { AchievementsDeck } from '@/features/profile/AchievementsDeck';
+import { AvatarCropSheet } from '@/features/profile/AvatarCropSheet';
 import { FeedCard } from '@/shared/FeedCard';
+import { Toast } from '@/ui/Toast';
 import { bulletinService } from '@/services/bulletinService';
+import { AVATAR_OUTPUT_SIZE, ACCEPTED_AVATAR_TYPES, validateAvatarFile } from '@/utils/cropImage';
 import styles from './ProfilePage.module.css';
 
 interface Props {
@@ -107,32 +110,90 @@ export const ProfilePage: React.FC<Props> = ({
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Avatar crop flow: the file is held here until the user confirms a framing,
+  // so nothing reaches Supabase Storage before they have seen the result.
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  const closeAvatarSheet = () => {
+    setPendingAvatarFile(null);
+    previouslyFocusedRef.current?.focus?.();
+  };
+
   // Handle direct device file upload (with automatic Supabase Storage upload and client-side compression)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset before awaiting so choosing the same photo again still fires change.
+    e.target.value = '';
+
+    // Avatars go through the cropper first; covers upload directly as before.
+    if (mode === 'avatar') {
+      const problem = validateAvatarFile(file);
+      if (problem) {
+        setToast({ message: problem, icon: 'error' });
+        return;
+      }
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+      setPendingAvatarFile(file);
+      return;
+    }
+
     try {
       const uploadedUrl = await bulletinService.uploadPhoto(file);
-
-      if (mode === 'avatar') {
-        const updated = { ...profileData, avatarUrl: uploadedUrl };
-        setProfileData(updated);
-        setTempAvatarUrl(uploadedUrl);
-        if (onUpdateProfile) onUpdateProfile(updated);
+      if (isEditModalOpen) {
+        setTempCoverUrl(uploadedUrl);
+        setToast({ message: 'Banner uploaded. Save changes to apply.', icon: 'check_circle' });
       } else {
         const updated = { ...profileData, coverUrl: uploadedUrl };
         setProfileData(updated);
         setTempCoverUrl(uploadedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
+        setToast({ message: 'Cover photo updated.', icon: 'check_circle' });
       }
     } catch (err) {
       console.error('[ProfilePage] Upload failed:', err);
-      // Ideally show a toast here, but we'll let the user know upload failed.
-      alert('Failed to upload image. Please check your connection and try again.');
+      setToast({
+        message: 'Failed to upload image. Please check your connection and try again.',
+        icon: 'error',
+      });
+    }
+  };
+
+  // Commit the cropped square, then push it through the normal upload path.
+  const handleAvatarConfirm = async (croppedFile: File) => {
+    setIsAvatarUploading(true);
+    try {
+      const uploadedUrl = await bulletinService.uploadPhoto(croppedFile, {
+        maxWidth: AVATAR_OUTPUT_SIZE,
+        maxHeight: AVATAR_OUTPUT_SIZE,
+        quality: 0.86,
+      });
+
+      if (isEditModalOpen) {
+        // Option B: Inside Edit Profile modal — stage the change so clicking Cancel cleanly discards it
+        setTempAvatarUrl(uploadedUrl);
+        setToast({ message: 'Photo cropped. Save changes to apply.', icon: 'check_circle' });
+      } else {
+        // Direct Hero Camera trigger — apply and persist immediately
+        const updated = { ...profileData, avatarUrl: uploadedUrl };
+        setProfileData(updated);
+        setTempAvatarUrl(uploadedUrl);
+        if (onUpdateProfile) onUpdateProfile(updated);
+        setToast({ message: 'Profile photo updated.', icon: 'check_circle' });
+      }
+    } catch (err) {
+      console.error('[ProfilePage] Avatar upload failed:', err);
+      setToast({
+        message: 'Could not save your photo. Please try again.',
+        icon: 'error',
+      });
     } finally {
-      // Reset target value so selecting the same photo triggers change
-      e.target.value = '';
+      setIsAvatarUploading(false);
+      closeAvatarSheet();
     }
   };
 
@@ -141,6 +202,11 @@ export const ProfilePage: React.FC<Props> = ({
     (p) =>
       (p.author?.id && activeEmployee.id && p.author.id === activeEmployee.id) ||
       (p.author?.name || '').toLowerCase().trim() === activeEmployee.name.toLowerCase().trim() ||
+      ((activeEmployee.name === 'ADMIN_USER' || activeEmployee.name === 'TEST_USER') &&
+        (p.author?.name === 'ADMIN_USER' ||
+          p.author?.name === 'TEST_USER' ||
+          p.author?.id === 'user-test' ||
+          p.author?.id === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
       (p.resharedBy?.id && activeEmployee.id && p.resharedBy.id === activeEmployee.id) ||
       (p.isReshared && isOwnProfile)
   );
@@ -230,13 +296,19 @@ export const ProfilePage: React.FC<Props> = ({
   // Handle ESC key to dismiss open modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isEditModalOpen) {
+      if (e.key !== 'Escape') return;
+      // The crop sheet sits above the edit modal, so it wins the keystroke.
+      if (pendingAvatarFile) {
+        closeAvatarSheet();
+        return;
+      }
+      if (isEditModalOpen) {
         setIsEditModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditModalOpen]);
+  }, [isEditModalOpen, pendingAvatarFile]);
 
   return (
     <div className={styles.profileContainer}>
@@ -245,7 +317,7 @@ export const ProfilePage: React.FC<Props> = ({
         type="file"
         ref={avatarFileInputRef}
         onChange={(e) => handleFileUpload(e, 'avatar')}
-        accept="image/*"
+        accept={ACCEPTED_AVATAR_TYPES.join(',')}
         style={{ display: 'none' }}
         aria-hidden="true"
       />
@@ -257,6 +329,23 @@ export const ProfilePage: React.FC<Props> = ({
         style={{ display: 'none' }}
         aria-hidden="true"
       />
+
+      {toast && (
+        <Toast message={toast.message} icon={toast.icon} onDismiss={() => setToast(null)} />
+      )}
+
+      {/* Avatar crop sheet — the photo is only uploaded once framing is confirmed */}
+      {pendingAvatarFile &&
+        createPortal(
+          <AvatarCropSheet
+            imageFile={pendingAvatarFile}
+            isUploading={isAvatarUploading}
+            onCancel={closeAvatarSheet}
+            onConfirm={handleAvatarConfirm}
+            onError={(message) => setToast({ message, icon: 'error' })}
+          />,
+          document.body
+        )}
 
       {/* 1. Facebook-Style Hero & Panoramic Cover Banner */}
       <div className={styles.profileCard}>
@@ -390,7 +479,7 @@ export const ProfilePage: React.FC<Props> = ({
                 <span className={styles.verifiedCheck} title="Verified Sabah Electricity Staff">
                   <span
                     className="material-symbols-outlined"
-                    style={{ fontSize: '18px', color: '#0055A4' }}
+                    style={{ fontSize: '18px', color: 'var(--color-primary-text)' }}
                   >
                     verified
                   </span>
@@ -450,7 +539,7 @@ export const ProfilePage: React.FC<Props> = ({
           <div className={styles.onboardingHeader}>
             <div className={styles.onboardingTitleWrap}>
               <span className={styles.onboardingSparkleIcon}>
-                <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#1A7A5A' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '22px', color: 'var(--color-forest-text)' }}>
                   stars
                 </span>
               </span>
@@ -490,7 +579,7 @@ export const ProfilePage: React.FC<Props> = ({
                     className="material-symbols-outlined"
                     style={{
                       fontSize: '18px',
-                      color: item.isCompleted ? '#1A7A5A' : '#94A3B8',
+                      color: item.isCompleted ? 'var(--color-forest-text)' : 'var(--color-text-muted)',
                     }}
                   >
                     {item.isCompleted ? 'check_circle' : 'radio_button_unchecked'}
@@ -534,7 +623,7 @@ export const ProfilePage: React.FC<Props> = ({
           <div className={styles.sectionTitleGroup}>
             <span
               className="material-symbols-outlined"
-              style={{ fontSize: '20px', color: '#0055A4' }}
+              style={{ fontSize: '20px', color: 'var(--color-primary-text)' }}
             >
               photo_library
             </span>
@@ -572,7 +661,7 @@ export const ProfilePage: React.FC<Props> = ({
         ) : (
           <div className={styles.emptyPhotosContainer}>
             <div className={styles.emptyPhotosIconCircle}>
-              <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#64748B' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '24px', color: 'var(--color-text-muted)' }}>
                 add_photo_alternate
               </span>
             </div>
@@ -608,7 +697,7 @@ export const ProfilePage: React.FC<Props> = ({
           <div className={styles.sectionTitleGroup}>
             <span
               className="material-symbols-outlined"
-              style={{ fontSize: '20px', color: '#1A7A5A' }}
+              style={{ fontSize: '20px', color: 'var(--color-forest-text)' }}
             >
               dynamic_feed
             </span>
@@ -650,7 +739,7 @@ export const ProfilePage: React.FC<Props> = ({
             <div className={styles.emptyIconCircle}>
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '28px', color: '#94A3B8' }}
+                style={{ fontSize: '28px', color: 'var(--color-text-muted)' }}
               >
                 post_add
               </span>
@@ -673,24 +762,6 @@ export const ProfilePage: React.FC<Props> = ({
         )}
       </section>
 
-
-
-      {/* Hidden File Inputs for Device Camera / File Uploads */}
-      <input
-        ref={avatarFileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileUpload(e, 'avatar')}
-      />
-      <input
-        ref={coverFileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileUpload(e, 'cover')}
-      />
-
       {/* 8. Comprehensive Edit Profile Modal Sheet (Portaled via createPortal) */}
       {isEditModalOpen &&
         createPortal(
@@ -708,7 +779,7 @@ export const ProfilePage: React.FC<Props> = ({
               {/* Modal Header */}
               <div className={styles.modalHeader}>
                 <div className={styles.modalHeaderTitleGroup}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#0055A4' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary-text)' }}>
                     manage_accounts
                   </span>
                   <h3 className={styles.modalTitle}>Edit Employee Profile</h3>

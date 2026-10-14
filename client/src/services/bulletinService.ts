@@ -88,7 +88,7 @@ class BulletinService {
           avatarUrl:
             row.author_id === 'user-ceo' || (row.author_name || '').toLowerCase().includes('yaakob')
               ? '/ceo_portrait.png'
-              : row.author_avatar || '/user_face.png',
+              : row.author_avatar || '/sabah_electricity_logo.png',
           isVerified: true,
         },
         timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -273,7 +273,7 @@ class BulletinService {
           departmentId: row.department_id,
           departmentName: row.department_name,
           authorName: row.author_name,
-          authorAvatar: row.author_avatar || '/user_face.png',
+          authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
           hasUnread: true,
           imageUrl: row.image_url,
           caption: row.caption || '',
@@ -301,7 +301,7 @@ class BulletinService {
             department_name: story.departmentName,
             author_id: (await supabase.auth.getUser()).data.user?.id || null,
             author_name: story.authorName,
-            author_avatar: story.authorAvatar || '/user_face.png',
+            author_avatar: story.authorAvatar || '/sabah_electricity_logo.png',
             image_url: story.imageUrl,
             caption: story.caption || '',
           },
@@ -320,17 +320,25 @@ class BulletinService {
   /**
    * Upload media photo to Supabase storage with automatic client-side compression
    * and fallback to DataURL.
+   *
+   * `options` lets a caller ship a pre-sized image (the avatar cropper passes
+   * 512×512). Defaults are unchanged, so bulletin and story uploads keep their
+   * existing 1600px / 0.82 behaviour.
    */
-  async uploadPhoto(file: File): Promise<string> {
+  async uploadPhoto(
+    file: File,
+    options: { maxWidth?: number; maxHeight?: number; quality?: number } = {}
+  ): Promise<string> {
+    const { maxWidth = 1600, maxHeight = 1600, quality = 0.82 } = options;
     let uploadTarget = file;
 
     // Automatically optimize smartphone captures to ~150-250KB WebP
     try {
       if (file.type.startsWith('image/')) {
         const compressed = await compressImageFile(file, {
-          maxWidth: 1600,
-          maxHeight: 1600,
-          quality: 0.82,
+          maxWidth,
+          maxHeight,
+          quality,
         });
         uploadTarget = compressed.file;
       }
@@ -634,7 +642,7 @@ class BulletinService {
         designation: data.designation || 'Sabah Electricity Staff',
         department: data.department || 'Operating',
         email: data.email,
-        avatarUrl: data.avatar_url || '/user_face.png',
+        avatarUrl: data.avatar_url || '/sabah_electricity_logo.png',
         coverUrl: data.cover_url || '/grid_horizon_hero.jpg',
         officeLocation: data.office_location || 'Wisma SESB HQ, Kota Kinabalu',
         phoneExtension: data.phone_extension || 'Ext. 4102',
@@ -679,7 +687,7 @@ class BulletinService {
         designation: row.designation || 'Sabah Electricity Staff',
         department: row.department || 'Operating',
         email: row.email,
-        avatarUrl: row.avatar_url || '/user_face.png',
+        avatarUrl: row.avatar_url || '/sabah_electricity_logo.png',
         coverUrl: row.cover_url || '/grid_horizon_hero.jpg',
         officeLocation: row.office_location || 'Wisma SESB HQ, Kota Kinabalu',
         phoneExtension: row.phone_extension || 'Ext. 4102',
@@ -691,20 +699,20 @@ class BulletinService {
 
       // Cache cloud profiles locally for offline resilience
       try {
-        const nonStatic = cloudProfiles.filter((p) => p.id !== 'user-test' && p.id !== 'user-ceo');
-        localStorage.setItem('sesb_registered_users', JSON.stringify(nonStatic));
+        localStorage.setItem('sesb_registered_users', JSON.stringify(cloudProfiles));
       } catch {
         // quota fallback
       }
 
-      // Merge ensuring TEST_USER and CEO always exist cleanly
+      // Merge ensuring cloud profiles take precedence and de-duplicate by email
       const mergedMap = new Map<string, Employee>();
       for (const p of cloudProfiles) {
-        mergedMap.set(p.id, p);
+        mergedMap.set(p.email ? p.email.toLowerCase() : p.id, p);
       }
       for (const p of localProfiles) {
-        if (!mergedMap.has(p.id)) {
-          mergedMap.set(p.id, p);
+        const key = p.email ? p.email.toLowerCase() : p.id;
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, p);
         }
       }
 
@@ -730,7 +738,7 @@ class BulletinService {
             designation: employee.designation,
             department: employee.department,
             email: employee.email,
-            avatar_url: employee.avatarUrl || '/user_face.png',
+            avatar_url: employee.avatarUrl || '/sabah_electricity_logo.png',
             cover_url: employee.coverUrl || '/grid_horizon_hero.jpg',
             office_location: employee.officeLocation || 'Wisma SESB HQ, Kota Kinabalu',
             phone_extension: employee.phoneExtension || 'Ext. 4102',
