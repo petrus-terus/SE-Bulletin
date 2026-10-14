@@ -171,7 +171,14 @@
   padding: 0;
 }
 
-html, body {
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+body {
   width: 100%;
   min-height: 100%;
   background-color: var(--color-surface-base);
@@ -182,8 +189,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
-  overscroll-behavior: none;
 }
 
 /* Selection and Caret Theming */
