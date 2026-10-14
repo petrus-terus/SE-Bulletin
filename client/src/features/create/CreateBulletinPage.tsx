@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
 import { CURRENT_USER } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
@@ -261,6 +262,19 @@ export const CreateBulletinPage: React.FC<Props> = ({
     onSubmit(newPost);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDeptOpen(false);
+        setIsAudienceOpen(false);
+      }
+    };
+    if (isDeptOpen || isAudienceOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDeptOpen, isAudienceOpen]);
+
   return (
     <div
       className={styles.fullPageContainer}
@@ -311,11 +325,11 @@ export const CreateBulletinPage: React.FC<Props> = ({
             <div className={styles.authorProfile}>
               <div className={styles.avatarWrapper}>
                 <img
-                  src={activeUser.avatarUrl || '/user_face.png'}
+                  src={activeUser.avatarUrl || '/sabah_electricity_logo.png'}
                   alt=""
                   className={styles.authorAvatar}
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                    (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                   }}
                 />
                 <span className={styles.onlineDot} />
@@ -327,14 +341,19 @@ export const CreateBulletinPage: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Audience Dropdown */}
-            <div className={styles.scopeWrapper}>
+            {/* Scope and Department Meta Buttons Group */}
+            <div className={styles.metaPillsGroup}>
+              {/* Audience Dropdown Button */}
               <button
                 type="button"
                 className={styles.scopeBtn}
-                onClick={() => setIsAudienceOpen(!isAudienceOpen)}
+                onClick={() => {
+                  setIsDeptOpen(false);
+                  setIsAudienceOpen(!isAudienceOpen);
+                }}
                 aria-expanded={isAudienceOpen}
-                aria-haspopup="true"
+                aria-haspopup="dialog"
+                title="Select Bulletin Audience Scope"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                   public
@@ -345,42 +364,22 @@ export const CreateBulletinPage: React.FC<Props> = ({
                 </span>
               </button>
 
-              {isAudienceOpen && (
-                <div className={styles.scopeMenu} role="menu">
-                  {['All Sabah Staff', 'HQ Only', 'Operations Only'].map((scope) => (
-                    <button
-                      key={scope}
-                      type="button"
-                      className={`${styles.scopeMenuItem} ${
-                        audienceScope === scope ? styles.scopeMenuItemActive : ''
-                      }`}
-                      onClick={() => {
-                        setAudienceScope(scope);
-                        setIsAudienceOpen(false);
-                      }}
-                      role="menuitem"
-                    >
-                      {scope}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Department Choice Row with Popover Pill */}
-          <div className={styles.deptSelectorRow}>
-            <span className={styles.deptLabel}>Department:</span>
-            <div className={styles.scopeWrapper} style={{ flex: 1 }}>
+              {/* Department Choice Button */}
               <button
                 type="button"
                 className={styles.scopeBtn}
                 style={{
-                  background: '#FFFFFF',
+                  background: 'var(--color-surface-card)',
                   borderColor: currentDept.color || '#0055A4',
                   color: currentDept.color || '#0055A4',
                 }}
-                onClick={() => setIsDeptOpen(!isDeptOpen)}
+                onClick={() => {
+                  setIsAudienceOpen(false);
+                  setIsDeptOpen(!isDeptOpen);
+                }}
+                aria-expanded={isDeptOpen}
+                aria-haspopup="dialog"
+                title="Select Bulletin Department"
               >
                 <span
                   style={{
@@ -388,6 +387,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
                     height: '8px',
                     borderRadius: '50%',
                     backgroundColor: currentDept.color || '#0055A4',
+                    flexShrink: 0,
                   }}
                 />
                 <span className="truncate">{currentDept.name}</span>
@@ -395,36 +395,6 @@ export const CreateBulletinPage: React.FC<Props> = ({
                   arrow_drop_down
                 </span>
               </button>
-
-              {isDeptOpen && (
-                <div className={styles.scopeMenu} style={{ left: 0, right: 'auto' }} role="menu">
-                  {departments.map((dept) => (
-                    <button
-                      key={dept.id}
-                      type="button"
-                      className={`${styles.scopeMenuItem} ${
-                        selectedDeptId === dept.id ? styles.scopeMenuItemActive : ''
-                      }`}
-                      onClick={() => {
-                        setSelectedDeptId(dept.id);
-                        setIsDeptOpen(false);
-                      }}
-                      role="menuitem"
-                    >
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          backgroundColor: dept.color || '#0055A4',
-                          marginRight: '8px',
-                        }}
-                      />
-                      <span>{dept.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -758,6 +728,133 @@ export const CreateBulletinPage: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Department Selector Modal Sheet (Mounted to Body to bypass container overflow clipping) */}
+      {isDeptOpen &&
+        createPortal(
+          <div
+            className={styles.portalOverlay}
+            onClick={() => setIsDeptOpen(false)}
+            role="presentation"
+          >
+            <div
+              className={styles.deptModalSheet}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Select Department"
+            >
+              <div className={styles.modalSheetHeader}>
+                <div className={styles.modalSheetTitleWrap}>
+                  <span className={styles.modalSheetTitle}>Select Department</span>
+                  <span className={styles.modalSheetSub}>Choose which SESB department this bulletin originates from</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.modalSheetCloseBtn}
+                  onClick={() => setIsDeptOpen(false)}
+                  aria-label="Close Department Sheet"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className={styles.modalSheetBody}>
+                {departments.map((dept) => {
+                  const isSelected = currentDept.id === dept.id;
+                  return (
+                    <button
+                      key={dept.id}
+                      type="button"
+                      className={`${styles.deptSheetOption} ${isSelected ? styles.deptSheetOptionActive : ''}`}
+                      onClick={() => {
+                        setSelectedDeptId(dept.id);
+                        setIsDeptOpen(false);
+                      }}
+                    >
+                      <span
+                        className={styles.deptSheetColorDot}
+                        style={{ backgroundColor: dept.color }}
+                      />
+                      <span className={styles.deptSheetName}>{dept.name}</span>
+                      {isSelected && (
+                        <span
+                          className={`material-symbols-outlined ${styles.deptSheetCheck}`}
+                        >
+                          check_circle
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Audience Scope Modal Sheet (Mounted to Body) */}
+      {isAudienceOpen &&
+        createPortal(
+          <div
+            className={styles.portalOverlay}
+            onClick={() => setIsAudienceOpen(false)}
+            role="presentation"
+          >
+            <div
+              className={styles.deptModalSheet}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Select Audience Scope"
+            >
+              <div className={styles.modalSheetHeader}>
+                <div className={styles.modalSheetTitleWrap}>
+                  <span className={styles.modalSheetTitle}>Audience Scope</span>
+                  <span className={styles.modalSheetSub}>Define who will receive and see this bulletin notification</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.modalSheetCloseBtn}
+                  onClick={() => setIsAudienceOpen(false)}
+                  aria-label="Close Audience Scope Sheet"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className={styles.modalSheetBody}>
+                {(['All Sabah Staff', 'HQ Only', 'Operations Only'] as const).map((scope) => {
+                  const isSelected = audienceScope === scope;
+                  return (
+                    <button
+                      key={scope}
+                      type="button"
+                      className={`${styles.deptSheetOption} ${isSelected ? styles.deptSheetOptionActive : ''}`}
+                      onClick={() => {
+                        setAudienceScope(scope);
+                        setIsAudienceOpen(false);
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px', color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                        {scope === 'All Sabah Staff' ? 'public' : scope === 'HQ Only' ? 'corporate_fare' : 'engineering'}
+                      </span>
+                      <span className={styles.deptSheetName}>{scope}</span>
+                      {isSelected && (
+                        <span
+                          className={`material-symbols-outlined ${styles.deptSheetCheck}`}
+                        >
+                          check_circle
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
