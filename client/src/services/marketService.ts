@@ -129,8 +129,12 @@ export async function fetchTenagaMarketData(): Promise<TenagaMarketData> {
       previousClose: prevClose,
       priceChange: diff,
       percentChange: pct,
-      dayHigh: meta.regularMarketDayHigh ?? Math.max(...intradayPoints.map((p) => p.price), currentPrice),
-      dayLow: meta.regularMarketDayLow ?? Math.min(...intradayPoints.map((p) => p.price), currentPrice),
+      dayHigh: (typeof meta.regularMarketDayHigh === 'number' && meta.regularMarketDayHigh > 0)
+        ? meta.regularMarketDayHigh
+        : Math.max(...intradayPoints.map((p) => p.price), currentPrice),
+      dayLow: (typeof meta.regularMarketDayLow === 'number' && meta.regularMarketDayLow > 0)
+        ? meta.regularMarketDayLow
+        : Math.min(...intradayPoints.map((p) => p.price), currentPrice),
       lastUpdated: formatMytShort(meta.regularMarketTime || Math.floor(now / 1000)),
       intradayPoints: intradayPoints.length >= 3 ? intradayPoints : FALLBACK_MARKET_DATA.intradayPoints,
     };

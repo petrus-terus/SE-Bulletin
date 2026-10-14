@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchTenagaMarketData, type TenagaMarketData } from '@/services/marketService';
+import { fetchKotaKinabaluWeather, type KotaKinabaluWeather } from '@/services/weatherService';
+import { useTheme } from '@/theme/useTheme';
 import styles from './KinabaluSkylineHero.module.css';
 
 interface Props {
   userName: string;
   department: string;
-  employeeId: string;
+  employeeId?: string;
   onOpenCreate?: () => void;
   onNavigateDirectory?: () => void;
   onFilterCategory?: (category: string) => void;
@@ -38,11 +40,22 @@ function getSmoothSvgPath(pts: { x: number; y: number }[]): string {
 export const KinabaluSkylineHero: React.FC<Props> = ({
   userName,
   department,
-  employeeId,
+  employeeId: _employeeId,
   onOpenCreate: _onOpenCreate,
   onNavigateDirectory: _onNavigateDirectory,
   onFilterCategory: _onFilterCategory,
 }) => {
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+
+  const [greetingText] = useState(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Selamat Pagi';
+    if (hour >= 12 && hour < 14) return 'Selamat Tengah Hari';
+    if (hour >= 14 && hour < 19) return 'Selamat Petang';
+    return 'Selamat Malam';
+  });
+
   const [currentDateStr] = useState(() => {
     const now = new Date();
     const days = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
@@ -53,6 +66,41 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     const year = now.getFullYear();
     return `${dayName}, ${dateNum} ${monthName} ${year}`;
   });
+
+  // Kota Kinabalu Live Weather State
+  const [weather, setWeather] = useState<KotaKinabaluWeather>({
+    temperature: 28,
+    condition: 'Cerah Berawan',
+    icon: 'partly_cloudy_day',
+    lastUpdated: 'Live',
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadWeather = async () => {
+      const data = await fetchKotaKinabaluWeather();
+      if (isMounted && data) {
+        setWeather(data);
+      }
+    };
+    loadWeather();
+    const weatherInterval = setInterval(loadWeather, 15 * 60 * 1000);
+    return () => {
+      isMounted = false;
+      clearInterval(weatherInterval);
+    };
+  }, []);
+
+  // Division text: replace Bahagian with Division or prefix with Division, no SESB ID
+  const divisionLabel = useMemo(() => {
+    if (!department) return 'Division Operasi & Grid';
+    let formatted = department.trim();
+    formatted = formatted.replace(/^bahagian\s+/i, 'Division ');
+    if (!/^division\s+/i.test(formatted)) {
+      formatted = `Division ${formatted}`;
+    }
+    return formatted;
+  }, [department]);
 
   // Actual Real-Time Bursa Malaysia Market Data State
   const [marketData, setMarketData] = useState<TenagaMarketData | null>(null);
@@ -70,7 +118,6 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     };
 
     loadData();
-    // Refresh market telemetry every 45 seconds
     const interval = setInterval(loadData, 45000);
     return () => {
       isMounted = false;
@@ -78,17 +125,24 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     };
   }, []);
 
-  const isDark = false;
-
-  // Derived graph & scrubbing coordinates
+  // Derived graph & coordinates
   const points = marketData?.intradayPoints || [];
   const prevClose = marketData?.previousClose ?? 13.06;
-  const dayLow = marketData?.dayLow ?? 13.10;
-  const dayHigh = marketData?.dayHigh ?? 13.28;
+  const currentPrice = marketData?.regularMarketPrice ?? 13.22;
 
-  const svgWidth = 320;
-  const svgHeight = 78;
-  const paddingY = 10;
+  // Ensure realistic intraday dayLow and dayHigh spread matching Bursa Malaysia trading bands
+  const rawLow = (marketData?.dayLow && marketData.dayLow > 0) ? marketData.dayLow : 13.10;
+  const rawHigh = (marketData?.dayHigh && marketData.dayHigh > 0) ? marketData.dayHigh : 13.28;
+  let dayLow = Math.min(rawLow, currentPrice);
+  let dayHigh = Math.max(rawHigh, currentPrice);
+  if (dayHigh - dayLow < 0.14) {
+    dayLow = Math.round((currentPrice - 0.08) * 100) / 100;
+    dayHigh = Math.round((currentPrice + 0.10) * 100) / 100;
+  }
+
+  const sparkWidth = 100;
+  const sparkHeight = 24;
+  const sparkPaddingY = 3;
 
   const allPrices = points.length > 0 ? points.map((p) => p.price) : [13.22, 13.06];
   const minPrice = Math.min(...allPrices, prevClose, dayLow);
@@ -96,38 +150,29 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   const priceRange = Math.max(0.12, maxPrice - minPrice);
 
   const coordPoints = points.map((p, idx) => ({
-    x: points.length > 1 ? (idx / (points.length - 1)) * svgWidth : svgWidth / 2,
-    y: svgHeight - paddingY - ((p.price - minPrice) / priceRange) * (svgHeight - paddingY * 2),
+    x: points.length > 1 ? (idx / (points.length - 1)) * sparkWidth : sparkWidth / 2,
+    y: sparkHeight - sparkPaddingY - ((p.price - minPrice) / priceRange) * (sparkHeight - sparkPaddingY * 2),
     price: p.price,
     timeStr: p.timeStr,
   }));
 
   const linePath = getSmoothSvgPath(coordPoints);
-  const areaPath =
-    coordPoints.length > 1
-      ? `${linePath} L ${coordPoints[coordPoints.length - 1].x.toFixed(1)},${svgHeight} L ${coordPoints[0].x.toFixed(1)},${svgHeight} Z`
-      : '';
-
-  const baselineY = svgHeight - paddingY - ((prevClose - minPrice) / priceRange) * (svgHeight - paddingY * 2);
 
   // Active scrubbed point vs latest real price
   const activePoint = scrubIndex !== null && coordPoints[scrubIndex] ? coordPoints[scrubIndex] : null;
-  const displayPrice = activePoint ? activePoint.price : (marketData?.regularMarketPrice ?? 13.22);
+  const displayPrice = activePoint ? activePoint.price : currentPrice;
   const priceDiff = Math.round((displayPrice - prevClose) * 100) / 100;
   const pctDiff = Math.round(((priceDiff / prevClose) * 100) * 100) / 100;
   const isPositive = priceDiff >= 0;
 
-  // Day Range position calculation
+  // Day Range position calculation (dot smoothly slides along the track)
   const rangeSpan = Math.max(0.01, dayHigh - dayLow);
-  const rangeProgress = Math.max(0, Math.min(100, ((displayPrice - dayLow) / rangeSpan) * 100));
-
-  // Floating magnetic tooltip coordinates
-  const tooltipXPercent = activePoint ? Math.max(10, Math.min(90, (activePoint.x / svgWidth) * 100)) : 50;
+  const rawProgress = ((displayPrice - dayLow) / rangeSpan) * 100;
+  const rangeProgress = Math.max(4, Math.min(96, rawProgress));
 
   const strokeColor = isPositive ? '#10B981' : '#EF4444';
-  const gradId = isPositive ? 'chartGreenGrad' : 'chartRedGrad';
 
-  const handlePointerAction = (e: React.PointerEvent<SVGSVGElement | HTMLDivElement>) => {
+  const handlePointerAction = (e: React.PointerEvent<HTMLDivElement | SVGSVGElement>) => {
     if (coordPoints.length === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -142,7 +187,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
   };
 
   return (
-    <div className={`${styles.heroCard} ${styles.themeDay}`}>
+    <div className={`${styles.heroCard} ${isDark ? styles.themeNight : styles.themeDay}`}>
       {/* Background Architectural Accent: Multi-Layered Animated Mt Kinabalu & Energy Grid Landscape */}
       <svg
         className={styles.watermarkSvg}
@@ -154,38 +199,38 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
         <defs>
           {/* Luminous Sky Atmospheric Radial Glow */}
           <radialGradient id="skyAuraGrad" cx="50%" cy="15%" r="65%">
-            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.22' : '0.14'} />
-            <stop offset="55%" stopColor={isDark ? '#10B981' : '#1A7A5A'} stopOpacity={isDark ? '0.08' : '0.03'} />
-            <stop offset="100%" stopColor={isDark ? '#0B0F17' : '#FFFFFF'} stopOpacity="0" />
+            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.24' : '0.14'} />
+            <stop offset="55%" stopColor={isDark ? '#10B981' : '#1A7A5A'} stopOpacity={isDark ? '0.10' : '0.03'} />
+            <stop offset="100%" stopColor={isDark ? '#070B14' : '#FFFFFF'} stopOpacity="0" />
           </radialGradient>
 
           {/* Mount Kinabalu High Summit Gradient */}
           <linearGradient id="kinabaluSummitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.24' : '0.16'} />
-            <stop offset="100%" stopColor={isDark ? '#0B0F17' : '#1A7A5A'} stopOpacity={isDark ? '0.04' : '0.02'} />
+            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.28' : '0.16'} />
+            <stop offset="100%" stopColor={isDark ? '#070B14' : '#1A7A5A'} stopOpacity={isDark ? '0.06' : '0.02'} />
           </linearGradient>
 
           {/* Crocker Foothills Gradient */}
           <linearGradient id="crockerMidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={isDark ? '#10B981' : '#1A7A5A'} stopOpacity={isDark ? '0.18' : '0.10'} />
-            <stop offset="100%" stopColor={isDark ? '#0284C7' : '#0055A4'} stopOpacity={isDark ? '0.03' : '0.01'} />
+            <stop offset="0%" stopColor={isDark ? '#10B981' : '#1A7A5A'} stopOpacity={isDark ? '0.22' : '0.10'} />
+            <stop offset="100%" stopColor={isDark ? '#0284C7' : '#0055A4'} stopOpacity={isDark ? '0.04' : '0.01'} />
           </linearGradient>
 
           {/* Summit Rim Light Gradient */}
           <linearGradient id="ridgeRimGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity="0.2" />
-            <stop offset="35%" stopColor="#38BDF8" stopOpacity="0.45" />
-            <stop offset="55%" stopColor="#10B981" stopOpacity="0.6" />
-            <stop offset="80%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0.1" />
+            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.35' : '0.2'} />
+            <stop offset="35%" stopColor="#38BDF8" stopOpacity={isDark ? '0.75' : '0.45'} />
+            <stop offset="55%" stopColor="#10B981" stopOpacity={isDark ? '0.85' : '0.6'} />
+            <stop offset="80%" stopColor={isDark ? '#38BDF8' : '#0055A4'} stopOpacity={isDark ? '0.5' : '0.3'} />
+            <stop offset="100%" stopColor="#10B981" stopOpacity={isDark ? '0.25' : '0.1'} />
           </linearGradient>
 
           {/* Valley Mist Gradient */}
           <linearGradient id="valleyMistGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="35%" stopColor={isDark ? '#38BDF8' : '#FFFFFF'} stopOpacity={isDark ? '0.12' : '0.22'} />
-            <stop offset="70%" stopColor={isDark ? '#10B981' : '#FFFFFF'} stopOpacity={isDark ? '0.08' : '0.18'} />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="0%" stopColor={isDark ? '#38BDF8' : '#FFFFFF'} stopOpacity="0" />
+            <stop offset="35%" stopColor={isDark ? '#38BDF8' : '#FFFFFF'} stopOpacity={isDark ? '0.16' : '0.22'} />
+            <stop offset="70%" stopColor={isDark ? '#10B981' : '#FFFFFF'} stopOpacity={isDark ? '0.12' : '0.18'} />
+            <stop offset="100%" stopColor={isDark ? '#10B981' : '#FFFFFF'} stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -238,7 +283,6 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
           strokeWidth="1.4"
           strokeDasharray="4 4"
         />
-        {/* Secondary Interconnection Feed Line */}
         <path
           d="M 40,176 Q 240,195 450,172 T 690,178"
           fill="none"
@@ -247,7 +291,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
           strokeDasharray="3 5"
         />
 
-        {/* Traveling Grid Energy Pulses (GPU accelerated transform) */}
+        {/* Traveling Grid Energy Pulses */}
         <g className={styles.pulseTrack1}>
           <circle cx="160" cy="162" r="3.5" fill="#10B981" />
           <circle cx="160" cy="162" r="7" fill="#10B981" opacity="0.3" />
@@ -264,218 +308,149 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
 
       {/* Main Content Layout */}
       <div className={styles.cardContent}>
-        {/* Top Operational Status Row */}
+        {/* Top Status Row: Left Date Pill & Right Live Weather Pill */}
         <div className={styles.metaRow}>
-          <div className={styles.telemetryGroup}>
-            <span className={styles.dateBadge}>
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                calendar_today
-              </span>
-              <span>{currentDateStr || 'Jumaat, 25 Sep 2026'}</span>
+          <div className={styles.pillBadge}>
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }} aria-hidden="true">
+              calendar_today
+            </span>
+            <span className="font-mono tabular-nums">{currentDateStr}</span>
+          </div>
+
+          <div className={styles.pillBadge} title="Cuaca Semasa Kota Kinabalu, Sabah">
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: '15px', color: isDark ? '#38BDF8' : '#0284C7' }}
+              aria-hidden="true"
+            >
+              {weather.icon}
+            </span>
+            <span>
+              KK <strong className="font-mono tabular-nums font-semibold">{weather.temperature}°C</strong> • {weather.condition}
             </span>
           </div>
         </div>
 
         {/* Central Executive Greeting */}
         <div className={styles.greetingBlock}>
-          <div className={styles.greetingHeader}>
-            <h1 className={styles.greetingTitle}>
-              Selamat Pagi, <span className={styles.highlightName}>{userName}</span>
-            </h1>
-            <span className={styles.wismaBadge}>
-              <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--color-primary-container)' }}>
-                location_on
-              </span>
-              Wisma SESB HQ • KK 26°C
-            </span>
-          </div>
-
-          <div className={styles.empMetadata}>
-            <span className={styles.deptText}>{department}</span>
-            <span className={styles.metaDivider}>|</span>
-            <span className="font-mono tabular-nums font-semibold">{employeeId}</span>
+          <h1 className={styles.greetingTitle}>
+            {greetingText}, {userName}
+          </h1>
+          <div className={styles.divisionSubtitle}>
+            {divisionLabel}
           </div>
         </div>
 
         {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */}
         <div className={styles.sharesWidget} aria-label="Tenaga Nasional Berhad Market Telemetry">
-          {/* Top Pill Row: Side-by-side Pills */}
+          {/* Top Pill Row: TNB Bursa 5347 on Left & Live Status on Right */}
           <div className={styles.sharesTopRow}>
             <div className={styles.brandPill} title="Tenaga Nasional Berhad (Bursa: 5347)">
               <span className={styles.brandPillText}>TNB • Bursa 5347</span>
             </div>
 
             <div className={styles.liveStatusPill}>
-              <span className={styles.liveStatusDot} aria-hidden="true" />
               <span className="font-mono tabular-nums">
-                {activePoint ? 'Live 11:30 MYT' : (marketData?.lastUpdated ? `Live ${marketData.lastUpdated}` : 'Live 11:30 MYT')}
+                {activePoint
+                  ? 'Live 11:30 MYT'
+                  : marketData?.lastUpdated
+                  ? `Live ${marketData.lastUpdated}`
+                  : 'Live 11:30 MYT'}
               </span>
             </div>
           </div>
 
-          {/* Main Price & Valuation Row: Price + unpill percentage on side */}
-          <div className={styles.sharesPriceRow}>
+          {/* Main Content Row: Price on Left, Compact Chart + Day Range on Right */}
+          <div className={styles.sharesBottomRow}>
+            {/* Left Column: Big Bold Price + Change */}
             <div className={styles.priceContainer}>
-              <span className={styles.priceNumber}>
-                MYR <span className="font-mono tabular-nums">{displayPrice.toFixed(2)}</span>
+              <span className={styles.currencyLabel}>MYR</span>
+              <span className={`font-mono tabular-nums ${styles.priceNumber}`}>
+                {displayPrice.toFixed(2)}
               </span>
               <span className={`${styles.changeText} ${isPositive ? styles.changeTextUp : styles.changeTextDown}`}>
                 <span className={styles.changeArrow}>{isPositive ? '▲' : '▼'}</span>
-                <span className="font-mono tabular-nums">{isPositive ? '+' : ''}{pctDiff.toFixed(2)}%</span>
+                <span className="font-mono tabular-nums">
+                  {isPositive ? '+' : ''}
+                  {pctDiff.toFixed(2)}%
+                </span>
               </span>
             </div>
-          </div>
 
-          {/* Full-Width Interactive Intraday Chart Canvas with Floating Tooltip */}
-          <div
-            className={styles.chartCanvasContainer}
-            onPointerDown={(e) => {
-              try {
-                e.currentTarget.setPointerCapture(e.pointerId);
-              } catch {}
-              handlePointerAction(e);
-            }}
-            onPointerMove={(e) => {
-              if (isScrubbing || e.pointerType === 'mouse') {
+            {/* Right Column: Compact Sparkline & Day Range Slider */}
+            <div
+              className={styles.chartSideContainer}
+              onPointerDown={(e) => {
+                try {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                } catch {}
                 handlePointerAction(e);
-              }
-            }}
-            onPointerUp={(e) => {
-              try {
-                e.currentTarget.releasePointerCapture(e.pointerId);
-              } catch {}
-              handlePointerEnd();
-            }}
-            onPointerCancel={handlePointerEnd}
-            onPointerLeave={(e) => {
-              if (e.pointerType === 'mouse') {
+              }}
+              onPointerMove={(e) => {
+                if (isScrubbing || e.pointerType === 'mouse') {
+                  handlePointerAction(e);
+                }
+              }}
+              onPointerUp={(e) => {
+                try {
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                } catch {}
                 handlePointerEnd();
-              }
-            }}
-          >
-            {/* Floating Magnetic Tooltip above active touch point */}
-            {activePoint && (
-              <div
-                className={styles.floatingTooltip}
-                style={{
-                  left: `${tooltipXPercent}%`,
-                }}
-              >
-                <span className={`font-mono tabular-nums ${styles.tooltipPrice}`}>
-                  {activePoint.price.toFixed(2)}
-                </span>
-                <span className={styles.tooltipDot}>•</span>
-                <span className={`font-mono tabular-nums ${styles.tooltipTime}`}>
-                  {activePoint.timeStr}
-                </span>
-              </div>
-            )}
-
-            <svg
-              className={styles.interactiveChartSvg}
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              preserveAspectRatio="none"
+              }}
+              onPointerCancel={handlePointerEnd}
+              onPointerLeave={(e) => {
+                if (e.pointerType === 'mouse') {
+                  handlePointerEnd();
+                }
+              }}
             >
-              <defs>
-                <linearGradient id="chartGreenGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity={isDark ? '0.24' : '0.12'} />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="chartRedGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity={isDark ? '0.24' : '0.12'} />
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-
-              {/* Transparent pointer capture plane */}
-              <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="transparent" />
-
-              {/* Previous Close Horizontal Baseline (Subtle reference, no text) */}
-              <line
-                x1="0"
-                y1={baselineY}
-                x2={svgWidth}
-                y2={baselineY}
-                stroke={isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(100, 116, 139, 0.22)'}
-                strokeWidth="1"
-                strokeDasharray="3 3"
-              />
-
-              {/* Gradient Area Under Curve */}
-              {areaPath && <path d={areaPath} fill={`url(#${gradId})`} />}
-
-              {/* Intraday Bézier Line Curve */}
-              {linePath && (
-                <path
-                  d={linePath}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-
-              {/* Interactive Scrub Guide Line & Snapping Circle */}
-              {activePoint ? (
-                <g>
-                  <line
-                    x1={activePoint.x}
-                    y1="0"
-                    x2={activePoint.x}
-                    y2={svgHeight}
-                    stroke={isDark ? 'rgba(56, 189, 248, 0.75)' : 'rgba(0, 85, 164, 0.55)'}
-                    strokeWidth="1.2"
-                    strokeDasharray="2 2"
+              {/* Mini Sparkline Curve */}
+              <svg
+                className={styles.miniSparklineSvg}
+                viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
+                preserveAspectRatio="none"
+              >
+                {linePath && (
+                  <path
+                    d={linePath}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
+                )}
+                {/* Active or Current End Dot */}
+                {coordPoints.length > 0 && (
                   <circle
-                    cx={activePoint.x}
-                    cy={activePoint.y}
-                    r="4"
-                    fill={strokeColor}
-                    stroke={isDark ? '#0F172A' : '#FFFFFF'}
-                    strokeWidth="2"
-                  />
-                </g>
-              ) : (
-                /* Terminal Live Dot on Rightmost Point */
-                coordPoints.length > 0 && (
-                  <circle
-                    cx={coordPoints[coordPoints.length - 1].x}
-                    cy={coordPoints[coordPoints.length - 1].y}
+                    cx={activePoint ? activePoint.x : coordPoints[coordPoints.length - 1].x}
+                    cy={activePoint ? activePoint.y : coordPoints[coordPoints.length - 1].y}
                     r="3.5"
                     fill={strokeColor}
-                    stroke="#FFFFFF"
-                    strokeWidth="1.5"
+                    stroke={isDark ? '#0A101D' : '#FFFFFF'}
+                    strokeWidth="1"
                   />
-                )
-              )}
-            </svg>
-          </div>
+                )}
+              </svg>
 
-          {/* Clean Minimalist Day Range Slider */}
-          <div className={styles.dayRangeContainer}>
-            <div className={styles.dayRangeRow}>
-              <span className={`font-mono tabular-nums ${styles.dayRangeBound}`}>
-                {dayLow.toFixed(2)}
-              </span>
-
-              <div className={styles.dayRangeTrack}>
-                <div
-                  className={styles.dayRangeMarker}
-                  style={{ left: `${rangeProgress}%` }}
-                />
-                <span
-                  className={`font-mono tabular-nums ${styles.dayRangeCurrentVal}`}
-                  style={{ left: `${rangeProgress}%` }}
-                >
-                  {displayPrice.toFixed(2)}
+              {/* Day Range Telemetry: 13.10 ────────●──────── 13.28 */}
+              <div className={styles.miniDayRange}>
+                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+                  {dayLow.toFixed(2)}
+                </span>
+                <div className={styles.rangeTrack}>
+                  <div className={styles.rangeTrackLine} />
+                  <div
+                    className={styles.rangeIndicator}
+                    style={{ left: `${rangeProgress}%` }}
+                  >
+                    <span className={styles.rangeIndicatorDot} />
+                  </div>
+                </div>
+                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+                  {dayHigh.toFixed(2)}
                 </span>
               </div>
-
-              <span className={`font-mono tabular-nums ${styles.dayRangeBound}`}>
-                {dayHigh.toFixed(2)}
-              </span>
             </div>
           </div>
         </div>
@@ -483,4 +458,3 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     </div>
   );
 };
-
