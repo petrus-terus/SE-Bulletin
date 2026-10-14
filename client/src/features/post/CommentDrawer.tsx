@@ -103,7 +103,7 @@ export const CommentDrawer: React.FC<Props> = ({
                       alt=""
                       className={styles.avatar}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                        (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                       }}
                     />
                   ) : (
@@ -133,11 +133,11 @@ export const CommentDrawer: React.FC<Props> = ({
         {/* Sticky Input Bar at Bottom */}
         <form className={styles.inputBarContainer} onSubmit={handleSubmit}>
           <img
-            src={currentUser.avatarUrl || '/user_face.png'}
+            src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
             alt=""
             className={styles.userMiniAvatar}
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+              (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
             }}
           />
           <div className={styles.inputFieldWrapper}>

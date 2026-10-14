@@ -111,11 +111,11 @@ export const QuoteBulletinModal: React.FC<Props> = ({
         <div className={styles.bodyArea}>
           <div className={styles.authorRow}>
             <img
-              src={currentUserAvatar || '/user_face.png'}
+              src={currentUserAvatar || '/sabah_electricity_logo.png'}
               alt=""
               className={styles.userAvatar}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/user_face.png';
+                (e.target as HTMLImageElement).src = '/sabah_electricity_logo.png';
               }}
             />
             <div className={styles.authorMetaText}>
@@ -145,11 +145,11 @@ export const QuoteBulletinModal: React.FC<Props> = ({
             <div className={styles.quotedCardPreview}>
               <div className={styles.quotedHeader}>
                 <img
-                  src={quotedPost.author.avatarUrl || '/user_face.png'}
+                  src={quotedPost.author.avatarUrl || '/sabah_electricity_logo.png'}
                   alt=""
                   className={styles.quotedAvatar}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/user_face.png';
+                    (e.target as HTMLImageElement).src = '/sabah_electricity_logo.png';
                   }}
                 />
                 <span className={styles.quotedAuthorName}>{quotedPost.author.name}</span>

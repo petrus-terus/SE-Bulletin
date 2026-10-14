@@ -3,8 +3,8 @@ import type { Employee, Post, Story } from '@/types/bulletin';
 export const CURRENT_USER: Employee = {
   id: 'user-test',
   employeeId: 'SESB-TEST',
-  name: 'TEST_USER',
-  fullName: 'TEST_USER (System Administrator)',
+  name: 'ADMIN_USER',
+  fullName: 'ADMIN_USER (System Administrator)',
   designation: 'Staff Administrator & Lead Engineer',
   department: 'INFORMATION & DIGITAL',
   email: 'test@sesb.com.my',
@@ -50,13 +50,24 @@ export function getRegisteredEmployees(): Employee[] {
   }
 }
 export function getEmployeeByAuthor(author: { id?: string; name: string; avatarUrl?: string; designation?: string; department?: string }): Employee {
+  // Legacy / alias check: TEST_USER and ADMIN_USER refer to the same Administrator identity
+  const normalizedAuthorName = (author.name || '').toLowerCase().trim();
+  if (
+    normalizedAuthorName === 'admin_user' ||
+    normalizedAuthorName === 'test_user' ||
+    author.id === 'user-test' ||
+    author.id === '270b3427-b4bc-4975-bdfb-3eea83a20229'
+  ) {
+    return CURRENT_USER;
+  }
+
   const registered = getRegisteredEmployees();
   const fullDirectory = [...ALL_EMPLOYEES, ...registered];
   const found = fullDirectory.find(
     (e) =>
       (author.id && e.id === author.id) ||
-      e.name.toLowerCase().trim() === author.name.toLowerCase().trim() ||
-      (e.fullName && e.fullName.toLowerCase().trim() === author.name.toLowerCase().trim())
+      e.name.toLowerCase().trim() === normalizedAuthorName ||
+      (e.fullName && e.fullName.toLowerCase().trim() === normalizedAuthorName)
   );
 
   if (found) return found;
@@ -68,7 +79,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
     designation: author.designation || 'Sabah Electricity Staff',
     department: author.department || 'Operating',
     email: `${author.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@sesb.com.my`,
-    avatarUrl: author.avatarUrl || '/user_face.png',
+    avatarUrl: author.avatarUrl || '/sabah_electricity_logo.png',
     officeLocation: 'Wisma SESB HQ, Kota Kinabalu',
     phoneExtension: `Ext. ${Math.floor(2000 + Math.random() * 5000)}`,
     role: 'GeneralStaff',
@@ -85,7 +96,7 @@ export const INITIAL_STORIES: Story[] = [
     id: 'story-1',
     departmentId: 'dept-ops',
     departmentName: 'Operating',
-    authorName: 'TEST_USER',
+    authorName: 'ADMIN_USER',
     hasUnread: true,
     imageUrl: '/mock-images/image1.png',
     caption: 'Tenom Main Intake Substation 132kV live commissioning test underway',
@@ -95,7 +106,7 @@ export const INITIAL_STORIES: Story[] = [
     id: 'story-2',
     departmentId: 'dept-cs',
     departmentName: 'Corporate Services',
-    authorName: 'TEST_USER',
+    authorName: 'ADMIN_USER',
     hasUnread: true,
     imageUrl: '/mock-images/image2.png',
     caption: 'Safety First: Annual PPE & High-Voltage Arc Flash Drill at Sepanggar Depot',
@@ -105,7 +116,7 @@ export const INITIAL_STORIES: Story[] = [
     id: 'story-3',
     departmentId: 'dept-hr',
     departmentName: 'Human Resources',
-    authorName: 'TEST_USER',
+    authorName: 'ADMIN_USER',
     hasUnread: true,
     imageUrl: '/mock-images/image5.png',
     caption: 'Welcome our 2026 Cohort of Graduate Apprentice Electrical Engineers!',
@@ -115,7 +126,7 @@ export const INITIAL_STORIES: Story[] = [
     id: 'story-4',
     departmentId: 'dept-id',
     departmentName: 'Information & Digital',
-    authorName: 'TEST_USER',
+    authorName: 'ADMIN_USER',
     hasUnread: false,
     imageUrl: '/mock-images/image6.png',
     caption: 'SESB Smart Grid telemetry upgrade completed across West Coast division',
@@ -178,7 +189,7 @@ Should we install a smart bean-to-cup coffee vending machine at IDD Level 4? Cas
     id: 'post-career-day-warning',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -225,7 +236,7 @@ Terima kasih atas kerjasama semua.`,
     id: 'post-our-brand',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -277,7 +288,7 @@ MyPortal > Corporate Communication > Rebranding Documents
     id: 'post-quote-madani-sample',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -291,7 +302,7 @@ MyPortal > Corporate Communication > Rebranding Documents
     id: 'post-madani-link',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -327,7 +338,7 @@ MyPortal > Corporate Communication > Rebranding Documents
     id: 'post-madani-link',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -366,7 +377,7 @@ Ikuti sorotan video dan laporan tapak di media sosial rasmi SESB!`,
     id: 'post-esg-challenge',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -405,7 +416,7 @@ Jangan lupa, blok kalendar ya... bersama kita mencabar dan menambah pengetahuan 
     id: 'post-hse-sembang',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -441,7 +452,7 @@ Lindungi diri. Lindungi keluarga. Lindungi komuniti.`,
     id: 'post-ewaste-recycle',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -488,7 +499,7 @@ Jika terdapat sebarang pertanyaan sila berhubung dengan En. Brondon Ceristoper d
     id: 'post-finance-pulse',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',
@@ -527,7 +538,7 @@ CFO / Strategic Management & Governance (SMG)`,
     id: 'post-tariff-info',
     author: {
       id: 'user-test',
-      name: 'TEST_USER',
+      name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
       avatarUrl: '/sabah_electricity_logo.png',

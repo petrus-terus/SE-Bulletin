@@ -44,12 +44,12 @@ export const PostDetailView: React.FC<Props> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // SuperAdmin Lockdown: TEST_USER is the sole global moderator capable of editing/deleting any post.
+  // SuperAdmin Lockdown: ADMIN_USER / TEST_USER is the global moderator capable of editing/deleting any post.
   // All other registered users can ONLY edit and delete their own posts.
   const isSuperAdmin = Boolean(
-    (currentUserName && currentUserName.trim().toUpperCase() === 'TEST_USER') ||
-    (currentUserId && currentUserId === 'user-test') ||
-    ((currentUserRole || '').toLowerCase() === 'superadmin' && currentUserName?.trim().toUpperCase() === 'TEST_USER')
+    (currentUserName && (currentUserName.trim().toUpperCase() === 'ADMIN_USER' || currentUserName.trim().toUpperCase() === 'TEST_USER')) ||
+    (currentUserId && (currentUserId === 'user-test' || currentUserId === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
+    ((currentUserRole || '').toLowerCase() === 'superadmin')
   );
 
   const isOwnPost = Boolean(
@@ -197,11 +197,11 @@ export const PostDetailView: React.FC<Props> = ({
           >
             <div className={styles.avatarWrap}>
               <img
-                src={post.author.avatarUrl || '/user_face.png'}
+                src={post.author.avatarUrl || '/sabah_electricity_logo.png'}
                 alt=""
                 className={styles.authorAvatar}
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                 }}
               />
               {post.author.isVerified && (
@@ -253,11 +253,11 @@ export const PostDetailView: React.FC<Props> = ({
           <div className={styles.quotedCard}>
             <div className={styles.quotedCardHeader}>
               <img
-                src={post.quotedPost.author.avatarUrl || '/user_face.png'}
+                src={post.quotedPost.author.avatarUrl || '/sabah_electricity_logo.png'}
                 alt=""
                 className={styles.quotedCardAvatar}
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                 }}
               />
               <span className={styles.quotedCardAuthor}>{post.quotedPost.author.name}</span>
@@ -504,7 +504,7 @@ export const PostDetailView: React.FC<Props> = ({
                       alt=""
                       className={styles.commentAvatar}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                        (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                       }}
                     />
                   ) : (

@@ -26,7 +26,7 @@ const PostDetailView = lazy(() =>
 
 const ViewFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
-    <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid #E2E8F0', borderTopColor: '#0055A4', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-primary-text)', animation: 'spin 0.8s linear infinite' }} />
   </div>
 );
 
@@ -138,7 +138,7 @@ export function App() {
               designation: 'Sabah Electricity Staff',
               department: 'Operations',
               email: user.email || 'staff@sesb.com.my',
-              avatarUrl: '/user_face.png',
+              avatarUrl: '/sabah_electricity_logo.png',
               coverUrl: '/grid_horizon_hero.jpg',
               officeLocation: 'Wisma SESB HQ, Kota Kinabalu',
               phoneExtension: 'Ext. 4102',

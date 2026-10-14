@@ -58,12 +58,12 @@ export const FeedCard: React.FC<Props> = ({
 
   const optionsWrapperRef = useRef<HTMLDivElement>(null);
 
-  // SuperAdmin Lockdown: TEST_USER is the sole global moderator capable of editing/deleting any post.
+  // SuperAdmin Lockdown: ADMIN_USER / TEST_USER is the global moderator capable of editing/deleting any post.
   // All other registered users can ONLY edit and delete their own posts.
   const isSuperAdmin = Boolean(
-    (currentUserName && currentUserName.trim().toUpperCase() === 'TEST_USER') ||
-    (currentUserId && currentUserId === 'user-test') ||
-    ((currentUserRole || '').toLowerCase() === 'superadmin' && currentUserName?.trim().toUpperCase() === 'TEST_USER')
+    (currentUserName && (currentUserName.trim().toUpperCase() === 'ADMIN_USER' || currentUserName.trim().toUpperCase() === 'TEST_USER')) ||
+    (currentUserId && (currentUserId === 'user-test' || currentUserId === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
+    ((currentUserRole || '').toLowerCase() === 'superadmin')
   );
 
   const isOwnPost = Boolean(
@@ -158,7 +158,7 @@ export const FeedCard: React.FC<Props> = ({
               alt=""
               className={styles.authorAvatar}
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
               }}
             />
             {post.author.isVerified && (
@@ -446,7 +446,7 @@ export const FeedCard: React.FC<Props> = ({
         >
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: '14px', color: 'var(--color-primary)' }}
+            style={{ fontSize: '14px', color: 'var(--color-primary-text)' }}
           >
             location_on
           </span>

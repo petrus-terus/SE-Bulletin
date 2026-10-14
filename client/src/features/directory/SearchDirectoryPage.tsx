@@ -176,7 +176,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
       {/* Sticky Search Header */}
       <div className={styles.searchHeaderDeck}>
         <div className={styles.inputWrapper}>
-          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#64748B' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-text-muted)' }}>
             search
           </span>
           <input
@@ -267,7 +267,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
           <section className={styles.resultSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0055A4' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary-text)' }}>
                   badge
                 </span>
                 <span>Staff & Organizational Directory</span>
@@ -292,7 +292,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                         alt={emp.name}
                         className={styles.empAvatar}
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                          (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
                         }}
                       />
                       {emp.isOnline && <span className={styles.onlineBadge} title="Available online"></span>}
@@ -353,7 +353,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
           <section className={styles.resultSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#1A7A5A' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-forest-text)' }}>
                   corporate_fare
                 </span>
                 <span>SESB Directorates & Units</span>
@@ -388,7 +388,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
           <section className={styles.resultSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0055A4' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary-text)' }}>
                   feed
                 </span>
                 <span>Relevant Bulletins & SOPs</span>
@@ -429,7 +429,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
         {filteredEmployees.length === 0 && filteredPosts.length === 0 && filteredDepartments.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIconBox}>
-              <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#94A3B8' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'var(--color-text-muted)' }}>
                 search_off
               </span>
             </div>

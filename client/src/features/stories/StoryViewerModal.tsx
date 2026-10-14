@@ -102,11 +102,11 @@ export const StoryViewerModal: React.FC<Props> = ({ stories, initialIndex, onClo
         <div className={styles.storyHeader}>
           <div className={styles.authorMeta}>
             <img
-              src={currentStory.authorAvatar || currentStory.imageUrl || '/user_face.png'}
+              src={currentStory.authorAvatar || currentStory.imageUrl || '/sabah_electricity_logo.png'}
               alt=""
               className={styles.authorAvatar}
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
               }}
             />
             <div className={styles.authorInfo}>
