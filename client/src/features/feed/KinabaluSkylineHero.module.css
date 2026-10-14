@@ -51,13 +51,10 @@
   color: #1E293B;
 }
 
-.themeDay .liveStatusPill {
-  background: #F1F5F9;
-  border: 1px solid #E2E8F0;
-  color: #475569;
+.themeDay .currencyLabel {
+  color: #64748B;
 }
 
-.themeDay .currencyLabel,
 .themeDay .priceNumber {
   color: #0F172A;
 }
@@ -71,11 +68,7 @@
 }
 
 .themeDay .rangeIndicatorDot {
-  background: #0F172A;
-}
-
-.themeDay .rangeIndicatorVal {
-  color: #0F172A;
+  background: #0055A4;
 }
 
 /* Dusk Mode (Transitional Twilight) */
@@ -125,13 +118,10 @@
   color: #F1F5F9;
 }
 
-.themeNight .liveStatusPill {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.themeNight .currencyLabel {
   color: #94A3B8;
 }
 
-.themeNight .currencyLabel,
 .themeNight .priceNumber {
   color: #F8FAFC;
 }
@@ -146,10 +136,6 @@
 
 .themeNight .rangeIndicatorDot {
   background: #38BDF8;
-}
-
-.themeNight .rangeIndicatorVal {
-  color: #F8FAFC;
 }
 
 /* Watermark SVG Silhouette */
@@ -257,21 +243,38 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .pillBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: 0;
   transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+.weatherTextWrap {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weatherCondition {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Greeting Section */
@@ -292,7 +295,7 @@
 }
 
 .divisionSubtitle {
-  font-size: var(--font-size-xs);
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: -0.01em;
   transition: color 200ms ease;
@@ -302,8 +305,8 @@
 .sharesWidget {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 16px;
-  padding: 12px 12px;
+  border-radius: 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -314,53 +317,45 @@
   -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow: visible;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-/* Top Pill Row: Side-by-side Pills */
-.sharesTopRow {
+/* Tier 1: Header Row (Brand Pill on Left, Price & Change on Right) */
+.sharesHeaderRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 8px;
 }
 
 .brandPill {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  gap: 5px;
+  padding: 2px 7px;
   border-radius: var(--radius-pill);
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
   transition: background 150ms ease, border-color 150ms ease;
+  flex-shrink: 0;
+}
+
+.brandLiveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10B981;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
 }
 
 .brandPillText {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
-}
-
-.liveStatusPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
-  background: #F1F5F9;
-  border: 1px solid #E2E8F0;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  white-space: nowrap;
-  letter-spacing: -0.01em;
-}
-
-/* Bottom Split Row: Price on Left, Compact Sparkline & Day Range on Right */
-.sharesBottomRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
 }
 
 .priceContainer {
@@ -371,88 +366,124 @@
 }
 
 .currencyLabel {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.02em;
   line-height: 1;
 }
 
 .priceNumber {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
   line-height: 1;
-  font-family: var(--font-family-sans);
   font-variant-numeric: tabular-nums;
   transition: color 200ms ease;
 }
 
-.changeText {
+.changeBadge {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 12px;
   font-weight: 700;
-  margin-left: 4px;
-  letter-spacing: -0.01em;
+  line-height: 1;
+  margin-left: 2px;
   font-variant-numeric: tabular-nums;
 }
 
-.changeTextUp {
-  color: #15803D; /* WCAG AAA 7.2:1 contrast */
+.changeBadgeUp {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857; /* WCAG AAA 7.2:1 contrast */
 }
 
-.themeNight .changeTextUp {
+.themeNight .changeBadgeUp {
+  background: rgba(16, 185, 129, 0.18);
   color: #34D399;
 }
 
-.changeTextDown {
-  color: #DC2626; /* WCAG AAA 7.0:1 contrast */
+.changeBadgeDown {
+  background: rgba(239, 68, 68, 0.12);
+  color: #B91C1C; /* WCAG AAA 7.0:1 contrast */
 }
 
-.themeNight .changeTextDown {
+.themeNight .changeBadgeDown {
+  background: rgba(239, 68, 68, 0.18);
   color: #F87171;
 }
 
 .changeArrow {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
 }
 
-/* Compact Right-Side Chart & Day Range Container */
-.chartSideContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  width: 140px;
-  max-width: 144px;
-  flex-shrink: 0;
+/* Tier 2: Interactive Full-Width Sparkline */
+.sparklineContainer {
+  width: 100%;
+  height: 32px;
   position: relative;
   user-select: none;
   cursor: crosshair;
   touch-action: pan-y;
+  margin-top: 1px;
 }
 
 .miniSparklineSvg {
   width: 100%;
-  height: 26px;
+  height: 32px;
   overflow: visible;
   display: block;
 }
 
-/* Compact Day Range Telemetry: 13.10 ────●(13.22)──── 13.28 */
+.floatingTooltip {
+  position: absolute;
+  top: -22px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #FFFFFF;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.tooltipPrice {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.tooltipDot {
+  color: #94A3B8;
+  font-size: 12px;
+}
+
+.tooltipTime {
+  color: #CBD5E1;
+}
+
+/* Tier 3: Full-Width Day Range Telemetry */
 .miniDayRange {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 5px;
-  margin-top: 3px;
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .rangeBound {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   flex-shrink: 0;
   letter-spacing: -0.01em;
 }
@@ -460,7 +491,7 @@
 .rangeTrack {
   position: relative;
   flex: 1;
-  height: 14px;
+  height: 12px;
   display: flex;
   align-items: center;
 }
@@ -469,7 +500,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 1.5px;
+  height: 2px;
   border-radius: 1px;
 }
 
@@ -486,11 +517,11 @@
 }
 
 .rangeIndicatorDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Accessibility: prefers-reduced-motion (emil-design-eng & animate) */
@@ -511,12 +542,10 @@
   .sharesWidget:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 10px 24px -3px rgba(0, 85, 164, 0.08);
   }
-  .brandPill:hover,
-  .liveStatusPill:hover {
+  .brandPill:hover {
     background: #E2E8F0;
   }
-  .themeNight .brandPill:hover,
-  .themeNight .liveStatusPill:hover {
+  .themeNight .brandPill:hover {
     background: rgba(255, 255, 255, 0.12);
   }
 }
@@ -528,21 +557,15 @@
 /* Responsive adjustment for extra-narrow screens (<340px) */
 @media (max-width: 340px) {
   .cardContent {
-    padding: 10px 12px;
+    padding: 10px 10px;
   }
   .metaRow {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  .sharesBottomRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .chartSideContainer {
-    width: 100%;
-    max-width: 100%;
-    align-items: stretch;
+  .sharesHeaderRow {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 }

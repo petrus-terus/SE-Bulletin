@@ -63,8 +63,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     const dayName = days[now.getDay()];
     const dateNum = now.getDate();
     const monthName = months[now.getMonth()];
-    const year = now.getFullYear();
-    return `${dayName}, ${dateNum} ${monthName} ${year}`;
+    return `${dayName}, ${dateNum} ${monthName}`;
   });
 
   // Kota Kinabalu Live Weather State
@@ -140,9 +139,9 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     dayHigh = Math.round((currentPrice + 0.10) * 100) / 100;
   }
 
-  const sparkWidth = 100;
-  const sparkHeight = 24;
-  const sparkPaddingY = 3;
+  const sparkWidth = 280;
+  const sparkHeight = 32;
+  const sparkPaddingY = 4;
 
   const allPrices = points.length > 0 ? points.map((p) => p.price) : [13.22, 13.06];
   const minPrice = Math.min(...allPrices, prevClose, dayLow);
@@ -317,7 +316,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             <span className="font-mono tabular-nums">{currentDateStr}</span>
           </div>
 
-          <div className={styles.pillBadge} title="Cuaca Semasa Kota Kinabalu, Sabah">
+          <div className={styles.pillBadge} title={`Cuaca Semasa Kota Kinabalu: ${weather.condition}, ${weather.temperature}°C`}>
             <span
               className="material-symbols-outlined"
               style={{ fontSize: '15px', color: isDark ? '#38BDF8' : '#0284C7' }}
@@ -325,8 +324,9 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             >
               {weather.icon}
             </span>
-            <span>
-              KK <strong className="font-mono tabular-nums font-semibold">{weather.temperature}°C</strong> • {weather.condition}
+            <span className={styles.weatherTextWrap}>
+              KK <strong className="font-mono tabular-nums font-semibold">{weather.temperature}°C</strong>
+              <span className={styles.weatherCondition}> • {weather.condition}</span>
             </span>
           </div>
         </div>
@@ -341,34 +341,21 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */}
+        {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Executive Telemetry Card */}
         <div className={styles.sharesWidget} aria-label="Tenaga Nasional Berhad Market Telemetry">
-          {/* Top Pill Row: TNB Bursa 5347 on Left & Live Status on Right */}
-          <div className={styles.sharesTopRow}>
+          {/* Tier 1 Header: Left TNB Brand Pill & Right Price + Change Badge */}
+          <div className={styles.sharesHeaderRow}>
             <div className={styles.brandPill} title="Tenaga Nasional Berhad (Bursa: 5347)">
+              <span className={styles.brandLiveDot} />
               <span className={styles.brandPillText}>TNB • Bursa 5347</span>
             </div>
 
-            <div className={styles.liveStatusPill}>
-              <span className="font-mono tabular-nums">
-                {activePoint
-                  ? 'Live 11:30 MYT'
-                  : marketData?.lastUpdated
-                  ? `Live ${marketData.lastUpdated}`
-                  : 'Live 11:30 MYT'}
-              </span>
-            </div>
-          </div>
-
-          {/* Main Content Row: Price on Left, Compact Chart + Day Range on Right */}
-          <div className={styles.sharesBottomRow}>
-            {/* Left Column: Big Bold Price + Change */}
             <div className={styles.priceContainer}>
               <span className={styles.currencyLabel}>MYR</span>
               <span className={`font-mono tabular-nums ${styles.priceNumber}`}>
                 {displayPrice.toFixed(2)}
               </span>
-              <span className={`${styles.changeText} ${isPositive ? styles.changeTextUp : styles.changeTextDown}`}>
+              <span className={`${styles.changeBadge} ${isPositive ? styles.changeBadgeUp : styles.changeBadgeDown}`}>
                 <span className={styles.changeArrow}>{isPositive ? '▲' : '▼'}</span>
                 <span className="font-mono tabular-nums">
                   {isPositive ? '+' : ''}
@@ -376,82 +363,98 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
                 </span>
               </span>
             </div>
+          </div>
 
-            {/* Right Column: Compact Sparkline & Day Range Slider */}
-            <div
-              className={styles.chartSideContainer}
-              onPointerDown={(e) => {
-                try {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                } catch {}
+          {/* Tier 2: Full-Width Sparkline Curve */}
+          <div
+            className={styles.sparklineContainer}
+            onPointerDown={(e) => {
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {}
+              handlePointerAction(e);
+            }}
+            onPointerMove={(e) => {
+              if (isScrubbing || e.pointerType === 'mouse') {
                 handlePointerAction(e);
-              }}
-              onPointerMove={(e) => {
-                if (isScrubbing || e.pointerType === 'mouse') {
-                  handlePointerAction(e);
-                }
-              }}
-              onPointerUp={(e) => {
-                try {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                } catch {}
+              }
+            }}
+            onPointerUp={(e) => {
+              try {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              } catch {}
+              handlePointerEnd();
+            }}
+            onPointerCancel={handlePointerEnd}
+            onPointerLeave={(e) => {
+              if (e.pointerType === 'mouse') {
                 handlePointerEnd();
-              }}
-              onPointerCancel={handlePointerEnd}
-              onPointerLeave={(e) => {
-                if (e.pointerType === 'mouse') {
-                  handlePointerEnd();
-                }
-              }}
-            >
-              {/* Mini Sparkline Curve */}
-              <svg
-                className={styles.miniSparklineSvg}
-                viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
-                preserveAspectRatio="none"
+              }
+            }}
+          >
+            {/* Floating Magnetic Tooltip above active touch point */}
+            {activePoint && (
+              <div
+                className={styles.floatingTooltip}
+                style={{
+                  left: `${(activePoint.x / sparkWidth) * 100}%`,
+                }}
               >
-                {linePath && (
-                  <path
-                    d={linePath}
-                    fill="none"
-                    stroke={strokeColor}
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-                {/* Active or Current End Dot */}
-                {coordPoints.length > 0 && (
-                  <circle
-                    cx={activePoint ? activePoint.x : coordPoints[coordPoints.length - 1].x}
-                    cy={activePoint ? activePoint.y : coordPoints[coordPoints.length - 1].y}
-                    r="3.5"
-                    fill={strokeColor}
-                    stroke={isDark ? '#0A101D' : '#FFFFFF'}
-                    strokeWidth="1"
-                  />
-                )}
-              </svg>
-
-              {/* Day Range Telemetry: 13.10 ────────●──────── 13.28 */}
-              <div className={styles.miniDayRange}>
-                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
-                  {dayLow.toFixed(2)}
+                <span className={`font-mono tabular-nums ${styles.tooltipPrice}`}>
+                  {activePoint.price.toFixed(2)}
                 </span>
-                <div className={styles.rangeTrack}>
-                  <div className={styles.rangeTrackLine} />
-                  <div
-                    className={styles.rangeIndicator}
-                    style={{ left: `${rangeProgress}%` }}
-                  >
-                    <span className={styles.rangeIndicatorDot} />
-                  </div>
-                </div>
-                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
-                  {dayHigh.toFixed(2)}
+                <span className={styles.tooltipDot}>•</span>
+                <span className={`font-mono tabular-nums ${styles.tooltipTime}`}>
+                  {activePoint.timeStr}
                 </span>
               </div>
+            )}
+
+            <svg
+              className={styles.miniSparklineSvg}
+              viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
+              preserveAspectRatio="none"
+            >
+              {linePath && (
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              {coordPoints.length > 0 && (
+                <circle
+                  cx={activePoint ? activePoint.x : coordPoints[coordPoints.length - 1].x}
+                  cy={activePoint ? activePoint.y : coordPoints[coordPoints.length - 1].y}
+                  r="3.5"
+                  fill={strokeColor}
+                  stroke={isDark ? '#0A101D' : '#FFFFFF'}
+                  strokeWidth="1.5"
+                />
+              )}
+            </svg>
+          </div>
+
+          {/* Tier 3: Full-Width Day Range Telemetry */}
+          <div className={styles.miniDayRange}>
+            <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+              {dayLow.toFixed(2)}
+            </span>
+            <div className={styles.rangeTrack}>
+              <div className={styles.rangeTrackLine} />
+              <div
+                className={styles.rangeIndicator}
+                style={{ left: `${rangeProgress}%` }}
+              >
+                <span className={styles.rangeIndicatorDot} />
+              </div>
             </div>
+            <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+              {dayHigh.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
