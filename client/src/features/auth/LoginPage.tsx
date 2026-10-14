@@ -13,31 +13,22 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activePillLogin, setActivePillLogin] = useState<string | null>(null);
 
-  const handleSignInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeLogin = async (email: string, pass: string) => {
     setErrorMessage(null);
-
-    const email = identifier.trim().toLowerCase();
-    if (!email) {
-      setErrorMessage('Please enter your corporate email address.');
-      return;
-    }
-
-    if (!password) {
-      setErrorMessage('Please enter your password.');
-      return;
-    }
-
     setIsLoading(true);
     try {
       if (!supabase) throw new Error('Supabase is not configured.');
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: pass,
+      });
+
       if (error) {
         throw error;
       }
-      
+
       if (onShowNotice) {
         onShowNotice('Sign in successful! Welcome to SE Bulletin.');
       }
@@ -46,7 +37,28 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
       setErrorMessage(err.message || 'Unable to complete sign in. Please try again.');
     } finally {
       setIsLoading(false);
+      setActivePillLogin(null);
     }
+  };
+
+  const handleSignInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier.trim()) {
+      setErrorMessage('Please enter your corporate email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+    await executeLogin(identifier, password);
+  };
+
+  const handlePillClick = async (email: string, pass: string, pillKey: string) => {
+    setIdentifier(email);
+    setPassword(pass);
+    setActivePillLogin(pillKey);
+    await executeLogin(email, pass);
   };
 
   return (
@@ -178,7 +190,7 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
             className={styles.signInBtn}
             disabled={isLoading}
           >
-            {isLoading ? (
+            {isLoading && !activePillLogin ? (
               <span>Signing in...</span>
             ) : (
               <>
@@ -190,6 +202,92 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
             )}
           </button>
         </form>
+
+        {/* Pilot Quick Access Personas (Zero Emojis, Authentic Vector Icons) */}
+        <div className={styles.pilotQuickSection}>
+          <div className={styles.pilotQuickHeader}>
+            <span className={styles.pilotQuickLabel}>Pilot Quick Access</span>
+            <span className={styles.pilotQuickHint}>1-Tap Sign In</span>
+          </div>
+
+          <div className={styles.pilotPillsGrid}>
+            <button
+              type="button"
+              className={styles.pilotPillBtn}
+              onClick={() => handlePillClick('test@sesb.com.my', 'TestAdmin@2026', 'admin')}
+              disabled={isLoading}
+            >
+              {activePillLogin === 'admin' ? (
+                <span className={styles.pilotPillSpinner} aria-hidden="true" />
+              ) : (
+                <span className={`material-symbols-outlined ${styles.pilotPillIcon}`} aria-hidden="true">
+                  shield_person
+                </span>
+              )}
+              <div className={styles.pilotPillMeta}>
+                <span className={styles.pilotPillTitle}>ADMIN_USER</span>
+                <span className={styles.pilotPillSub}>Super Administrator</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={styles.pilotPillBtn}
+              onClick={() => handlePillClick('ceo.office@sesb.com.my', 'CeoOffice@2026', 'ceo')}
+              disabled={isLoading}
+            >
+              {activePillLogin === 'ceo' ? (
+                <span className={styles.pilotPillSpinner} aria-hidden="true" />
+              ) : (
+                <span className={`material-symbols-outlined ${styles.pilotPillIcon}`} aria-hidden="true">
+                  corporate_fare
+                </span>
+              )}
+              <div className={styles.pilotPillMeta}>
+                <span className={styles.pilotPillTitle}>CEO Office</span>
+                <span className={styles.pilotPillSub}>Executive Suite</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={styles.pilotPillBtn}
+              onClick={() => handlePillClick('testuser1@sesb.com.my', 'Password123!', 'staff1')}
+              disabled={isLoading}
+            >
+              {activePillLogin === 'staff1' ? (
+                <span className={styles.pilotPillSpinner} aria-hidden="true" />
+              ) : (
+                <span className={`material-symbols-outlined ${styles.pilotPillIcon}`} aria-hidden="true">
+                  badge
+                </span>
+              )}
+              <div className={styles.pilotPillMeta}>
+                <span className={styles.pilotPillTitle}>testuser1</span>
+                <span className={styles.pilotPillSub}>Info & Digital Staff</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={styles.pilotPillBtn}
+              onClick={() => handlePillClick('testuser2@sesb.com.my', 'Password123!', 'staff2')}
+              disabled={isLoading}
+            >
+              {activePillLogin === 'staff2' ? (
+                <span className={styles.pilotPillSpinner} aria-hidden="true" />
+              ) : (
+                <span className={`material-symbols-outlined ${styles.pilotPillIcon}`} aria-hidden="true">
+                  engineering
+                </span>
+              )}
+              <div className={styles.pilotPillMeta}>
+                <span className={styles.pilotPillTitle}>testuser2</span>
+                <span className={styles.pilotPillSub}>Operations Staff</span>
+              </div>
+            </button>
+          </div>
+        </div>
 
         <footer className={styles.loginFooter}>
           <p className={styles.footerText}>
