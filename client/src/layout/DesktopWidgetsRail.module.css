@@ -45,7 +45,7 @@
   font-family: monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: var(--color-forest-green);
+  color: var(--color-forest-text);
 }
 
 .liveDot {
@@ -102,7 +102,7 @@
 
 .stationStatus {
   font-size: var(--font-size-xs);
-  color: var(--color-forest-green);
+  color: var(--color-forest-text);
   font-weight: 600;
 }
 

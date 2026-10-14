@@ -37,7 +37,7 @@
   z-index: 2;
   width: calc(100% - 32px);
   max-width: 420px;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
@@ -48,8 +48,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  color: #1E293B;
-  animation: gateCardEnter 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  color: var(--color-text-main);
+  animation: gateCardEnter var(--transition-smooth) forwards;
 }
 
 @keyframes gateCardEnter {
@@ -67,11 +67,11 @@
   width: 72px;
   height: 72px;
   border-radius: 16px;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(0, 85, 164, 0.15), 0 0 0 1px #E8EDF2;
+  box-shadow: 0 4px 14px rgba(0, 85, 164, 0.15), 0 0 0 1px var(--color-border-subtle);
   margin-bottom: 20px;
   overflow: hidden;
 }
@@ -86,9 +86,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-primary-text);
   padding: 4px 10px;
   border-radius: 9999px;
   font-size: 12px;
@@ -99,7 +99,7 @@
 .gateTitle {
   font-size: 20px;
   font-weight: 800;
-  color: #0F172A;
+  color: var(--color-text-main);
   margin: 0 0 6px 0;
   letter-spacing: -0.02em;
 }
@@ -107,7 +107,7 @@
 .gateSubtitle {
   font-size: 13px;
   line-height: 1.5;
-  color: #64748B;
+  color: var(--color-text-muted);
   margin: 0 0 24px 0;
 }
 
@@ -128,7 +128,7 @@
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text-main);
   margin-bottom: 6px;
 }
 
@@ -142,19 +142,19 @@
   position: absolute;
   left: 14px;
   font-size: 20px;
-  color: #94A3B8;
+  color: var(--color-text-muted);
   pointer-events: none;
 }
 
 .passcodeInput {
   width: 100%;
   height: 48px;
-  background: #F8FAFC;
-  border: 1.5px solid #CBD5E1;
+  background: var(--color-surface-muted);
+  border: 1.5px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 0 44px 0 42px;
   font-size: 16px;
-  color: #0F172A;
+  color: var(--color-text-main);
   outline: none;
   font-family: inherit;
   letter-spacing: 0.05em;
@@ -163,9 +163,9 @@
 }
 
 .passcodeInput:focus {
-  border-color: #1A7A5A;
-  box-shadow: 0 0 0 3px rgba(26, 122, 90, 0.15);
-  background: #FFFFFF;
+  border-color: var(--color-forest-text);
+  box-shadow: 0 0 0 3px rgba(26, 122, 90, 0.2);
+  background: var(--color-surface-card);
 }
 
 .toggleVisibilityBtn {
@@ -173,7 +173,7 @@
   right: 12px;
   background: none;
   border: none;
-  color: #64748B;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,9 +185,9 @@
 }
 
 .errorMessage {
-  background: #FEF2F2;
-  border: 1px solid #FCA5A5;
-  color: #991B1B;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #EF4444;
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -231,7 +231,7 @@
 .footerHint {
   margin-top: 20px;
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: 4px;

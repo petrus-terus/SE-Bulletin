@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className={styles.logoBadge}>
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '32px', color: '#0055A4' }}
+                style={{ fontSize: '32px', color: 'var(--color-primary-text)' }}
               >
                 bolt
               </span>

@@ -35,7 +35,7 @@
   .filterPill:hover {
     background: var(--color-surface-alt);
     color: var(--color-text-main);
-    border-color: #CBD5E1;
+    border-color: var(--color-border-subtle);
   }
 }
 
@@ -61,6 +61,8 @@
   font-weight: 700;
   background: var(--color-surface-alt);
   color: var(--color-text-muted);
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
 }
 
 .countBadgeActive {

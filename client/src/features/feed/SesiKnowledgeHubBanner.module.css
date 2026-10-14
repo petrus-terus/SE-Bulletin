@@ -23,11 +23,11 @@
   box-shadow:
     0 2px 12px rgba(0, 85, 164, 0.18),
     0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform var(--transition-fast),
               box-shadow 150ms ease-out;
 
   /* Entry animation */
-  animation: bannerFadeIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: bannerFadeIn 400ms var(--ease-expo) both;
 }
 
 /* Frosted glass overlay for depth */
@@ -80,7 +80,7 @@
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -135,7 +135,7 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
   color: #FFFFFF;
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform 200ms var(--ease-expo),
               background 200ms ease-out;
 }
 

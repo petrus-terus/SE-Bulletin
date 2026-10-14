@@ -116,7 +116,14 @@ export const NotificationsView: React.FC<Props> = ({
           <div className={styles.categorySubIcon}>
             <span
               className="material-symbols-outlined"
-              style={{ color: notif.iconColor || '#0055A4' }}
+              style={{
+                color:
+                  notif.iconColor === '#0055A4'
+                    ? 'var(--color-primary-text)'
+                    : notif.iconColor === '#1A7A5A'
+                    ? 'var(--color-forest-text)'
+                    : notif.iconColor || 'var(--color-primary-text)',
+              }}
             >
               {notif.icon || 'notifications'}
             </span>

@@ -3,7 +3,7 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--color-surface-card);
-  animation: slideIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideIn var(--transition-normal) forwards;
   padding-bottom: 96px; /* Spacing for bottom reply bar */
 }
 
@@ -27,7 +27,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--color-border-subtle);
@@ -81,9 +81,9 @@
 }
 
 .iconButtonActive {
-  background: #EFF6FF;
-  border-color: #BFDBFE;
-  color: #1D4ED8;
+  background: rgba(0, 85, 164, 0.12);
+  border-color: rgba(0, 85, 164, 0.25);
+  color: var(--color-primary-text, #0055A4);
 }
 
 /* Post Main Article Body */
@@ -130,7 +130,7 @@
   width: 18px;
   height: 18px;
   border-radius: var(--radius-pill);
-  background: #FFFFFF;
+  background: var(--surface-logo-badge, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,7 +281,7 @@
   padding: 0 4px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms ease;
+  transition: transform var(--transition-fast), color 150ms ease;
 }
 
 .likeBtn:active {
@@ -295,18 +295,25 @@
 .likeIconActive {
   color: #EF4444;
   font-variation-settings: 'FILL' 1;
-  animation: heartPop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: heartPop 300ms var(--ease-expo);
 }
 
 @keyframes heartPop {
   0% {
-    transform: scale(1);
+    transform: scale(0.9);
   }
   50% {
-    transform: scale(1.35);
+    transform: scale(1.15);
   }
   100% {
     transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .likeIconActive {
+    animation: none;
+    transform: none;
   }
 }
 
@@ -348,24 +355,24 @@
 
 @media (hover: hover) and (pointer: fine) {
   .engagementBtn:hover {
-    color: var(--color-primary, #0055A4);
+    color: var(--color-primary-text, #0055A4);
   }
 }
 
 .reshareActive {
-  color: var(--color-forest-green, #1A7A5A) !important;
+  color: var(--color-forest-text, #1A7A5A) !important;
 }
 
 .bookmarkActive {
-  color: var(--color-primary, #0055A4) !important;
+  color: var(--color-primary-text, #0055A4) !important;
 }
 
 /* Embedded Quoted Post Preview */
 .quotedCard {
   margin: 12px 0 16px;
   border-radius: 14px;
-  border: 1px solid #E2E8F0;
-  background: #F8FAFC;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-muted);
   overflow: hidden;
 }
 
@@ -392,6 +399,8 @@
 .quotedCardMeta {
   font-size: var(--font-size-xs, 12px);
   color: var(--color-text-muted, #64748B);
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
 }
 
 .quotedCardContent {
@@ -405,8 +414,8 @@
   width: 100%;
   max-height: 220px;
   overflow: hidden;
-  background: #0F172A;
-  border-top: 1px solid #E2E8F0;
+  background: #0B0F17;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .quotedCardImg {
@@ -446,7 +455,7 @@
 .commentBubble {
   display: flex;
   gap: 12px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   padding: 12px 14px;
   border-radius: var(--radius-card);
   border: 1px solid var(--color-border-subtle);
@@ -520,7 +529,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px calc(env(safe-area-inset-bottom, 12px) + 8px);
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--color-border-subtle);
@@ -534,7 +543,7 @@
   padding: 10px 16px;
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-border-subtle);
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   font-size: var(--font-size-sm);
   color: var(--color-text-main);
   outline: none;
@@ -543,7 +552,7 @@
 
 .replyInput:focus {
   border-color: var(--color-primary-container);
-  background: #FFFFFF;
+  background: var(--color-surface-card);
 }
 
 .sendBtn {
@@ -564,7 +573,7 @@
 }
 
 .sendBtn:disabled {
-  background: #CBD5E1;
+  background: var(--color-border-subtle);
   cursor: not-allowed;
 }
 
@@ -573,18 +582,18 @@
 }
 
 .deleteIconButton {
-  color: #DC2626;
+  color: var(--color-danger, #EF4444);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .deleteIconButton:hover {
-    background: #FEE2E2;
-    border-color: #FECACA;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
   }
 }
 
 .deleteIconButton:active {
-  background: #FCA5A5;
+  background: rgba(239, 68, 68, 0.2);
 }
 
 /* Two-Step Post Deletion Confirmation Modal */
@@ -613,7 +622,7 @@
 .confirmDialog {
   width: 100%;
   max-width: 380px;
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card);
   padding: 24px 20px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -621,7 +630,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  animation: dialogScaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: dialogScaleIn 200ms var(--ease-expo) forwards;
 }
 
 @keyframes dialogScaleIn {
@@ -646,7 +655,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #FEE2E2;
+  background: rgba(239, 68, 68, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -656,13 +665,13 @@
 .dialogTitle {
   font-size: var(--font-size-md);
   font-weight: 700;
-  color: #0F172A;
+  color: var(--color-text-main);
   margin: 0 0 8px 0;
 }
 
 .dialogDesc {
   font-size: var(--font-size-xs);
-  color: #64748B;
+  color: var(--color-text-muted);
   line-height: 1.5;
   margin: 0 0 20px 0;
 }
@@ -678,28 +687,28 @@
   flex: 1;
   min-height: 44px;
   padding: 10px 16px;
-  background: #F1F5F9;
+  background: var(--color-surface-muted);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  color: #334155;
+  color: var(--color-text-main);
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 .cancelDialogBtn:active {
   transform: scale(0.97);
-  background: #E2E8F0;
+  background: var(--color-border-subtle);
 }
 
 .confirmDeleteBtn {
   flex: 1;
   min-height: 44px;
   padding: 10px 16px;
-  background: #DC2626;
+  background: var(--color-danger, #DC2626);
   border: none;
   border-radius: var(--radius-md);
   color: #FFFFFF;
@@ -711,7 +720,7 @@
   gap: 6px;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -730,19 +739,19 @@
   padding: 12px 14px;
   margin-top: 12px;
   margin-bottom: 12px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   border: 1px solid var(--color-border-subtle, #E8EDF2);
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease-out;
+  transition: transform var(--transition-fast), background-color 150ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .pdfCard:hover {
-    background: #F1F5F9;
-    border-color: #CBD5E1;
+    background: var(--color-surface-card);
+    border-color: var(--color-border-subtle);
   }
 }
 
@@ -763,7 +772,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: 10px;
-  background: #FEE2E2;
+  background: rgba(239, 68, 68, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -771,7 +780,7 @@
 
 .pdfBadgeIcon {
   font-size: 22px !important;
-  color: #DC2626 !important;
+  color: var(--color-danger, #EF4444) !important;
 }
 
 .pdfCardInfo {
@@ -783,7 +792,7 @@
 .pdfCardFileName {
   font-size: var(--font-size-sm, 14px);
   font-weight: 600;
-  color: #1E293B;
+  color: var(--color-text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -791,8 +800,10 @@
 
 .pdfCardMeta {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   margin-top: 2px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
 }
 
 .pdfCardActionBtn {
@@ -801,7 +812,7 @@
   gap: 6px;
   padding: 6px 12px;
   min-height: 36px;
-  background: #0055A4;
+  background: var(--color-primary-container, #0055A4);
   color: #FFFFFF;
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
@@ -810,14 +821,14 @@
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background-color 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background-color 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .pdfCardActionBtn:hover {
-    background: #004080;
+    background: var(--color-primary-hover, #004080);
   }
 }
 

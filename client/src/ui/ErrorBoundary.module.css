@@ -11,7 +11,7 @@
 .errorCard {
   width: 100%;
   max-width: 480px;
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: 20px;
   border: 1px solid var(--color-border-subtle, #E8EDF2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
@@ -21,7 +21,7 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  animation: cardFadeIn 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: cardFadeIn 250ms var(--ease-expo) forwards;
 }
 
 @keyframes cardFadeIn {
@@ -39,7 +39,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #EFF6FF;
+  background: rgba(0, 85, 164, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,7 +72,7 @@
 .primaryBtn {
   width: 100%;
   min-height: 44px;
-  background: var(--color-primary, #0055A4);
+  background: var(--color-primary-container, #0055A4);
   color: #FFFFFF;
   border: none;
   border-radius: 12px;
@@ -109,10 +109,10 @@
 
 @media (hover: hover) and (pointer: fine) {
   .primaryBtn:hover {
-    background: #004485;
+    background: var(--color-primary-hover, #004485);
   }
   .secondaryBtn:hover {
-    background: #F1F5F9;
+    background: var(--color-surface-muted);
     color: var(--color-text-main, #1E293B);
   }
 }
@@ -121,14 +121,14 @@
   width: 100%;
   margin-top: 12px;
   text-align: left;
-  border-top: 1px solid #E2E8F0;
+  border-top: 1px solid var(--color-border-subtle);
   padding-top: 12px;
 }
 
 .devSummary {
   font-size: 12px;
   font-weight: 600;
-  color: #94A3B8;
+  color: var(--color-text-muted, #94A3B8);
   cursor: pointer;
   user-select: none;
 }
@@ -137,10 +137,11 @@
   margin-top: 8px;
   padding: 10px;
   border-radius: 8px;
-  background: #0F172A;
+  background: #0B0F17;
   color: #F8FAFC;
-  font-size: 11px;
-  font-family: monospace;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee } from '@/types/bulletin';
+import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
 import styles from './BrandSidebarDrawer.module.css';
 
 interface Props {
@@ -139,7 +140,7 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
               {savedCount > 0 && (
                 <span className={`${styles.badge} font-mono tabular-nums`}>{savedCount}</span>
               )}
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#94A3B8' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-text-muted)' }}>
                 chevron_right
               </span>
             </div>
@@ -147,7 +148,14 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
 
           <div className={styles.divider} />
 
-          {/* 2. Switch / Log Out */}
+          {/* 2. Appearance Selector */}
+          <div style={{ padding: '4px 0' }}>
+            <ThemeSwitcher />
+          </div>
+
+          <div className={styles.divider} />
+
+          {/* 3. Switch / Log Out */}
           <button
             type="button"
             className={`${styles.menuItem} ${styles.logoutItem}`}

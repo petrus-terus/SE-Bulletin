@@ -10,9 +10,9 @@
 
 /* 1. Profile Hero Card */
 .profileCard {
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card, 12px);
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border: 1px solid var(--color-border-subtle);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   display: flex;
@@ -61,7 +61,7 @@
   cursor: pointer;
   z-index: 5;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -97,7 +97,7 @@
   width: 92px;
   height: 92px;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   padding: 3px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
@@ -107,7 +107,7 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  background: #FFFFFF;
+  background: var(--color-surface-card);
 }
 
 .onlineBadge {
@@ -118,7 +118,7 @@
   height: 14px;
   border-radius: 50%;
   background: #10B981;
-  border: 2.5px solid #FFFFFF;
+  border: 2.5px solid var(--color-surface-card);
 }
 
 /* Dual Trigger: Camera Button on Avatar */
@@ -130,7 +130,7 @@
   height: 34px;
   border-radius: 50%;
   background: #0055A4;
-  border: 2px solid #FFFFFF;
+  border: 2px solid var(--color-surface-card);
   color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -138,7 +138,7 @@
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 85, 164, 0.3);
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -162,9 +162,9 @@
   min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-md, 8px);
-  background: #F1F5F9;
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
-  color: #1E293B;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-main);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
@@ -172,18 +172,18 @@
   gap: 6px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .editProfileBtn:hover {
-    background: #E2E8F0;
+    background: var(--color-surface-card);
   }
 }
 
 .editProfileBtn:active {
   transform: scale(0.96);
-  background: #CBD5E1;
+  background: var(--color-surface-muted);
 }
 
 .createShortcutBtn {
@@ -201,7 +201,7 @@
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 2px 6px rgba(0, 85, 164, 0.25);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -218,9 +218,9 @@
   min-height: 44px;
   padding: 8px 12px;
   border-radius: var(--radius-md, 8px);
-  background: #FFF1F2;
-  border: 1px solid #FECDD3;
-  color: #BE123C;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #EF4444;
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
@@ -228,18 +228,18 @@
   gap: 5px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .logoutBtn:hover {
-    background: #FFE4E6;
+    background: rgba(239, 68, 68, 0.2);
   }
 }
 
 .logoutBtn:active {
   transform: scale(0.96);
-  background: #FECDD3;
+  background: rgba(239, 68, 68, 0.25);
 }
 
 /* Identity & Details */
@@ -258,7 +258,7 @@
 .userName {
   font-size: 22px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -279,22 +279,22 @@
   display: inline-flex;
   padding: 4px 10px;
   border-radius: var(--radius-pill, 9999px);
-  background: #EFF6FF;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
-  border: 1px solid #DBEAFE;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .roleBadge {
   display: inline-flex;
   padding: 4px 10px;
   border-radius: var(--radius-pill, 9999px);
-  background: #F8FAFC;
-  color: #475569;
+  background: var(--color-surface-muted);
+  color: var(--color-text-body);
   font-size: var(--font-size-xs, 12px);
   font-weight: 500;
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .empIdRow {
@@ -302,7 +302,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  color: #64748B;
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs, 12px);
 }
 
@@ -314,7 +314,7 @@
 
 .bioParagraph {
   font-size: var(--font-size-sm, 14px);
-  color: #334155;
+  color: var(--color-text-body);
   line-height: 1.5;
   margin: 4px 0 0 0;
 }
@@ -325,9 +325,9 @@
   align-items: center;
   justify-content: space-around;
   padding: 14px 12px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .statBox {
@@ -340,26 +340,27 @@
 .statNumber {
   font-size: 18px;
   font-weight: 700;
-  color: #0055A4;
+  color: var(--color-primary-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .statLabel {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
 .statDivider {
   width: 1px;
   height: 24px;
-  background: #CBD5E1;
+  background: var(--color-border-subtle);
 }
 
 /* 2. Brand-New User Onboarding & Milestone Card (Gate 15.4) */
 .onboardingCard {
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card, 12px);
-  border: 1px solid #DBEAFE;
+  border: 1px solid var(--color-border-subtle);
   box-shadow: 0 2px 8px rgba(0, 85, 164, 0.05);
   padding: 20px;
   display: flex;
@@ -389,7 +390,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #E8F5E9;
+  background: var(--color-surface-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,13 +400,13 @@
 .onboardingTitle {
   font-size: 16px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0 0 4px 0;
 }
 
 .onboardingSubtitle {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   margin: 0;
   line-height: 1.45;
 }
@@ -415,16 +416,16 @@
   align-items: center;
   padding: 4px 12px;
   border-radius: var(--radius-pill, 9999px);
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: var(--color-forest-text);
 }
 
 .progressTrack {
   width: 100%;
   height: 8px;
   border-radius: 9999px;
-  background: #F1F5F9;
+  background: var(--color-surface-muted);
   overflow: hidden;
 }
 
@@ -434,7 +435,7 @@
   background: linear-gradient(90deg, #1A7A5A, #10B981);
   border-radius: 9999px;
   transform-origin: left;
-  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 400ms var(--ease-expo);
 }
 
 .checklistGrid {
@@ -448,15 +449,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   border-radius: var(--radius-md, 8px);
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--color-border-subtle);
   gap: 12px;
 }
 
 .checklistItemDone {
-  background: #F0FDF4;
-  border-color: #DCFCE7;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .checkIconWrap {
@@ -473,27 +474,27 @@
 .checklistText {
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text-body);
 }
 
 .checklistActionBtn {
   min-height: 36px;
   padding: 4px 12px;
   border-radius: 6px;
-  background: #EFF6FF;
-  border: 1px solid #DBEAFE;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
   flex-shrink: 0;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .checklistActionBtn:hover {
-    background: #DBEAFE;
+    background: var(--color-surface-card);
   }
 }
 
@@ -522,7 +523,7 @@
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 2px 8px rgba(26, 122, 90, 0.25);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -537,9 +538,9 @@
 
 /* 3. Field Photos Section */
 .photosSection {
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card, 12px);
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border: 1px solid var(--color-border-subtle);
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   display: flex;
@@ -562,7 +563,7 @@
 .sectionTitle {
   font-size: var(--font-size-sm, 14px);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
 }
 
@@ -623,9 +624,9 @@
 /* Empty State for Photos (Brand New Users) */
 .emptyPhotosContainer {
   padding: 24px 16px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   border-radius: var(--radius-md, 8px);
-  border: 1px dashed #CBD5E1;
+  border: 1px dashed var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -637,7 +638,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #E2E8F0;
+  background: var(--color-surface-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -652,13 +653,13 @@
 .emptyPhotosTitle {
   font-size: var(--font-size-xs, 12px);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
 }
 
 .emptyPhotosSubtitle {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   margin: 0;
   max-width: 320px;
   line-height: 1.4;
@@ -668,9 +669,9 @@
   min-height: 38px;
   padding: 6px 14px;
   border-radius: var(--radius-md, 8px);
-  background: #EFF6FF;
-  border: 1px solid #DBEAFE;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
@@ -679,12 +680,12 @@
   cursor: pointer;
   touch-action: manipulation;
   margin-top: 4px;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .uploadPhotoCtaBtn:hover {
-    background: #DBEAFE;
+    background: var(--color-surface-card);
   }
 }
 
@@ -706,10 +707,10 @@
 }
 
 .noPostsCard {
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card, 12px);
   padding: 32px 20px;
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
+  border: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -721,7 +722,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #F1F5F9;
+  background: var(--color-surface-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -731,13 +732,13 @@
 .noPostsTitle {
   font-size: var(--font-size-md, 16px);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
 }
 
 .noPostsDesc {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   max-width: 320px;
   margin: 0 0 8px 0;
   line-height: 1.4;
@@ -758,7 +759,7 @@
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 2px 6px rgba(0, 85, 164, 0.2);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -786,38 +787,18 @@
   animation: fadeInBackdrop 180ms ease-out forwards;
 }
 
-@keyframes fadeInBackdrop {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .modalSheet,
 .mediaPickerSheet {
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   border-radius: var(--radius-card, 16px);
   width: 100%;
   max-width: 520px;
-  max-height: 90vh;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+  max-height: min(90dvh, 640px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: scaleInSheet 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes scaleInSheet {
-  from {
-    transform: scale3d(0.95, 0.95, 1);
-    opacity: 0;
-  }
-  to {
-    transform: scale3d(1, 1, 1);
-    opacity: 1;
-  }
+  animation: scaleInSheet 200ms var(--ease-expo) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -835,12 +816,12 @@
 
 .modalHeader {
   padding: 14px 20px;
-  border-bottom: 1px solid var(--color-border-subtle, #E8EDF2);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  background: #FAFAFA;
+  background: var(--color-surface-card);
 }
 
 .modalHeaderTitleGroup {
@@ -852,7 +833,7 @@
 .modalTitle {
   font-size: var(--font-size-md, 16px);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
 }
 
@@ -861,7 +842,7 @@
   min-height: 44px;
   background: transparent;
   border: none;
-  color: #94A3B8;
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -873,8 +854,8 @@
 
 @media (hover: hover) and (pointer: fine) {
   .modalCloseBtn:hover {
-    background: #F1F5F9;
-    color: #1E293B;
+    background: var(--color-surface-muted);
+    color: var(--color-text-main);
   }
 }
 
@@ -892,19 +873,19 @@
   background: transparent;
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
-  color: #64748B;
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: all 120ms ease;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
 .mediaTabActive {
-  background: #EFF6FF;
-  color: #0055A4;
-  border-color: #DBEAFE;
+  background: var(--color-surface-muted);
+  color: var(--color-primary-text);
+  border-color: var(--color-border-subtle);
 }
 
 .mediaPickerBody {
@@ -918,8 +899,8 @@
 .uploadPromptCard {
   padding: 14px 16px;
   border-radius: var(--radius-md, 10px);
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -929,11 +910,12 @@
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  background: #EFF6FF;
+  background: var(--color-surface-card);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: var(--color-primary-text);
 }
 
 .uploadPromptText {
@@ -943,13 +925,13 @@
 .uploadPromptTitle {
   font-size: 13px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   margin: 0;
 }
 
 .uploadPromptDesc {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
   margin: 2px 0 0 0;
   line-height: 1.35;
 }
@@ -969,7 +951,7 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -992,7 +974,7 @@
   font-size: var(--font-size-xs, 12px);
   font-weight: 700;
   text-transform: uppercase;
-  color: #64748B;
+  color: var(--color-text-muted);
   letter-spacing: 0.04em;
   margin: 0;
 }
@@ -1094,8 +1076,8 @@
   height: 68px;
   border-radius: 50%;
   overflow: hidden;
-  background: #FFFFFF;
-  border: 2px solid #E2E8F0;
+  background: var(--surface-logo-badge);
+  border: 2px solid var(--color-border-subtle);
   padding: 2px;
 }
 
@@ -1109,7 +1091,7 @@
 .presetAvatarName {
   font-size: 11px;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text-main);
   text-align: center;
   max-width: 90px;
   line-height: 1.25;
@@ -1141,8 +1123,8 @@
 .mediaPreviewsDeck {
   border-radius: var(--radius-lg, 12px);
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle, #E2E8F0);
-  background: #F8FAFC;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-muted);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -1184,7 +1166,7 @@
   gap: 4px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 .quickCoverChangeBtn:active {
@@ -1203,7 +1185,7 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   padding: 2.5px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   position: relative;
@@ -1217,7 +1199,7 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  background: #FFFFFF;
+  background: var(--color-surface-card);
 }
 
 .quickAvatarChangeBtn {
@@ -1228,7 +1210,7 @@
   height: 26px;
   border-radius: 50%;
   background: #0055A4;
-  border: 1.5px solid #FFFFFF;
+  border: 1.5px solid var(--color-surface-card);
   color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -1236,7 +1218,7 @@
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 2px 4px rgba(0, 85, 164, 0.35);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 120ms var(--ease-expo);
 }
 
 .quickAvatarChangeBtn:active {
@@ -1260,18 +1242,18 @@
 .previewMetaTitle {
   font-size: var(--font-size-xs, 12px);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
 }
 
 .previewMetaSub {
   font-size: var(--font-size-xs, 12px);
-  color: #64748B;
+  color: var(--color-text-muted);
 }
 
 .resetCrestBtn {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   cursor: pointer;
@@ -1281,7 +1263,7 @@
   align-items: center;
   gap: 3px;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 .resetCrestBtn:active {
@@ -1316,7 +1298,7 @@
 .fieldLabel {
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text-main);
 }
 
 .labelWithCounter {
@@ -1331,68 +1313,68 @@
   min-height: 44px;
   padding: 8px 12px;
   border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-border-subtle, #CBD5E1);
-  background: #F8FAFC;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-muted);
   font-size: var(--font-size-sm, 14px);
-  color: #1E293B;
+  color: var(--color-text-main);
   transition: border-color 120ms ease, background 120ms ease;
 }
 
 .textInput:focus,
 .selectInput:focus {
   outline: none;
-  background: #FFFFFF;
-  border-color: #0055A4;
-  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.12);
+  background: var(--color-surface-card);
+  border-color: var(--color-primary-text);
+  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.2);
 }
 
 .bioTextarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-border-subtle, #CBD5E1);
-  background: #F8FAFC;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-muted);
   font-size: var(--font-size-sm, 14px);
-  color: #1E293B;
+  color: var(--color-text-main);
   resize: vertical;
   line-height: 1.45;
 }
 
 .bioTextarea:focus {
   outline: none;
-  background: #FFFFFF;
-  border-color: #0055A4;
-  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.12);
+  background: var(--color-surface-card);
+  border-color: var(--color-primary-text);
+  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.2);
 }
 
 .modalActions {
   padding: 14px 20px;
-  border-top: 1px solid var(--color-border-subtle, #E8EDF2);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
   flex-shrink: 0;
-  background: #FAFAFA;
+  background: var(--color-surface-card);
 }
 
 .cancelBtn {
   min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-md, 8px);
-  background: #F1F5F9;
-  border: 1px solid var(--color-border-subtle, #E8EDF2);
-  color: #475569;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .cancelBtn:hover {
-    background: #E2E8F0;
+    background: var(--color-surface-card);
   }
 }
 
@@ -1415,7 +1397,7 @@
   align-items: center;
   gap: 6px;
   box-shadow: 0 2px 6px rgba(0, 85, 164, 0.25);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1449,7 +1431,7 @@
   cursor: pointer;
   z-index: 5;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1466,9 +1448,9 @@
   min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-md, 8px);
-  background: #EFF6FF;
-  border: 1px solid #DBEAFE;
-  color: #0055A4;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
@@ -1477,12 +1459,12 @@
   cursor: pointer;
   text-decoration: none;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .contactActionBtn:hover {
-    background: #DBEAFE;
+    background: var(--color-surface-card);
   }
 }
 
@@ -1494,9 +1476,9 @@
   min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-md, 8px);
-  background: #F0FDF4;
-  border: 1px solid #DCFCE7;
-  color: #15803D;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: var(--color-forest-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 600;
   display: inline-flex;
@@ -1504,12 +1486,12 @@
   gap: 6px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .callExtBtn:hover {
-    background: #DCFCE7;
+    background: rgba(16, 185, 129, 0.2);
   }
 }
 

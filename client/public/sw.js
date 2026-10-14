@@ -1,5 +1,5 @@
 // Sabah Electricity Bulletin App - Service Worker (Cache API & Offline Shell)
-const CACHE_NAME = 'sesb-bulletin-v2.6';
+const CACHE_NAME = 'sesb-bulletin-v2.7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

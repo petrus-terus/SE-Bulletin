@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Employee } from '@/types/bulletin';
 import type { TabKey } from '@/layout/BottomNav';
+import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
 import styles from './DesktopSidebar.module.css';
 
 interface Props {
@@ -95,28 +96,33 @@ export const DesktopSidebar: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* User profile footer */}
-      <div
-        className={styles.userFooter}
-        onClick={() => onTabChange('profile')}
-        role="button"
-        tabIndex={0}
-        aria-label="View user profile"
-      >
-        <div className={styles.avatarWrapper}>
-          <img
-            src={currentUser.avatarUrl}
-            alt={currentUser.name}
-            className={styles.avatarImg}
-            onError={(e) => {
-              e.currentTarget.src = '/default_avatar.png';
-            }}
-          />
-          {currentUser.isOnline && <span className={styles.onlineDot} />}
-        </div>
-        <div className={styles.userInfo}>
-          <span className={styles.userName}>{currentUser.name}</span>
-          <span className={styles.userRole}>{currentUser.designation}</span>
+      {/* Bottom Section: Theme Switcher & User Profile */}
+      <div className={styles.bottomSection}>
+        <ThemeSwitcher />
+
+        {/* User profile footer */}
+        <div
+          className={styles.userFooter}
+          onClick={() => onTabChange('profile')}
+          role="button"
+          tabIndex={0}
+          aria-label="View user profile"
+        >
+          <div className={styles.avatarWrapper}>
+            <img
+              src={currentUser.avatarUrl}
+              alt={currentUser.name}
+              className={styles.avatarImg}
+              onError={(e) => {
+                e.currentTarget.src = '/default_avatar.png';
+              }}
+            />
+            {currentUser.isOnline && <span className={styles.onlineDot} />}
+          </div>
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{currentUser.name}</span>
+            <span className={styles.userRole}>{currentUser.designation}</span>
+          </div>
         </div>
       </div>
     </nav>

@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  animation: overlayFadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: overlayFadeIn 200ms var(--ease-expo) forwards;
 }
 
 @keyframes overlayFadeIn {
@@ -103,7 +103,7 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 2px 8px rgba(26, 122, 90, 0.35);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
 }
 
 .publishBtn:active {
@@ -359,7 +359,7 @@
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 120ms var(--ease-expo);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }

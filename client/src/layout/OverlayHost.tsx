@@ -25,7 +25,7 @@ const SavedPostsDrawer = lazy(() =>
 
 const ViewFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px' }}>
-    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #E2E8F0', borderTopColor: '#0055A4', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid var(--color-border-subtle)', borderTopColor: 'var(--color-primary-text)', animation: 'spin 0.8s linear infinite' }} />
   </div>
 );
 

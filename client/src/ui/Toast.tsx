@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './Toast.module.css';
 
 interface Props {
@@ -14,18 +14,26 @@ export const Toast: React.FC<Props> = ({
   onDismiss,
   durationMs = 2800,
 }) => {
+  const [exiting, setExiting] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onDismiss();
-    }, durationMs);
-    return () => clearTimeout(timer);
-  }, [message, durationMs, onDismiss]);
+    const exitTimer = setTimeout(() => setExiting(true), durationMs);
+    const unmountTimer = setTimeout(onDismiss, durationMs + 200);
+    return () => {
+      clearTimeout(exitTimer);
+      clearTimeout(unmountTimer);
+    };
+  }, [durationMs, onDismiss]);
 
   if (!message) return null;
 
   return (
     <div className={styles.toastContainer}>
-      <div className={styles.toastPill} role="status" aria-live="polite">
+      <div
+        className={`${styles.toastPill} ${exiting ? styles.toastExiting : ''}`}
+        role="status"
+        aria-live="polite"
+      >
         <span className={`material-symbols-outlined ${styles.toastIcon}`}>
           {icon}
         </span>

@@ -31,7 +31,7 @@
 
 /* Executive Wisdom Card */
 .card {
-  background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
+  background: var(--gradient-ceo-wisdom);
   border-radius: var(--radius-card, 12px);
   border: 1px solid var(--color-border-subtle, #E8EDF2);
   box-shadow: 0 2px 10px rgba(0, 85, 164, 0.05);
@@ -75,7 +75,7 @@
   right: -2px;
   width: 18px;
   height: 18px;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -84,7 +84,7 @@
 
 .verifiedPillIcon {
   font-size: 15px !important;
-  color: #0055A4;
+  color: var(--color-primary-text);
   font-variation-settings: 'FILL' 1;
 }
 
@@ -109,7 +109,7 @@
 }
 
 .authorName:hover {
-  color: #0055A4;
+  color: var(--color-primary-text);
 }
 
 .roleTag {
@@ -196,7 +196,7 @@
 }
 
 .bookmarkActive {
-  color: #0055A4 !important;
+  color: var(--color-primary-text) !important;
 }
 
 .viewBulletinsBtn {
@@ -206,17 +206,17 @@
   background: none;
   border: none;
   padding: 4px 0;
-  color: #0055A4;
+  color: var(--color-primary-text);
   font-size: var(--font-size-xs, 12px);
   font-weight: 700;
   cursor: pointer;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), color 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), color 120ms ease-out;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 .viewBulletinsBtn:hover {
-  color: #003E7A;
+  color: var(--color-primary-text);
 }
 
 .viewBulletinsBtn:active {

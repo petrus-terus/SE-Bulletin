@@ -39,3 +39,25 @@
     transform: translateY(0) scale(1);
   }
 }
+
+.toastExiting {
+  animation: toastExit 200ms var(--ease-expo) forwards;
+}
+
+@keyframes toastExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toastPill,
+  .toastExiting {
+    animation: none;
+  }
+}

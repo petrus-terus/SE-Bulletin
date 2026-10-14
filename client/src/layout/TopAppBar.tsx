@@ -51,11 +51,11 @@ export const TopAppBar: React.FC<Props> = ({
             aria-label="View user profile"
           >
             <img
-              src={currentUser.avatarUrl || '/user_face.png'}
+              src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
               alt=""
               className={styles.avatarImg}
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/user_face.png';
+                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
               }}
             />
             {currentUser.isOnline && <span className={styles.onlineDot} />}

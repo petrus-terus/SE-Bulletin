@@ -24,7 +24,7 @@ const ProfilePage = lazy(() =>
 
 const ViewFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
-    <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid #E2E8F0', borderTopColor: '#0055A4', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-primary-text)', animation: 'spin 0.8s linear infinite' }} />
   </div>
 );
 
@@ -170,7 +170,7 @@ export const TabRouter: React.FC<TabRouterProps> = ({
                 style={{
                   textAlign: 'center',
                   padding: '48px 16px',
-                  background: '#FFFFFF',
+                  background: 'var(--color-surface-card)',
                   borderRadius: 'var(--radius-card)',
                   border: '1px solid var(--color-border-subtle)',
                   color: 'var(--color-text-muted)',

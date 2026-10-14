@@ -23,17 +23,18 @@
   left: 0;
   width: min(320px, 86vw);
   z-index: 1001;
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.18);
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
-  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 260ms var(--ease-expo);
   padding-top: max(16px, env(safe-area-inset-top));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   padding-left: 16px;
   padding-right: 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -56,7 +57,7 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: 16px;
-  border-bottom: 1px solid #E8EDF2;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .brandGroup {
@@ -69,10 +70,10 @@
   width: 36px;
   height: 36px;
   object-fit: contain;
-  background: #FFFFFF;
+  background: var(--surface-logo-badge);
   border-radius: 8px;
   padding: 2px;
-  border: 1px solid #E8EDF2;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .brandText {
@@ -81,16 +82,16 @@
 }
 
 .brandTitle {
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: 700;
-  color: #0055A4;
+  color: var(--color-primary-text);
   line-height: 1.2;
 }
 
 .brandSubtitle {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 500;
-  color: #64748B;
+  color: var(--color-text-muted);
   letter-spacing: 0.02em;
 }
 
@@ -103,23 +104,23 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #64748B;
+  color: var(--color-text-muted);
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out, color 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out, color 120ms ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .closeButton:hover {
-    background: #F1F5F9;
-    color: #1E293B;
+    background: var(--color-surface-hover);
+    color: var(--color-text-main);
   }
 }
 
 .closeButton:active {
   transform: scale(0.92);
-  background: #E2E8F0;
+  background: var(--color-surface-alt);
 }
 
 /* User Identity Card */
@@ -127,8 +128,8 @@
   margin-top: 16px;
   margin-bottom: 20px;
   padding: 14px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -140,8 +141,8 @@
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: #FFFFFF;
-  border: 2px solid #0055A4;
+  background: var(--surface-logo-badge);
+  border: 2px solid var(--color-primary-container);
   flex-shrink: 0;
   padding: 2px;
   display: flex;
@@ -163,18 +164,18 @@
 }
 
 .userName {
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .userRole {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  color: #1A7A5A;
+  color: var(--color-forest-text);
   margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -182,8 +183,8 @@
 }
 
 .userDivision {
-  font-size: 11px;
-  color: #64748B;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -205,26 +206,26 @@
   width: 100%;
   min-height: 52px;
   padding: 10px 14px;
-  background: #FFFFFF;
-  border: 1px solid #E8EDF2;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease-out, border-color 120ms ease-out;
+  transition: transform 120ms var(--ease-expo), background 120ms ease-out, border-color 120ms ease-out;
   text-align: left;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .menuItem:hover {
-    background: #F8FAFC;
-    border-color: #CBD5E1;
+    background: var(--color-surface-hover);
+    border-color: var(--color-border-focus);
   }
 }
 
 .menuItem:active {
   transform: scale(0.98);
-  background: #F1F5F9;
+  background: var(--color-surface-alt);
 }
 
 .menuItemLeft {
@@ -240,8 +241,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #EFF6FF;
-  color: #0055A4;
+  background: var(--color-primary-light);
+  color: var(--color-primary-text);
   flex-shrink: 0;
 }
 
@@ -253,18 +254,18 @@
 .menuItemLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-main);
 }
 
 .menuItemSub {
-  font-size: 11px;
-  color: #64748B;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .badge {
-  background: #0055A4;
+  background: var(--color-primary-container);
   color: #FFFFFF;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 12px;
@@ -272,53 +273,53 @@
 
 /* Logout Variant */
 .logoutItem {
-  border-color: #FECDD3;
-  background: #FFF1F2;
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .logoutItem:hover {
-    background: #FFE4E6;
-    border-color: #FDA4AF;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
   }
 }
 
 .logoutItem:active {
   transform: scale(0.98);
-  background: #FEE2E2;
+  background: rgba(239, 68, 68, 0.18);
 }
 
 .logoutIconWrap {
-  background: #FEE2E2;
-  color: #BE123C;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-alert-red);
 }
 
 .logoutItemLabel {
-  color: #9F1239;
+  color: var(--color-alert-red);
 }
 
 .divider {
   height: 1px;
-  background: #E8EDF2;
+  background: var(--color-border-subtle);
   margin: 8px 0;
 }
 
 /* Drawer Footer */
 .drawerFooter {
   padding-top: 16px;
-  border-top: 1px solid #E8EDF2;
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .footerNote {
-  font-size: 11px;
-  color: #64748B;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
 .footerSub {
-  font-size: 10px;
-  color: #94A3B8;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }

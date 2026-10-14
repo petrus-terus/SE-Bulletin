@@ -51,7 +51,7 @@ export const AchievementsDeck: React.FC<Props> = ({ bulletinCount }) => {
     <section className={styles.achievementsSection} aria-label="SESB Honors & Achievements">
       <div className={styles.sectionHeader}>
         <div className={styles.titleRow}>
-          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#0055A4' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary-text)' }}>
             workspace_premium
           </span>
           <h2 className={styles.sectionTitle}>Honors & Achievements</h2>

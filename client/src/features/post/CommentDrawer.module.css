@@ -109,7 +109,7 @@
 /* Post Reference Header in Drawer */
 .postReference {
   padding: 10px 18px;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border-subtle);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
@@ -128,6 +128,7 @@
 .commentsList {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
@@ -160,8 +161,8 @@
   width: 34px;
   height: 34px;
   border-radius: var(--radius-pill);
-  background: #EBF3FB;
-  color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-text);
   font-weight: 700;
   font-size: var(--font-size-xs);
   display: flex;
@@ -172,7 +173,7 @@
 
 .commentContent {
   flex: 1;
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   padding: 10px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-subtle);
@@ -203,7 +204,7 @@
   font-size: var(--font-size-xs);
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: #E2E8F0;
+  background: var(--color-border-subtle);
   color: var(--color-text-muted);
   font-weight: 600;
 }
@@ -211,6 +212,8 @@
 .timeTag {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
 }
 
 .commentMessage {
@@ -251,16 +254,16 @@
   padding: 0 44px 0 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-subtle);
-  background: #F8FAFC;
+  background: var(--color-surface-muted);
   font-size: var(--font-size-sm);
   color: var(--color-text-main);
   outline: none;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
 .inputField:focus {
   border-color: var(--color-primary-container);
-  background: #FFFFFF;
+  background: var(--color-surface-card);
   box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.12);
 }
 
@@ -277,7 +280,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
 }
 
 .sendButton:disabled {

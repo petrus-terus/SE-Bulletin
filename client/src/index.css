@@ -4,12 +4,16 @@
    =================================================================== */
 
 :root {
+  color-scheme: light;
+
   /* Brand Core (Kinabalu Mountain & Coastal Utility) */
-  --color-primary: #003E7A;             /* Deep Blue Navy */
+  --color-primary: #003E7A;             /* Deep Blue Navy (Backgrounds & Containers) */
   --color-primary-container: #0055A4;   /* Sabah Electricity Corporate Blue */
+  --color-primary-text: #0055A4;        /* Corporate Blue for Text / Links / Icons */
   --color-primary-hover: #004485;       /* Pressed Blue */
   --color-primary-light: #EBF3FB;       /* Subtle Tint */
-  --color-forest-green: #1A7A5A;        /* Kinabalu Peak Green */
+  --color-forest-green: #1A7A5A;        /* Kinabalu Peak Green (Button Backgrounds) */
+  --color-forest-text: #1A7A5A;         /* Kinabalu Peak Green for Text */
   --color-forest-hover: #146348;        /* Pressed Forest Green */
   --color-forest-light: #E6F5EF;        /* Subtle Green Tint */
   --color-accent-green: #10B981;        /* CTA Accent (Always with #0B0F17 text) */
@@ -21,8 +25,17 @@
   --color-surface-card: #FFFFFF;        /* Card & Modal Surface */
   --color-surface-alt: #E8EDF2;         /* Chip background / alt surface */
   --color-surface-hover: #F8FAFC;       /* Hover state */
+  --color-surface-glass: rgba(255, 255, 255, 0.88); /* Frosted Glass Chrome */
   --color-border-subtle: #E2E8F0;       /* Hairline card & input borders */
   --color-border-focus: #0055A4;        /* Focused ring */
+
+  /* Surface Gradients (Themed) */
+  --gradient-card-pinned: linear-gradient(180deg, #FFFDF8 0%, #FFFFFF 64px);
+  --gradient-ceo-wisdom: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
+
+  /* Brand Assets & Media Filter */
+  --surface-logo-badge: #FFFFFF;        /* Always White for Authentic SESB/TNB Logos */
+  --image-dim: 1;                       /* Feed Image Dimming (1 in light, 0.92 in dark) */
 
   /* Typography */
   --color-text-main: #111C2D;           /* High contrast heading text */
@@ -73,6 +86,81 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Shared modal entrance motion. Defined globally (not inside a CSS module) so
+   every sheet — profile edit, avatar crop, and any future one — plays the same
+   entrance instead of re-declaring a scoped copy of the same keyframes. */
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleInSheet {
+  from {
+    transform: scale3d(0.95, 0.95, 1);
+    opacity: 0;
+  }
+  to {
+    transform: scale3d(1, 1, 1);
+    opacity: 1;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces — slate scale for natural elevation step-up */
+  --color-surface-base:  #0B0F17;   /* Canvas background */
+  --color-surface-card:  #151C2B;   /* Card & modal surface */
+  --color-surface-alt:   #1E293B;   /* Chips, alt rows */
+  --color-surface-hover: #243044;
+  --color-surface-glass: rgba(15, 23, 42, 0.85);   /* Frosted chrome */
+  --color-border-subtle: #263244;
+  --color-border-focus:  #60A5FA;
+
+  /* Typography — high contrast on dark card surface #151C2B */
+  --color-text-main: #F1F5F9;   /* 15.7:1 */
+  --color-text-body: #CBD5E1;   /* 11.6:1 */
+  --color-text-muted: #94A3B8;  /*  6.7:1 */
+
+  /* Brand — backgrounds UNCHANGED, only -text variants lighten */
+  --color-primary:          #003E7A;   /* Unchanged solid deep blue */
+  --color-primary-container:#0055A4;   /* Unchanged button bg — white text 7.2:1 */
+  --color-primary-text:     #60A5FA;   /* 6.8:1 text & link blue on card */
+  --color-primary-hover:    #0B4A8F;
+  --color-primary-light:    #12263F;   /* Subtle dark blue tint */
+
+  --color-forest-green:     #1A7A5A;   /* Unchanged solid green bg — white text 5.3:1 */
+  --color-forest-text:      #34D399;   /* 8.9:1 green text & icons on card */
+  --color-forest-hover:     #146348;
+  --color-forest-light:     #0F2A22;   /* Subtle dark green tint */
+
+  /* Accent CTA — UNCHANGED: #10B981 + #0B0F17 dark ink = 10.8:1 in both themes */
+  --color-accent-green: #10B981;
+  --color-dark-ink:     #0B0F17;
+
+  /* Semantic Alerts — lightened for contrast on dark */
+  --color-safety-orange:    #FBBF24;   /* HSE warnings */
+  --color-safety-orange-bg: #3A2A0B;
+  --color-alert-red:        #F87171;   /* Critical alert */
+  --color-alert-red-bg:     #3B1416;
+
+  /* Elevation & Depth */
+  --shadow-card:          0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card-elevated: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-popover:       0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-fab:           0 8px 20px -3px rgba(16, 185, 129, 0.32), 0 4px 8px -2px rgba(16, 185, 129, 0.18);
+
+  /* Theme-specific tokens */
+  --surface-logo-badge: #FFFFFF;   /* ALWAYS white for authentic corporate logos */
+  --image-dim: 0.92;               /* Controlled image dimming on dark */
+  --gradient-card-pinned: linear-gradient(180deg, #1E293B 0%, #151C2B 64px);
+  --gradient-ceo-wisdom:  linear-gradient(145deg, #151C2B 0%, #1E293B 100%);
+}
+
 /* ===================================================================
    Baseline Resets
    =================================================================== */
@@ -95,17 +183,24 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 /* Selection and Caret Theming */
 ::selection {
   background-color: rgba(0, 85, 164, 0.18);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+[data-theme='dark'] ::selection {
+  background-color: rgba(96, 165, 250, 0.28);
+  color: #FFFFFF;
 }
 
 input, textarea, select {
   font-family: inherit;
-  caret-color: var(--color-primary-container);
+  font-size: 16px;
+  caret-color: var(--color-primary-text);
 }
 
 /* ===================================================================
@@ -154,6 +249,14 @@ input, textarea, select {
   background: rgba(100, 116, 139, 0.4);
 }
 
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #263244;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
 /* Hide scrollbar for clean horizontal snap strips */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -163,9 +266,31 @@ input, textarea, select {
   scrollbar-width: none;
 }
 
+/* Temporary transition during user theme flip (240ms duration) */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 240ms var(--ease-expo), border-color 240ms var(--ease-expo), color 240ms var(--ease-expo) !important;
+  transition-delay: 0s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition: none !important;
+  }
+}
+
 /* Tactile interactive micro-interaction */
-button, a {
+html {
   -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent; /* keep for safety on old WebKit */
 }
 
 button:active:not(:disabled), .interactive-press:active {
