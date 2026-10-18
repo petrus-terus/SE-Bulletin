@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import type { AppNotification, Comment, Post, Story } from '@/types/bulletin';
+import { useEffect, useRef } from 'react';
+import type { AppNotification, Comment, Employee, Post, Story } from '@/types/bulletin';
 import { isSupabaseConfigured, supabase } from '@/services/supabaseClient';
 import { saveStoredNotifications } from '@/services/notificationService';
 
@@ -11,6 +11,7 @@ interface UseRealtimeSyncParams {
   setSelectedPostId: React.Dispatch<React.SetStateAction<string | null>>;
   setActiveCommentPostId: React.Dispatch<React.SetStateAction<string | null>>;
   setToast: (toast: { message: string; icon?: string } | null) => void;
+  currentUser?: Employee | null;
 }
 
 export function useRealtimeSync({
@@ -21,7 +22,13 @@ export function useRealtimeSync({
   setSelectedPostId,
   setActiveCommentPostId,
   setToast,
+  currentUser,
 }: UseRealtimeSyncParams) {
+  const currentUserRef = useRef<Employee | null | undefined>(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
@@ -95,38 +102,50 @@ export function useRealtimeSync({
           };
 
           setPosts((prev) => [livePost, ...prev.filter((p) => p.id !== livePost.id)]);
-          setToast({
-            message: `New bulletin: "${(row.title || 'Bulletin').slice(0, 26)}..."`,
-            icon: 'campaign',
-          });
 
-          // Append to dynamic notifications
-          const newNotif: AppNotification = {
-            id: `notif-${Date.now()}`,
-            category: row.official_notice ? 'urgent' : 'general',
-            title: row.official_notice
-              ? `${row.department || 'SESB'} Official Notice`
-              : `${row.author_name || 'Staff'} published a bulletin`,
-            message: row.title,
-            timestamp: 'Just now',
-            createdAt: Date.now(),
-            isRead: false,
-            icon: row.official_notice ? 'security' : 'campaign',
-            iconColor: row.official_notice ? '#EF4444' : '#0055A4',
-            targetPostId: row.id,
-            avatarUrl: row.author_avatar || undefined,
-            avatarInitials: (row.author_name || 'SE')
-              .split(' ')
-              .map((n: string) => n[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase(),
-          };
-          setNotifications((prev) => {
-            const updated = [newNotif, ...prev];
-            saveStoredNotifications(updated);
-            return updated;
-          });
+          const currUser = currentUserRef.current;
+          const isSelf = Boolean(
+            currUser &&
+              ((row.author_id && row.author_id === currUser.id) ||
+                (row.author_name &&
+                  currUser.name &&
+                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
+          );
+
+          if (!isSelf) {
+            setToast({
+              message: `New bulletin: "${(row.title || 'Bulletin').slice(0, 26)}..."`,
+              icon: 'campaign',
+            });
+
+            // Append to dynamic notifications
+            const newNotif: AppNotification = {
+              id: `notif-${Date.now()}`,
+              category: row.official_notice ? 'urgent' : 'general',
+              title: row.official_notice
+                ? `${row.department || 'SESB'} Official Notice`
+                : `${row.author_name || 'Staff'} published a bulletin`,
+              message: row.title,
+              timestamp: 'Just now',
+              createdAt: Date.now(),
+              isRead: false,
+              icon: row.official_notice ? 'security' : 'campaign',
+              iconColor: row.official_notice ? '#EF4444' : '#0055A4',
+              targetPostId: row.id,
+              avatarUrl: row.author_avatar || undefined,
+              avatarInitials: (row.author_name || 'SE')
+                .split(' ')
+                .map((n: string) => n[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase(),
+            };
+            setNotifications((prev) => {
+              const updated = [newNotif, ...prev];
+              saveStoredNotifications(updated);
+              return updated;
+            });
+          }
         }
       )
       .on(
@@ -178,7 +197,16 @@ export function useRealtimeSync({
             })
           );
 
-          if (row.is_edited) {
+          const currUser = currentUserRef.current;
+          const isSelf = Boolean(
+            currUser &&
+              ((row.author_id && row.author_id === currUser.id) ||
+                (row.author_name &&
+                  currUser.name &&
+                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
+          );
+
+          if (row.is_edited && !isSelf) {
             setToast({
               message: `Updated: "${(row.title || 'Bulletin').slice(0, 26)}..."`,
               icon: 'edit',
@@ -217,49 +245,60 @@ export function useRealtimeSync({
             };
           });
 
+          const currUser = currentUserRef.current;
+          const isCommentSelf = Boolean(
+            currUser &&
+              ((row.author_id && row.author_id === currUser.id) ||
+                (row.author_name &&
+                  currUser.name &&
+                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
+          );
+
           setPosts((prev) =>
             prev.map((p) =>
               p.id === row.post_id
                 ? {
                     ...p,
-                    commentsCount: p.commentsCount + 1,
+                    commentsCount: isCommentSelf ? p.commentsCount : p.commentsCount + 1,
                     previewComment: liveComment,
                   }
                 : p
             )
           );
 
-          setToast({
-            message: `${row.author_name}: "${row.text.slice(0, 24)}..."`,
-            icon: 'chat',
-          });
+          if (!isCommentSelf) {
+            setToast({
+              message: `${row.author_name}: "${row.text.slice(0, 24)}..."`,
+              icon: 'chat',
+            });
 
-          // Append to dynamic notifications
-          const commentNotif: AppNotification = {
-            id: `notif-c-${Date.now()}`,
-            category: 'comment',
-            title: `${row.author_name} commented`,
-            message: row.text,
-            timestamp: 'Just now',
-            createdAt: Date.now(),
-            isRead: false,
-            icon: 'chat',
-            iconColor: '#0055A4',
-            targetPostId: row.post_id,
-            targetCommentId: row.id,
-            avatarUrl: row.author_avatar || undefined,
-            avatarInitials: (row.author_name || 'SE')
-              .split(' ')
-              .map((n: string) => n[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase(),
-          };
-          setNotifications((prev) => {
-            const updated = [commentNotif, ...prev];
-            saveStoredNotifications(updated);
-            return updated;
-          });
+            // Append to dynamic notifications
+            const commentNotif: AppNotification = {
+              id: `notif-c-${Date.now()}`,
+              category: 'comment',
+              title: `${row.author_name} commented`,
+              message: row.text,
+              timestamp: 'Just now',
+              createdAt: Date.now(),
+              isRead: false,
+              icon: 'chat',
+              iconColor: '#0055A4',
+              targetPostId: row.post_id,
+              targetCommentId: row.id,
+              avatarUrl: row.author_avatar || undefined,
+              avatarInitials: (row.author_name || 'SE')
+                .split(' ')
+                .map((n: string) => n[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase(),
+            };
+            setNotifications((prev) => {
+              const updated = [commentNotif, ...prev];
+              saveStoredNotifications(updated);
+              return updated;
+            });
+          }
         }
       )
       .on(

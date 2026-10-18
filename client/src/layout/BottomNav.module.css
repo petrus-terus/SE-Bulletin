@@ -10,6 +10,7 @@
   border-top: 1px solid var(--color-border-subtle);
   padding-bottom: var(--safe-area-bottom);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
+  will-change: transform;
 }
 
 @media (min-width: 1024px) {
@@ -91,6 +92,12 @@
 }
 
 /* Elevated Center Floating FAB */
+.centerFabSpacer {
+  flex: 1;
+  height: 100%;
+  pointer-events: none;
+}
+
 .centerFabWrapper {
   flex: 1;
   display: flex;

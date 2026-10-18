@@ -1,4 +1,4 @@
-import type { CreatePostPayload, Employee, EmojiReactionType, Post } from '@/types/bulletin';
+import type { Comment, CreatePostPayload, Employee, EmojiReactionType, Post } from '@/types/bulletin';
 import { bulletinService } from '@/services/bulletinService';
 import { saveBookmarkedPostId } from '@/services/bookmarkStorage';
 
@@ -293,11 +293,50 @@ export function usePostActions({
     }
   };
 
-  // Add Comment Handler with Supabase Cloud Sync
+  // Add Comment Handler with Optimistic UI & Supabase Cloud Sync
   const handleAddComment = async (postId: string, commentText: string) => {
     if (!currentUser) return;
     const targetPost = posts.find((p) => p.id === postId);
     const currentCount = targetPost ? targetPost.commentsCount : 0;
+    const tempId = `temp-c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const optimisticComment: Comment = {
+      id: tempId,
+      authorName: currentUser.name,
+      department: currentUser.department,
+      avatarUrl: currentUser.avatarUrl,
+      avatarInitials: (currentUser.name || 'SE')
+        .split(' ')
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase(),
+      text: commentText,
+      timestamp: 'Just now',
+      likesCount: 0,
+    };
+
+    // 1. Optimistic insertion
+    setCommentsByPost((prev) => {
+      const existing = prev[postId] || [];
+      return {
+        ...prev,
+        [postId]: [...existing, optimisticComment],
+      };
+    });
+
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            commentsCount: post.commentsCount + 1,
+            previewComment: optimisticComment,
+          };
+        }
+        return post;
+      })
+    );
 
     try {
       const newComment = await bulletinService.addComment(
@@ -307,21 +346,26 @@ export function usePostActions({
         currentCount
       );
 
+      // 2. Reconcile temporary comment with persistent cloud comment
       setCommentsByPost((prev) => {
         const existing = prev[postId] || [];
-        if (existing.some((c) => c.id === newComment.id)) return prev;
+        if (existing.some((c) => c.id === newComment.id)) {
+          return {
+            ...prev,
+            [postId]: existing.filter((c) => c.id !== tempId),
+          };
+        }
         return {
           ...prev,
-          [postId]: [...existing, newComment],
+          [postId]: existing.map((c) => (c.id === tempId ? newComment : c)),
         };
       });
 
       setPosts((prev) =>
         prev.map((post) => {
-          if (post.id === postId) {
+          if (post.id === postId && post.previewComment?.id === tempId) {
             return {
               ...post,
-              commentsCount: post.commentsCount + 1,
               previewComment: newComment,
             };
           }
@@ -334,6 +378,27 @@ export function usePostActions({
         icon: 'chat',
       });
     } catch {
+      // Rollback on failure
+      setCommentsByPost((prev) => {
+        const existing = prev[postId] || [];
+        return {
+          ...prev,
+          [postId]: existing.filter((c) => c.id !== tempId),
+        };
+      });
+
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              commentsCount: Math.max(0, post.commentsCount - 1),
+            };
+          }
+          return post;
+        })
+      );
+
       setToast({
         message: 'Failed to post comment',
         icon: 'error',

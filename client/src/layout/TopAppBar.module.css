@@ -10,6 +10,7 @@
   border-bottom: 1px solid var(--color-border-subtle);
   padding-top: var(--safe-area-top);
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03);
+  will-change: transform, opacity;
 }
 
 @media (min-width: 1024px) {
@@ -26,6 +27,8 @@
   padding: 0 16px;
   max-width: 680px;
   margin: 0 auto;
+  transform-origin: top center;
+  will-change: transform, opacity;
 }
 
 .brandGroup {

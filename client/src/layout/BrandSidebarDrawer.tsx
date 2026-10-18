@@ -99,18 +99,18 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
         <div className={styles.userCard}>
           <div className={styles.avatarWrapper}>
             <img
-              src="/sabah_electricity_logo.png"
+              src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
               alt={currentUser.name}
               className={styles.avatarImg}
               onError={(e) => {
-                e.currentTarget.src = '/sesb_logo.png';
+                e.currentTarget.src = '/sabah_electricity_logo.png';
               }}
             />
           </div>
           <div className={styles.userInfo}>
             <span className={styles.userName}>{currentUser.name}</span>
             <span className={styles.userRole}>{currentUser.designation || 'Staff'}</span>
-            <span className={styles.userDivision}>INFORMATION & DIGITAL</span>
+            <span className={styles.userDivision}>{currentUser.department || 'Sabah Electricity'}</span>
           </div>
         </div>
 

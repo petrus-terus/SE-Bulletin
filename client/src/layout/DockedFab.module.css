@@ -1,0 +1,51 @@
+.dockedFab {
+  position: fixed;
+  bottom: calc(var(--safe-area-bottom, 0px) + 16px);
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-green);
+  color: #0B0F17 !important;
+  border: 3.5px solid var(--color-surface-card);
+  box-shadow: var(--shadow-fab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 52;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  /* Resting state before scrolled */
+  transform: translate3d(0, 80px, 0) scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+@media (min-width: 1024px) {
+  .dockedFab {
+    display: none !important;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dockedFab:hover {
+    background-color: var(--color-accent-hover);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  }
+}
+
+.dockedFab:active {
+  transform: scale(0.92) !important;
+}
+
+.fabIcon {
+  font-size: 26px !important;
+  font-weight: 700;
+  color: #0B0F17 !important;
+  user-select: none;
+  -webkit-user-select: none;
+}

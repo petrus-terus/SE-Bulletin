@@ -38,16 +38,38 @@ interface Props {
 const DEFAULT_COVER_URL = '/grid_horizon_hero.jpg';
 const DEFAULT_AVATAR_URL = '/sabah_electricity_logo.png';
 
-const SESB_DIVISIONS = ['INFORMATION & DIGITAL'];
+const SESB_DIVISIONS = [
+  'Information & Digital',
+  'Operations & Grid',
+  'Engineering & Distribution',
+  'Safety & Health (HSE)',
+  'Corporate Communications',
+  'Human Resources',
+  'Finance & Procurement',
+  'Chief Executive Officer (CEO) Office',
+];
 
 const SESB_ROLES = [
   'Chief Information & Digital Officer (CIDO)',
+  'Head of Department / Director',
   'Senior Manager',
-  'Head',
-  'Staff',
+  'Lead Engineer',
+  'Senior Executive',
+  'Staff Administrator',
+  'Technical Specialist',
+  'Field Technician',
+  'Corporate Staff',
 ];
 
-const SESB_LOCATIONS = ['Bangunan KWASA'];
+const SESB_LOCATIONS = [
+  'Wisma SESB HQ, Kota Kinabalu',
+  'Bangunan KWASA',
+  'Tenom Pangi Hydro Power Station',
+  'Sepanggar Bay Power Station',
+  'Sandakan Regional Station',
+  'Tawau Regional Station',
+  'Labuan Regional Office',
+];
 
 export const ProfilePage: React.FC<Props> = ({
   posts,
@@ -79,13 +101,9 @@ export const ProfilePage: React.FC<Props> = ({
   // Profile fields state (keyed by employee id in App.tsx for automatic resets)
   const [profileData, setProfileData] = useState<Employee>(activeEmployee);
 
-  // Normalize division & location for Phase 1 pilot
-  const activeDivision = SESB_DIVISIONS.includes(profileData.department)
-    ? profileData.department
-    : SESB_DIVISIONS[0];
-  const activeLocation = SESB_LOCATIONS.includes(profileData.officeLocation || '')
-    ? (profileData.officeLocation || SESB_LOCATIONS[0])
-    : SESB_LOCATIONS[0];
+  // Active division & location with fallback to profileData
+  const activeDivision = profileData.department || SESB_DIVISIONS[0];
+  const activeLocation = profileData.officeLocation || SESB_LOCATIONS[0];
 
   // Modal visibility states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -211,10 +229,10 @@ export const ProfilePage: React.FC<Props> = ({
       (p.isReshared && isOwnProfile)
   );
 
-  // Total reactions on user's posts
+  // Total reactions on user's posts (strict data integrity without artificial inflation)
   const totalReactions = userPosts.reduce(
     (acc, p) => acc + (p.likesCount || 0),
-    isOwnProfile ? (userPosts.length > 0 ? userPosts.length * 24 : 0) : Math.max(12, userPosts.length * 28)
+    0
   );
 
   // Unlocked achievements count (Bronze: 1, Silver: 5, Gold: 10)

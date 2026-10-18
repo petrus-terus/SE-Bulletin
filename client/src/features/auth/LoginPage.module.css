@@ -276,8 +276,10 @@
   touch-action: manipulation;
 }
 
-.forgotLink:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .forgotLink:hover {
+    text-decoration: underline;
+  }
 }
 
 .inputFieldWrapper {

@@ -13,7 +13,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: false,
     icon: 'security',
     iconColor: '#EF4444',
-    targetPostId: 'post-safety-1',
+    targetPostId: 'post-career-day-warning',
     avatarInitials: 'HSE',
   },
   {
@@ -26,7 +26,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: false,
     icon: 'campaign',
     iconColor: '#0055A4',
-    targetPostId: 'post-1',
+    targetPostId: 'post-madani-link',
     avatarInitials: 'OPS',
   },
   {
@@ -52,7 +52,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: true,
     icon: 'favorite',
     iconColor: '#E11D48',
-    targetPostId: 'post-1',
+    targetPostId: 'post-our-brand',
     avatarInitials: 'SA',
   },
   {
@@ -65,7 +65,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: true,
     icon: 'chat',
     iconColor: '#0055A4',
-    targetPostId: 'post-1',
+    targetPostId: 'post-our-brand',
     targetCommentId: 'c2',
     avatarInitials: 'MI',
   },
@@ -79,7 +79,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: true,
     icon: 'alternate_email',
     iconColor: '#10B981',
-    targetPostId: 'post-1',
+    targetPostId: 'post-madani-link',
     avatarInitials: 'SW',
   },
   {
@@ -92,7 +92,7 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     isRead: true,
     icon: 'celebration',
     iconColor: '#F59E0B',
-    targetPostId: 'post-1',
+    targetPostId: 'post-esg-challenge',
     avatarInitials: 'HR',
   },
 ];
@@ -105,7 +105,18 @@ export function getStoredNotifications(): AppNotification[] {
       return INITIAL_NOTIFICATIONS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : INITIAL_NOTIFICATIONS;
+    if (!Array.isArray(parsed)) return INITIAL_NOTIFICATIONS;
+
+    // Self-heal legacy orphaned IDs from past sessions
+    return parsed.map((n: AppNotification) => {
+      if (n.targetPostId === 'post-safety-1') {
+        return { ...n, targetPostId: 'post-career-day-warning' };
+      }
+      if (n.targetPostId === 'post-1') {
+        return { ...n, targetPostId: 'post-madani-link' };
+      }
+      return n;
+    });
   } catch {
     return INITIAL_NOTIFICATIONS;
   }

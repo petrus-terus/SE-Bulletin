@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import type { AppNotification, Comment, Employee, Post, Story } from '@/types/bulletin';
 import { INITIAL_POSTS, INITIAL_STORIES, getEmployeeByAuthor } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
@@ -11,8 +11,10 @@ import { AppShell } from '@/layout/AppShell';
 import { TopAppBar } from '@/layout/TopAppBar';
 import { BottomNav } from '@/layout/BottomNav';
 import type { TabKey } from '@/layout/BottomNav';
+import { DockedFab } from '@/layout/DockedFab';
 import { DesktopSidebar } from '@/layout/DesktopSidebar';
 import { DesktopWidgetsRail } from '@/layout/DesktopWidgetsRail';
+import { useScrollChoreography } from '@/hooks/useScrollChoreography';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PilotGate } from '@/features/auth/PilotGate';
 import { Toast } from '@/ui/Toast';
@@ -70,6 +72,9 @@ export function App() {
     title?: string;
     location?: string | null;
   } | null>(null);
+
+  // Gesture-linked 1:1 scroll choreography with snap-to-rest
+  useScrollChoreography({ activeTab, selectedPostId });
 
   // Derived Reactive Entities (Single Source of Truth)
   const selectedPostForDetail = selectedPostId ? posts.find((p) => p.id === selectedPostId) || null : null;
@@ -199,6 +204,7 @@ export function App() {
     setSelectedPostId,
     setActiveCommentPostId,
     setToast,
+    currentUser,
   });
 
   const handleViewAuthorProfile = (author: {
@@ -236,23 +242,36 @@ export function App() {
     });
   }, [activeDetailOrCommentPostId]);
 
-  // Derived Department counts
-  const postCounts: Record<string, number> = {
-    'dept-all': posts.length,
-  };
-  posts.forEach((p) => {
-    if (p.departmentId) {
-      postCounts[p.departmentId] = (postCounts[p.departmentId] || 0) + 1;
-    }
-  });
+  // Derived Department counts (memoized)
+  const postCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'dept-all': posts.length,
+    };
+    posts.forEach((p) => {
+      if (p.departmentId) {
+        counts[p.departmentId] = (counts[p.departmentId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [posts]);
 
-  const filteredPosts =
-    selectedDeptId === 'dept-all'
-      ? posts
-      : posts.filter((p) => p.departmentId === selectedDeptId);
+  const filteredPosts = useMemo(
+    () =>
+      selectedDeptId === 'dept-all'
+        ? posts
+        : posts.filter((p) => p.departmentId === selectedDeptId),
+    [posts, selectedDeptId]
+  );
 
-  const latestCeoPost = posts.find((p) => p.author?.id === 'user-ceo');
-  const feedPosts = filteredPosts.filter((p) => p.author?.id !== 'user-ceo');
+  const latestCeoPost = useMemo(
+    () => posts.find((p) => p.author?.id === 'user-ceo'),
+    [posts]
+  );
+
+  const feedPosts = useMemo(
+    () => filteredPosts.filter((p) => p.author?.id !== 'user-ceo'),
+    [filteredPosts]
+  );
 
   // Update Profile Handler
   const handleUpdateProfile = async (updatedUser: Employee) => {
@@ -325,14 +344,14 @@ export function App() {
     if (notif.targetPostId) {
       const targetPost = posts.find((p) => p.id === notif.targetPostId);
       if (targetPost) {
+        setSelectedPostId(targetPost.id);
         if (notif.targetCommentId || notif.category === 'comment') {
           setActiveCommentPostId(targetPost.id);
-        } else {
-          setSelectedPostId(targetPost.id);
         }
       }
     }
     setActiveTab('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // 0. Pre-Auth Pilot Passcode Gate
@@ -490,6 +509,9 @@ export function App() {
         onCreateClick={() => setIsCreateOpen(true)}
         unreadCount={unreadCount}
       />
+
+      {/* Sequenced Docked FAB (Rises from bottom-right as BottomNav exits) */}
+      <DockedFab onClick={() => setIsCreateOpen(true)} />
 
       {/* All Overlay Modals, Drawers & Toast Feedback */}
       <OverlayHost

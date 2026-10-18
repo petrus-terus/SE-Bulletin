@@ -80,7 +80,7 @@ CREATE TABLE public.posts (
     shares_count INTEGER DEFAULT 0,
     reshares_count INTEGER DEFAULT 0,
     quote_post_id TEXT REFERENCES public.posts(id) ON DELETE SET NULL,
-    reactions_breakdown JSONB DEFAULT '{"like":0,"celebrate":0,"support":0,"insightful":0,"safety":0}'::jsonb,
+    reactions_breakdown JSONB DEFAULT '{"laugh":0,"fire":0,"clap":0,"cry":0}'::jsonb,
     poll_data JSONB DEFAULT NULL,
     pdf_url TEXT DEFAULT NULL,
     pdf_name TEXT DEFAULT NULL,

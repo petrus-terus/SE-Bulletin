@@ -114,7 +114,7 @@ export const DesktopSidebar: React.FC<Props> = ({
               alt={currentUser.name}
               className={styles.avatarImg}
               onError={(e) => {
-                e.currentTarget.src = '/default_avatar.png';
+                e.currentTarget.src = '/sabah_electricity_logo.png';
               }}
             />
             {currentUser.isOnline && <span className={styles.onlineDot} />}

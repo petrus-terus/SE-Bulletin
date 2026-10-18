@@ -6,7 +6,7 @@ export type TabKey = 'home' | 'explore' | 'notifications' | 'profile';
 interface Props {
   activeTab: TabKey;
   onTabChange: (tab: TabKey) => void;
-  onCreateClick: () => void;
+  onCreateClick?: () => void;
   unreadCount?: number;
 }
 
@@ -17,7 +17,7 @@ export const BottomNav: React.FC<Props> = ({
   unreadCount = 3,
 }) => {
   return (
-    <nav className={styles.navContainer} aria-label="Bottom Navigation">
+    <nav className={styles.navContainer} aria-label="Bottom Navigation" data-chrome="bottomnav">
       <div className={styles.inner}>
         {/* 1. Home Tab */}
         <button

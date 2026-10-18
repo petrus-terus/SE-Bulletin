@@ -50,12 +50,14 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className={styles.errorWrapper} role="alert">
           <div className={styles.errorCard}>
             <div className={styles.logoBadge}>
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: '32px', color: 'var(--color-primary-text)' }}
-              >
-                bolt
-              </span>
+              <img
+                src="/sabah_electricity_logo.png"
+                alt="Sabah Electricity"
+                className={styles.brandLogo}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/sesb_logo.png';
+                }}
+              />
             </div>
 
             <h1 className={styles.title}>Display Recovery Notice</h1>

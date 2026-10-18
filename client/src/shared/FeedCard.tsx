@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { EmojiReactionType, Post } from '@/types/bulletin';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
-import { ReshareBottomSheet } from '@/shared/ReshareBottomSheet';
-import { QuoteBulletinModal } from '@/shared/QuoteBulletinModal';
 import { formatCompactNumber } from '@/utils/format';
 import styles from './FeedCard.module.css';
 
@@ -33,7 +31,7 @@ export const FeedCard: React.FC<Props> = ({
   currentUserId,
   currentUserName,
   currentUserRole,
-  currentUserAvatar,
+  currentUserAvatar: _currentUserAvatar,
   onLikeToggle,
   onCommentClick,
   onBookmarkToggle,
@@ -43,8 +41,8 @@ export const FeedCard: React.FC<Props> = ({
   onAuthorClick,
   onVotePoll,
   onReactionSelect: _onReactionSelect,
-  onReshareToggle,
-  onQuotePost,
+  onReshareToggle: _onReshareToggle,
+  onQuotePost: _onQuotePost,
   onSharePost,
   onReshareClick,
 }) => {
@@ -53,8 +51,6 @@ export const FeedCard: React.FC<Props> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [reshareSheetOpen, setReshareSheetOpen] = useState(false);
-  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 
   const optionsWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -384,6 +380,8 @@ export const FeedCard: React.FC<Props> = ({
                   post.quotedPost.imageUrl!
                 }
                 alt=""
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   (e.currentTarget as HTMLElement).style.display = 'none';
                 }}
@@ -401,6 +399,8 @@ export const FeedCard: React.FC<Props> = ({
               <img
                 src={url}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = '/mock-images/image1.png';
                 }}
@@ -416,6 +416,8 @@ export const FeedCard: React.FC<Props> = ({
           <img
             src={post.imageUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             onError={() => setImageError(true)}
             className={styles.postImage}
           />
@@ -497,11 +499,7 @@ export const FeedCard: React.FC<Props> = ({
             className={`${styles.actionButton} ${post.isReshared ? styles.reshareActive : ''}`}
             onClick={(e) => {
               e.stopPropagation();
-              if (onReshareClick) {
-                onReshareClick(post);
-              } else {
-                setReshareSheetOpen(true);
-              }
+              onReshareClick?.(post);
             }}
             aria-label={post.isReshared ? 'Undo reshare' : 'Reshare post'}
           >
@@ -673,23 +671,6 @@ export const FeedCard: React.FC<Props> = ({
           </div>,
           document.body
         )}
-      {/* Reshare Bottom Sheet */}
-      <ReshareBottomSheet
-        isOpen={reshareSheetOpen}
-        isReshared={post.isReshared}
-        onClose={() => setReshareSheetOpen(false)}
-        onRepost={() => onReshareToggle?.(post.id)}
-        onQuote={() => setQuoteModalOpen(true)}
-      />
-      {/* Quote Compose Modal */}
-      <QuoteBulletinModal
-        isOpen={quoteModalOpen}
-        quotedPost={post}
-        currentUserAvatar={currentUserAvatar}
-        currentUserName={currentUserName}
-        onClose={() => setQuoteModalOpen(false)}
-        onSubmit={(text) => onQuotePost?.(post, text)}
-      />
     </article>
   );
 };

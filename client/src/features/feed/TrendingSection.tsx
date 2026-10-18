@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Post } from '@/types/bulletin';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './TrendingSection.module.css';
@@ -12,10 +12,14 @@ interface Props {
 export const TrendingSection: React.FC<Props> = ({ posts, onSelectPost, onOpenComments }) => {
   const scrollRef = useHorizontalScroll<HTMLDivElement>();
 
-  // Take top posts sorted by likesCount + commentsCount
-  const trendingPosts = [...posts]
-    .sort((a, b) => b.likesCount + b.commentsCount - (a.likesCount + a.commentsCount))
-    .slice(0, 4);
+  // Take top posts sorted by likesCount + commentsCount (memoized)
+  const trendingPosts = useMemo(
+    () =>
+      [...posts]
+        .sort((a, b) => b.likesCount + b.commentsCount - (a.likesCount + a.commentsCount))
+        .slice(0, 4),
+    [posts]
+  );
 
   return (
     <section className={styles.trendingContainer} aria-label="Trending Bulletins">

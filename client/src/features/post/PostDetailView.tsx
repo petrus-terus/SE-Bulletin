@@ -539,7 +539,7 @@ export const PostDetailView: React.FC<Props> = ({
       <form className={styles.bottomReplyBar} onSubmit={handleSendComment}>
         <input
           type="text"
-          placeholder="Write a comment as Mohd Irfan..."
+          placeholder={`Write a comment as ${currentUserName || 'colleague'}...`}
           value={commentInput}
           onChange={(e) => setCommentInput(e.target.value)}
           className={styles.replyInput}

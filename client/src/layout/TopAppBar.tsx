@@ -16,8 +16,8 @@ export const TopAppBar: React.FC<Props> = ({
   onBrandClick,
 }) => {
   return (
-    <header className={styles.header}>
-      <div className={styles.inner}>
+    <header className={styles.header} data-chrome="topbar">
+      <div className={styles.inner} data-chrome="topbar-inner">
         {/* Official Sabah Electricity Brand Logo + App Title: Tapping opens Brand Sidebar */}
         <div
           className={styles.brandGroup}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Department, Employee, Post } from '@/types/bulletin';
 import { ALL_EMPLOYEES, getRegisteredEmployees } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
@@ -117,54 +117,70 @@ export const SearchDirectoryPage: React.FC<Props> = ({
     };
   }, []);
 
-  const allStaff: EmployeeRecord[] = staffEmployees.map((emp) => ({
-    id: emp.id,
-    name: emp.name,
-    designation: emp.designation,
-    department: emp.department,
-    departmentId: emp.adminDepartments?.[0] || 'dept-ops',
-    staffId: emp.employeeId,
-    extension: emp.phoneExtension || 'Ext. 4100',
-    email: emp.email,
-    avatarUrl: emp.avatarUrl,
-    isOnline: Boolean(emp.isOnline),
-  }));
+  const allStaff: EmployeeRecord[] = useMemo(
+    () =>
+      staffEmployees.map((emp) => ({
+        id: emp.id,
+        name: emp.name,
+        designation: emp.designation,
+        department: emp.department,
+        departmentId: emp.adminDepartments?.[0] || 'dept-ops',
+        staffId: emp.employeeId,
+        extension: emp.phoneExtension || 'Ext. 4100',
+        email: emp.email,
+        avatarUrl: emp.avatarUrl,
+        isOnline: Boolean(emp.isOnline),
+      })),
+    [staffEmployees]
+  );
 
-  // Filter Employees
-  const filteredEmployees = allStaff.filter((emp) => {
-    if (activeCategory === 'circulars' || activeCategory === 'departments') return false;
-    if (!effectiveQuery) return true;
-    return (
-      emp.name.toLowerCase().includes(effectiveQuery) ||
-      emp.designation.toLowerCase().includes(effectiveQuery) ||
-      emp.department.toLowerCase().includes(effectiveQuery) ||
-      emp.staffId.toLowerCase().includes(effectiveQuery) ||
-      emp.email.toLowerCase().includes(effectiveQuery)
-    );
-  });
+  // Filter Employees (memoized)
+  const filteredEmployees = useMemo(
+    () =>
+      allStaff.filter((emp) => {
+        if (activeCategory === 'circulars' || activeCategory === 'departments') return false;
+        if (!effectiveQuery) return true;
+        return (
+          emp.name.toLowerCase().includes(effectiveQuery) ||
+          emp.designation.toLowerCase().includes(effectiveQuery) ||
+          emp.department.toLowerCase().includes(effectiveQuery) ||
+          emp.staffId.toLowerCase().includes(effectiveQuery) ||
+          emp.email.toLowerCase().includes(effectiveQuery)
+        );
+      }),
+    [allStaff, activeCategory, effectiveQuery]
+  );
 
-  // Filter Posts
-  const filteredPosts = posts.filter((p) => {
-    if (activeCategory === 'staff' || activeCategory === 'departments') return false;
-    if (activeCategory === 'circulars' && !p.officialNotice) return false;
-    if (!effectiveQuery) return true;
-    const dept = p.author?.department || p.departmentName || '';
-    const author = p.author?.name || '';
-    return (
-      (p.title && p.title.toLowerCase().includes(effectiveQuery)) ||
-      p.content.toLowerCase().includes(effectiveQuery) ||
-      dept.toLowerCase().includes(effectiveQuery) ||
-      author.toLowerCase().includes(effectiveQuery)
-    );
-  });
+  // Filter Posts (memoized)
+  const filteredPosts = useMemo(
+    () =>
+      posts.filter((p) => {
+        if (activeCategory === 'staff' || activeCategory === 'departments') return false;
+        if (activeCategory === 'circulars' && !p.officialNotice) return false;
+        if (!effectiveQuery) return true;
+        const dept = p.author?.department || p.departmentName || '';
+        const author = p.author?.name || '';
+        return (
+          (p.title && p.title.toLowerCase().includes(effectiveQuery)) ||
+          p.content.toLowerCase().includes(effectiveQuery) ||
+          dept.toLowerCase().includes(effectiveQuery) ||
+          author.toLowerCase().includes(effectiveQuery)
+        );
+      }),
+    [posts, activeCategory, effectiveQuery]
+  );
 
-  // Filter Departments
-  const filteredDepartments = departments.filter((d) => {
-    if (d.id === 'dept-all') return false;
-    if (activeCategory === 'staff' || activeCategory === 'circulars') return false;
-    if (!effectiveQuery) return true;
-    return d.name.toLowerCase().includes(effectiveQuery);
-  });
+  // Filter Departments (memoized)
+  const filteredDepartments = useMemo(
+    () =>
+      departments.filter((d) => {
+        if (d.id === 'dept-all') return false;
+        if (activeCategory === 'staff' || activeCategory === 'circulars') return false;
+        if (!effectiveQuery) return true;
+        return d.name.toLowerCase().includes(effectiveQuery);
+      }),
+    [departments, activeCategory, effectiveQuery]
+  );
 
   const clearSearch = () => {
     setQuery('');

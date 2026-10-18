@@ -158,3 +158,10 @@
   border-radius: 50%;
   background: #64748B;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none !important;
+  }
+}
+
