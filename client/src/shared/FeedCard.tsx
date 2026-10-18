@@ -121,7 +121,7 @@ export const FeedCard: React.FC<Props> = ({
     return parts.map((part, i) => {
       if (part.startsWith('#')) {
         return (
-          <span key={i} style={{ color: '#0055A4', fontWeight: 600 }}>
+          <span key={i} style={{ color: 'var(--color-primary-text)', fontWeight: 600 }}>
             {part}
           </span>
         );
@@ -172,7 +172,7 @@ export const FeedCard: React.FC<Props> = ({
               {post.departmentName && (
                 <span
                   className={styles.deptPill}
-                  style={{ backgroundColor: post.departmentColor || '#0055A4' }}
+                  style={{ '--dept-color': post.departmentColor || '#0055A4' } as React.CSSProperties}
                 >
                   {post.departmentName}
                 </span>
@@ -181,7 +181,7 @@ export const FeedCard: React.FC<Props> = ({
                 <span className={styles.pinnedPill}>
                   <span
                     className="material-symbols-outlined"
-                    style={{ fontSize: '13px', color: '#D97706', fontVariationSettings: "'FILL' 1" }}
+                    style={{ fontSize: '13px', color: 'var(--color-safety-orange)', fontVariationSettings: "'FILL' 1" }}
                   >
                     push_pin
                   </span>
@@ -243,7 +243,7 @@ export const FeedCard: React.FC<Props> = ({
                 >
                   <span
                     className="material-symbols-outlined"
-                    style={{ fontSize: '18px', color: '#0055A4' }}
+                    style={{ fontSize: '18px', color: 'var(--color-primary-text)' }}
                   >
                     edit
                   </span>
@@ -264,7 +264,7 @@ export const FeedCard: React.FC<Props> = ({
                 >
                   <span
                     className="material-symbols-outlined"
-                    style={{ fontSize: '18px', color: '#DC2626' }}
+                    style={{ fontSize: '18px', color: 'var(--color-alert-red)' }}
                   >
                     delete_outline
                   </span>
@@ -598,7 +598,7 @@ export const FeedCard: React.FC<Props> = ({
               <span className={styles.commentDeptBadge}>
                 {post.previewComment.department}
               </span>
-              <span className="tabular-nums font-mono" style={{ fontSize: '12px', color: '#94A3B8' }}>
+              <span className="tabular-nums font-mono" style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 • {post.previewComment.timestamp}
               </span>
             </div>
@@ -627,7 +627,7 @@ export const FeedCard: React.FC<Props> = ({
               <div className={styles.dialogIconWrap}>
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: '28px', color: '#DC2626' }}
+                  style={{ fontSize: '28px', color: 'var(--color-alert-red)' }}
                 >
                   delete_forever
                 </span>

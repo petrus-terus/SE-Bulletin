@@ -95,7 +95,7 @@ export const InteractivePollCard: React.FC<Props> = ({ poll, onVote }) => {
         {hasVoted && (
           <>
             <span className={styles.metaDot}>•</span>
-            <span style={{ fontSize: '12px', color: '#64748B' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
               Tap your vote to deselect
             </span>
           </>

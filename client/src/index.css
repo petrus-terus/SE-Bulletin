@@ -23,11 +23,21 @@
   /* Surfaces & Canvas */
   --color-surface-base: #F5F7FA;        /* Canvas Background */
   --color-surface-card: #FFFFFF;        /* Card & Modal Surface */
+  --color-surface-muted: #F1F5F9;       /* Muted surface for nested cards, inputs, quote blocks */
   --color-surface-alt: #E8EDF2;         /* Chip background / alt surface */
   --color-surface-hover: #F8FAFC;       /* Hover state */
   --color-surface-glass: rgba(255, 255, 255, 0.88); /* Frosted Glass Chrome */
   --color-border-subtle: #E2E8F0;       /* Hairline card & input borders */
+  --color-border-strong: #CBD5E1;       /* Emphasized border */
   --color-border-focus: #0055A4;        /* Focused ring */
+
+  /* Token Aliases */
+  --color-brand-blue: #0055A4;          /* Brand Blue Alias */
+  --color-danger: #BA1A1A;              /* Semantic Danger Alias */
+  --color-bg-app: #F5F7FA;              /* App Background Canvas Alias */
+  --color-on-surface: #111C2D;          /* On Surface Typography Alias */
+  --font-mono: var(--font-family-mono); /* Font mono alias */
+  --radius-lg: 14px;                    /* Large radius */
 
   /* Surface Gradients (Themed) */
   --gradient-card-pinned: linear-gradient(180deg, #FFFDF8 0%, #FFFFFF 64px);
@@ -115,11 +125,21 @@
   /* Surfaces — slate scale for natural elevation step-up */
   --color-surface-base:  #0B0F17;   /* Canvas background */
   --color-surface-card:  #151C2B;   /* Card & modal surface */
+  --color-surface-muted: #1C2536;   /* Tier 2: Nested cards, search inputs, quote blocks, poll tracks */
   --color-surface-alt:   #1E293B;   /* Chips, alt rows */
   --color-surface-hover: #243044;
-  --color-surface-glass: rgba(15, 23, 42, 0.85);   /* Frosted chrome */
+  --color-surface-glass: rgba(11, 15, 23, 0.88);   /* Frosted chrome top/bottom bars */
   --color-border-subtle: #263244;
+  --color-border-strong: #334155;
   --color-border-focus:  #60A5FA;
+
+  /* Token Aliases */
+  --color-brand-blue: #0055A4;
+  --color-danger: #F87171;
+  --color-bg-app: #0B0F17;
+  --color-on-surface: #F1F5F9;
+  --font-mono: var(--font-family-mono);
+  --radius-lg: 14px;
 
   /* Typography — high contrast on dark card surface #151C2B */
   --color-text-main: #F1F5F9;   /* 15.7:1 */
@@ -271,20 +291,38 @@ input, textarea, select {
   scrollbar-width: none;
 }
 
-/* Temporary transition during user theme flip (240ms duration) */
+/* Scoped transition during user theme flip (240ms duration) — avoids layout thrashing */
 html.theme-transitioning,
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
+html.theme-transitioning body,
+html.theme-transitioning header,
+html.theme-transitioning nav,
+html.theme-transitioning main,
+html.theme-transitioning article,
+html.theme-transitioning aside,
+html.theme-transitioning [class*="card"],
+html.theme-transitioning [class*="Card"],
+html.theme-transitioning [class*="drawer"],
+html.theme-transitioning [class*="Drawer"],
+html.theme-transitioning [class*="sheet"],
+html.theme-transitioning [class*="Sheet"] {
   transition: background-color 240ms var(--ease-expo), border-color 240ms var(--ease-expo), color 240ms var(--ease-expo) !important;
   transition-delay: 0s !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html.theme-transitioning,
-  html.theme-transitioning *,
-  html.theme-transitioning *::before,
-  html.theme-transitioning *::after {
+  html.theme-transitioning body,
+  html.theme-transitioning header,
+  html.theme-transitioning nav,
+  html.theme-transitioning main,
+  html.theme-transitioning article,
+  html.theme-transitioning aside,
+  html.theme-transitioning [class*="card"],
+  html.theme-transitioning [class*="Card"],
+  html.theme-transitioning [class*="drawer"],
+  html.theme-transitioning [class*="Drawer"],
+  html.theme-transitioning [class*="sheet"],
+  html.theme-transitioning [class*="Sheet"] {
     transition: none !important;
   }
 }

@@ -64,3 +64,21 @@
     display: block;
   }
 }
+
+/* Focused Post Detail View overrides */
+.mainContentDetail {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .layoutContainerDetail {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .mainContentNoTopBar {
+    padding-top: calc(14px + var(--safe-area-top, 0px)) !important;
+  }
+}
+

@@ -98,11 +98,30 @@
 .deptPill {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;
+  background-color: var(--dept-color, #0055A4);
   color: #FFFFFF;
+}
+
+[data-theme='dark'] .deptPill {
+  background-color: color-mix(in srgb, var(--dept-color, #0055A4) 20%, transparent) !important;
+  color: var(--color-text-main) !important;
+  border: 1px solid color-mix(in srgb, var(--dept-color, #0055A4) 35%, transparent);
+}
+
+[data-theme='dark'] .deptPill::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--dept-color, #60A5FA);
+  box-shadow: 0 0 6px var(--dept-color, #60A5FA);
+  flex-shrink: 0;
 }
 
 .cardPinned {
@@ -208,6 +227,14 @@
   max-height: 520px;
   object-fit: contain;
   display: block;
+  filter: brightness(var(--image-dim, 1));
+  transition: filter 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .postImage {
+    filter: brightness(1);
+  }
 }
 
 .locationChip {
@@ -263,6 +290,14 @@
   object-fit: cover;
   pointer-events: none;
   -webkit-user-drag: none;
+  filter: brightness(var(--image-dim, 1));
+  transition: filter 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .multiImageSlide img {
+    filter: brightness(1);
+  }
 }
 
 .multiImageBadge {

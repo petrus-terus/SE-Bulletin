@@ -42,6 +42,7 @@ export const PostDetailView: React.FC<Props> = ({
 }) => {
   const [commentInput, setCommentInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showActionSheet, setShowActionSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
   // SuperAdmin Lockdown: ADMIN_USER / TEST_USER is the global moderator capable of editing/deleting any post.
@@ -108,8 +109,72 @@ export const PostDetailView: React.FC<Props> = ({
     });
   };
 
+  // Edge Swipe-to-Dismiss Touch Gesture Handler
+  const touchStartXRef = React.useRef(0);
+  const touchStartYRef = React.useRef(0);
+  const isSwipingRef = React.useRef(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      // Only allow swipe if initiated within 40px of the left edge
+      if (touch.clientX < 40) {
+        touchStartXRef.current = touch.clientX;
+        touchStartYRef.current = touch.clientY;
+        isSwipingRef.current = true;
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSwipingRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartXRef.current;
+    const deltaY = touch.clientY - touchStartYRef.current;
+
+    // Cancel if primary motion is vertical scroll
+    if (Math.abs(deltaY) > Math.abs(deltaX) && deltaX < 20) {
+      isSwipingRef.current = false;
+      if (containerRef.current) {
+        containerRef.current.style.transform = '';
+      }
+      return;
+    }
+
+    if (deltaX > 0 && containerRef.current) {
+      containerRef.current.style.transform = `translate3d(${deltaX}px, 0, 0)`;
+      containerRef.current.style.transition = 'none';
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwipingRef.current) return;
+    isSwipingRef.current = false;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartXRef.current;
+
+    if (deltaX > 80 && containerRef.current) {
+      containerRef.current.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease';
+      containerRef.current.style.transform = 'translate3d(100%, 0, 0)';
+      containerRef.current.style.opacity = '0';
+      setTimeout(() => {
+        onBack();
+      }, 180);
+    } else if (containerRef.current) {
+      containerRef.current.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
+      containerRef.current.style.transform = 'translate3d(0, 0, 0)';
+    }
+  };
+
   return (
-    <div className={styles.container}>
+    <div
+      ref={containerRef}
+      className={styles.container}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* 1. Sticky Frosted Navigation Header */}
       <header className={styles.stickyHeader}>
         <button
@@ -124,64 +189,21 @@ export const PostDetailView: React.FC<Props> = ({
           <span>Feed</span>
         </button>
 
+        {/* Center Spacer */}
+        <div className={styles.headerSpacer} />
+
         <div className={styles.headerActions}>
           <button
             type="button"
-            className={`${styles.iconButton} ${post.isBookmarked ? styles.iconButtonActive : ''}`}
-            onClick={() => onBookmarkToggle(post.id)}
-            title={post.isBookmarked ? 'Saved to bookmarks' : 'Save post'}
-            aria-label="Bookmark post"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: '20px',
-                fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              bookmark
-            </span>
-          </button>
-
-          <button
-            type="button"
             className={styles.iconButton}
-            onClick={handleCopyLink}
-            title={linkCopied ? 'Link copied!' : 'Copy intranet link'}
-            aria-label="Copy post link"
+            onClick={() => setShowActionSheet(true)}
+            title="More options"
+            aria-label="More options"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-              {linkCopied ? 'done' : 'link'}
+            <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
+              more_horiz
             </span>
           </button>
-
-          {canEdit && onEditPost && (
-            <button
-              type="button"
-              className={styles.iconButton}
-              onClick={() => onEditPost(post)}
-              title="Edit this bulletin"
-              aria-label="Edit post"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#0055A4' }}>
-                edit
-              </span>
-            </button>
-          )}
-
-          {canDelete && (
-            <button
-              type="button"
-              className={`${styles.iconButton} ${styles.deleteIconButton}`}
-              onClick={() => setShowDeleteConfirm(true)}
-              title="Delete this bulletin"
-              aria-label="Delete post"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#DC2626' }}>
-                delete_outline
-              </span>
-            </button>
-          )}
         </div>
       </header>
 
@@ -611,6 +633,102 @@ export const PostDetailView: React.FC<Props> = ({
                   <span>Delete</span>
                 </button>
               </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* 5. Bottom Action Sheet for Post Options */}
+      {showActionSheet &&
+        createPortal(
+          <div
+            className={styles.actionSheetBackdrop}
+            onClick={() => setShowActionSheet(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bulletin options"
+          >
+            <div
+              className={styles.actionSheetContainer}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.actionSheetHandle} />
+              <div className={styles.actionSheetList}>
+                <button
+                  type="button"
+                  className={styles.actionSheetItem}
+                  onClick={() => {
+                    onBookmarkToggle(post.id);
+                    setShowActionSheet(false);
+                  }}
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: '22px',
+                      color: post.isBookmarked ? '#0055A4' : 'inherit',
+                      fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
+                    }}
+                  >
+                    bookmark
+                  </span>
+                  <span>{post.isBookmarked ? 'Remove Bookmark' : 'Save Bulletin'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.actionSheetItem}
+                  onClick={() => {
+                    handleCopyLink();
+                    setShowActionSheet(false);
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
+                    link
+                  </span>
+                  <span>{linkCopied ? 'Link Copied!' : 'Copy Intranet Link'}</span>
+                </button>
+
+                {canEdit && onEditPost && (
+                  <button
+                    type="button"
+                    className={styles.actionSheetItem}
+                    onClick={() => {
+                      setShowActionSheet(false);
+                      onEditPost(post);
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#0055A4' }}>
+                      edit
+                    </span>
+                    <span>Edit Bulletin</span>
+                  </button>
+                )}
+
+                {canDelete && (
+                  <button
+                    type="button"
+                    className={`${styles.actionSheetItem} ${styles.actionSheetItemDanger}`}
+                    onClick={() => {
+                      setShowActionSheet(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#EF4444' }}>
+                      delete_outline
+                    </span>
+                    <span>Delete Bulletin</span>
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={styles.actionSheetCancelBtn}
+                onClick={() => setShowActionSheet(false)}
+              >
+                Cancel
+              </button>
             </div>
           </div>,
           document.body

@@ -35,7 +35,7 @@ export const TopAppBar: React.FC<Props> = ({
             }}
           />
           <span className={styles.brandTitle}>SE Bulletin</span>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0055A4', marginLeft: '2px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary-text)', marginLeft: '2px' }}>
             menu
           </span>
         </div>

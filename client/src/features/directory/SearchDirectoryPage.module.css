@@ -35,7 +35,7 @@
 .inputWrapper:focus-within {
   background: var(--color-surface-card);
   border-color: var(--color-primary-text);
-  box-shadow: 0 0 0 2px rgba(0, 85, 164, 0.2);
+  box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
 .searchInput {

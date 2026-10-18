@@ -186,9 +186,11 @@ export function useScrollChoreography({ activeTab, selectedPostId }: Choreograph
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Desktop check: disable on >= 1024px
+    // Disable on >= 1024px or on secondary tabs (explore, notifications, profile)
     const isDesktop = () => window.innerWidth >= 1024;
-    if (isDesktop()) {
+    const isHome = activeTab === 'home';
+
+    if (isDesktop() || !isHome) {
       resetChrome(false);
       return;
     }
@@ -196,7 +198,7 @@ export function useScrollChoreography({ activeTab, selectedPostId }: Choreograph
     lastScrollYRef.current = Math.max(0, window.scrollY);
 
     const onScroll = () => {
-      if (isDesktop()) return;
+      if (isDesktop() || !isHome) return;
 
       if (snapAnimIdRef.current !== null) {
         cancelAnimationFrame(snapAnimIdRef.current);

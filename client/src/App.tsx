@@ -387,20 +387,24 @@ export function App() {
 
   return (
     <>
-      {/* Sticky Corporate Top App Bar */}
-      <TopAppBar
-        currentUser={currentUser}
-        unreadCount={unreadCount}
-        onNotificationClick={() => setActiveTab('notifications')}
-        onBrandClick={() => setIsBrandSidebarOpen(true)}
-        onProfileClick={() => {
-          setViewedProfileEmployee(null);
-          setActiveTab('profile');
-        }}
-      />
+      {/* Sticky Corporate Top App Bar (Exclusive to Home feed; hidden on Explore, Notifications, Profile and PostDetail) */}
+      {activeTab === 'home' && !selectedPostForDetail && (
+        <TopAppBar
+          currentUser={currentUser}
+          unreadCount={unreadCount}
+          onNotificationClick={() => setActiveTab('notifications')}
+          onBrandClick={() => setIsBrandSidebarOpen(true)}
+          onProfileClick={() => {
+            setViewedProfileEmployee(null);
+            setActiveTab('profile');
+          }}
+        />
+      )}
 
       {/* Main Container Shell with Multi-Screen Responsive Layout */}
       <AppShell
+        hasTopAppBar={activeTab === 'home' && !selectedPostForDetail}
+        isDetailView={Boolean(selectedPostForDetail)}
         sidebar={
           <DesktopSidebar
             activeTab={activeTab}
@@ -498,20 +502,26 @@ export function App() {
         )}
       </AppShell>
 
-      {/* Sticky Bottom Navigation Bar */}
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setSelectedPostId(null);
-          if (tab === 'profile') setViewedProfileEmployee(null);
-          setActiveTab(tab);
-        }}
-        onCreateClick={() => setIsCreateOpen(true)}
-        unreadCount={unreadCount}
-      />
+      {/* Sticky Bottom Navigation Bar & Docked FAB (Hidden in PostDetailView for dedicated reply bar) */}
+      {!selectedPostForDetail && (
+        <>
+          <BottomNav
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setSelectedPostId(null);
+              if (tab === 'profile') setViewedProfileEmployee(null);
+              setActiveTab(tab);
+            }}
+            onCreateClick={() => setIsCreateOpen(true)}
+            unreadCount={unreadCount}
+          />
 
-      {/* Sequenced Docked FAB (Rises from bottom-right as BottomNav exits) */}
-      <DockedFab onClick={() => setIsCreateOpen(true)} />
+          {/* Sequenced Docked FAB is exclusive to Home feed when BottomNav scrubs out */}
+          {activeTab === 'home' && (
+            <DockedFab onClick={() => setIsCreateOpen(true)} />
+          )}
+        </>
+      )}
 
       {/* All Overlay Modals, Drawers & Toast Feedback */}
       <OverlayHost
