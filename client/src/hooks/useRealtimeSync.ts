@@ -123,7 +123,7 @@ export function useRealtimeSync({
               id: `notif-${Date.now()}`,
               category: row.official_notice ? 'urgent' : 'general',
               title: row.official_notice
-                ? `${row.department || 'SESB'} Official Notice`
+                ? `${row.department || 'SE'} Official Notice`
                 : `${row.author_name || 'Staff'} published a bulletin`,
               message: row.title,
               timestamp: 'Just now',

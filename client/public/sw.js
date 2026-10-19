@@ -1,4 +1,4 @@
-// Sabah Electricity Bulletin App - Service Worker (Cache API & Offline Shell)
+// SE-Connect App - Service Worker (Cache API & Offline Shell)
 const CACHE_NAME = 'sesb-bulletin-v2.7';
 const STATIC_ASSETS = [
   '/',

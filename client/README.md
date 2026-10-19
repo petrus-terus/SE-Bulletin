@@ -1,4 +1,4 @@
-# 📱 Sabah Electricity Bulletin — Frontend Client
+# 📱 SE-Connect — Frontend Client
 
 The frontend client is a high-performance, mobile-first **Progressive Web App (PWA)** built with **React 19**, **TypeScript**, and **Vite**.
 

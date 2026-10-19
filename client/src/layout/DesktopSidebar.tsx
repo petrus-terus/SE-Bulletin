@@ -31,7 +31,7 @@ export const DesktopSidebar: React.FC<Props> = ({
           }}
           role="button"
           tabIndex={0}
-          aria-label="SE Bulletin Home"
+          aria-label="SE-Connect Home"
         >
           <img
             src="/sabah_electricity_logo.png"
@@ -41,7 +41,7 @@ export const DesktopSidebar: React.FC<Props> = ({
               e.currentTarget.src = '/sesb_logo.png';
             }}
           />
-          <span className={styles.brandTitle}>SE Bulletin</span>
+          <span className={styles.brandTitle}>SE-Connect</span>
         </div>
 
         {/* Navigation Menu */}

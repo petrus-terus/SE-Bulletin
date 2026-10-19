@@ -34,7 +34,7 @@ export const TopAppBar: React.FC<Props> = ({
               e.currentTarget.src = '/sesb_logo.png';
             }}
           />
-          <span className={styles.brandTitle}>SE Bulletin</span>
+          <span className={styles.brandTitle}>SE-Connect</span>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary-text)', marginLeft: '2px' }}>
             menu
           </span>

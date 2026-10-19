@@ -16,7 +16,7 @@ export const CURRENT_USER: Employee = {
   adminDepartments: ['dept-id', 'dept-ops', 'dept-ceo', 'dept-cs', 'dept-hr', 'dept-fin', 'dept-all'],
   isVerified: true,
   isOnline: true,
-  bio: 'System Administrator and Lead Engineer managing statewide Sabah Electricity Bulletin pilot platform.',
+  bio: 'System Administrator and Lead Engineer managing statewide SE-Connect pilot platform.',
 };
 
 export const ALL_EMPLOYEES: Employee[] = [
@@ -30,7 +30,7 @@ export const ALL_EMPLOYEES: Employee[] = [
     department: 'Chief Executive Officer (CEO) Office',
     email: 'ceo.office@sesb.com.my',
     avatarUrl: '/ceo_portrait.png',
-    officeLocation: 'Wisma SESB, Executive Suite Level 9, Kota Kinabalu',
+    officeLocation: 'Wisma SE, Executive Suite Level 9, Kota Kinabalu',
     phoneExtension: 'Ext. 1001',
     role: 'SuperAdmin',
     isVerified: true,
@@ -80,7 +80,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
     department: author.department || 'Operating',
     email: `${author.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@sesb.com.my`,
     avatarUrl: author.avatarUrl || '/sabah_electricity_logo.png',
-    officeLocation: 'Wisma SESB HQ, Kota Kinabalu',
+    officeLocation: 'Wisma SE HQ, Kota Kinabalu',
     phoneExtension: `Ext. ${Math.floor(2000 + Math.random() * 5000)}`,
     role: 'GeneralStaff',
     isVerified: true,
@@ -129,7 +129,7 @@ export const INITIAL_STORIES: Story[] = [
     authorName: 'ADMIN_USER',
     hasUnread: false,
     imageUrl: '/mock-images/image6.png',
-    caption: 'SESB Smart Grid telemetry upgrade completed across West Coast division',
+    caption: 'SE Smart Grid telemetry upgrade completed across West Coast division',
     hoursRemaining: 4,
   },
 ];
@@ -208,7 +208,7 @@ Sekiranya terdapat pertanyaan, mohon maklumkan bahawa program masih belum disahk
 Mesej ini adalah untuk makluman dalaman sahaja dan tidak perlu dipanjangkan kepada pihak luar.
 
 Terima kasih atas kerjasama semua.`,
-    location: 'Wisma SESB HQ (Internal Broadcast Only)',
+    location: 'Wisma SE HQ (Internal Broadcast Only)',
     imageUrl: '/mock-images/image4.png',
     isPinned: true,
     commentsEnabled: true,
@@ -254,7 +254,7 @@ Untuk siri pertama, kenali maksud di sebalik identiti logo kita dan bagaimana se
 MyPortal > Corporate Communication > Rebranding Documents
 
 #OurBrandOurJourney #EnergisingOurFuture`,
-    location: 'Digital Experience Hub, Wisma SESB',
+    location: 'Digital Experience Hub, Wisma SE',
     imageUrl: '/mock-images/image2.png',
     isPinned: false,
     commentsEnabled: true,
@@ -350,7 +350,7 @@ MyPortal > Corporate Communication > Rebranding Documents
 
 Tahniah kepada semua pasukan teknikal, perancangan grid, dan kontraktor yang bertungkus-lumus memastikan kesinambungan grid voltan tinggi ini beroperasi dengan piawaian keselamatan tertinggi.
 
-Ikuti sorotan video dan laporan tapak di media sosial rasmi SESB!`,
+Ikuti sorotan video dan laporan tapak di media sosial rasmi SE!`,
     location: 'Southern Grid Transmission Corridor',
     imageUrl: '/mock-images/image7.jpeg',
     isPinned: false,
@@ -390,7 +390,7 @@ Ikuti sorotan video dan laporan tapak di media sosial rasmi SESB!`,
 Kepada rakan-rakan yang masih belum pernah menyertai cabaran ini yang telah kita lalui 3 sesi sebelumnya, jangan kecewa, sesi terakhir ini masih boleh disertai dan berkemungkinan masih mampu mengejar markah rakan-rakan yang mendahului 😊... Walau pun kita tidak menduduki carta tetapi masih mampu mendahului carta ilmu sebelum menyertainya.
 
 Jangan lupa, blok kalendar ya... bersama kita mencabar dan menambah pengetahuan baharu.`,
-    location: 'Wisma SESB HQ & Online ESG Portal',
+    location: 'Wisma SE HQ & Online ESG Portal',
     imageUrl: '/mock-images/image1.png',
     isPinned: false,
     commentsEnabled: true,
@@ -434,7 +434,7 @@ Ikuti perkongsian En. Asrin @ Rudiman bin Badri, Pengurus Besar Kesihatan, Kesel
 
 Jadikan keselamatan satu amalan, bukan sekadar peringatan.
 Lindungi diri. Lindungi keluarga. Lindungi komuniti.`,
-    location: 'RTM Sabah & Wisma SESB HSE Media Center',
+    location: 'RTM Sabah & Wisma SE HSE Media Center',
     imageUrl: '/mock-images/image5.png',
     isPinned: false,
     commentsEnabled: true,
@@ -520,7 +520,7 @@ Jom Belajar Bersama!
 
 Finance Division
 CFO / Strategic Management & Governance (SMG)`,
-    location: 'Wisma SESB HQ Level 8',
+    location: 'Wisma SE HQ Level 8',
     imageUrl: '/mock-images/image6.png',
     isPinned: false,
     commentsEnabled: true,
@@ -550,13 +550,13 @@ CFO / Strategic Management & Governance (SMG)`,
 
 Dapatkan maklumat lanjut mengenai jadual baharu tarif elektrik dengan melayari laman web Sabah Electricity di www.sesb.com.my/tariff.
 
-Untuk sebarang pertanyaan berkaitan tarif, sila hubungi SESB Careline di 15444 (Tekan 2).
+Untuk sebarang pertanyaan berkaitan tarif, sila hubungi SE Careline di 15444 (Tekan 2).
 
 Kekal terhubung dengan kami melalui saluran rasmi syarikat:
 • Facebook: facebook.com/sabahelectricity
 • Instagram: @sabahelectricity
 • TikTok: @sabahelectricity`,
-    location: 'SESB Customer Service Touchpoints Statewide',
+    location: 'SE Customer Service Touchpoints Statewide',
     imageUrl: null,
     isPinned: false,
     commentsEnabled: true,

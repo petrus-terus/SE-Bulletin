@@ -1,7 +1,7 @@
 {
-  "short_name": "SE Bulletin",
-  "name": "Sabah Electricity Bulletin",
-  "description": "Sabah Electricity Internal Corporate Bulletin & Social Communication PWA",
+  "short_name": "SE-Connect",
+  "name": "SE-Connect",
+  "description": "SE-Connect: the Sabah Electricity staff communication and collaboration app",
   "id": "/",
   "start_url": "/",
   "scope": "/",

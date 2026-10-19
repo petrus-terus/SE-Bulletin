@@ -126,7 +126,7 @@ export const QuoteBulletinModal: React.FC<Props> = ({
                 <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
                   public
                 </span>
-                <span>Wisma SESB Feed</span>
+                <span>Wisma SE Feed</span>
               </span>
             </div>
           </div>

@@ -1,5 +1,5 @@
 /**
- * Sabah Electricity Bulletin - Tenaga Nasional Berhad (TNB 5347) Real-Time Market Service
+ * SE-Connect - Tenaga Nasional Berhad (TNB 5347) Real-Time Market Service
  * Fetches actual live Bursa Malaysia market data via Yahoo Finance proxy (/api/market/tnb).
  * Incorporates in-memory caching and resilient fallback for offline/weekend trading hours.
  */

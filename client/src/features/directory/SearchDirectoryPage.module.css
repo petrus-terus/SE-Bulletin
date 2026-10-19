@@ -211,19 +211,52 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: transform 120ms var(--ease-expo), box-shadow 120ms ease-out;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms var(--ease-expo), box-shadow 120ms ease-out, border-color 120ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .employeeCard:hover {
     box-shadow: 0 4px 12px rgba(0, 85, 164, 0.08);
+    border-color: rgba(0, 85, 164, 0.25);
   }
+}
+
+.employeeCard:active {
+  transform: scale(0.985);
 }
 
 .empHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.empHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.empChevron {
+  font-size: 20px !important;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  transition: transform 140ms var(--ease-expo), opacity 140ms ease;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .employeeCard:hover .empChevron {
+    opacity: 1;
+    transform: translateX(2px);
+    color: var(--color-primary-text);
+  }
 }
 
 .avatarHolder {
@@ -294,58 +327,6 @@
   color: var(--color-text-body);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-}
-
-.empActionButtons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.contactBtn {
-  flex: 1;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-main);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-decoration: none;
-  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
-}
-
-.contactBtn:active {
-  transform: scale(0.96);
-  background: var(--color-surface-card);
-}
-
-.callExtBtn {
-  flex: 1;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  color: var(--color-forest-text);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: transform 120ms var(--ease-expo), background 120ms ease-out;
-}
-
-.callExtBtn:active {
-  transform: scale(0.96);
-  background: rgba(16, 185, 129, 0.2);
 }
 
 /* Department Directory Grid */

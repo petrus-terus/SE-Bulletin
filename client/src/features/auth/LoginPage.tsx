@@ -30,7 +30,7 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
       }
 
       if (onShowNotice) {
-        onShowNotice('Sign in successful! Welcome to SE Bulletin.');
+        onShowNotice('Sign in successful! Welcome to SE-Connect.');
       }
     } catch (err: any) {
       console.warn('[LoginPage] Sign in verification error:', err);
@@ -77,7 +77,7 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
         <div className={styles.heroContent}>
           <span className={styles.heroEyebrow}>Internal Staff Portal</span>
           <h1 className={styles.heroTitle}>
-            Welcome to Sabah Electricity <span className={styles.heroBrandHighlight}>SE Bulletin</span>
+            Welcome to <span className={styles.heroBrandHighlight}>SE-Connect</span>
           </h1>
           <p className={styles.heroSubtitle}>
             Energising Sabah with reliability, safety, and pride.
@@ -291,7 +291,7 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
 
         <footer className={styles.loginFooter}>
           <p className={styles.footerText}>
-            Wisma SESB HQ • Sabah Electricity Sdn. Bhd. • Pilot Staging
+            Wisma SE HQ • Sabah Electricity Sdn. Bhd. • Pilot Staging
           </p>
         </footer>
       </main>

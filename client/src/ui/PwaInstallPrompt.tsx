@@ -84,7 +84,7 @@ export const PwaInstallPrompt: React.FC = () => {
           <div className={styles.appIconWrapper}>
             <img
               src="/sesb_app_icon.png"
-              alt="SE Bulletin Icon"
+              alt="SE-Connect Icon"
               className={styles.appIcon}
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = '/favicon.svg';
@@ -93,7 +93,7 @@ export const PwaInstallPrompt: React.FC = () => {
           </div>
 
           <div className={styles.bannerText}>
-            <span className={styles.bannerTitle}>Install SE Bulletin</span>
+            <span className={styles.bannerTitle}>Install SE-Connect</span>
             <span className={styles.bannerSubtitle}>
               {isIos
                 ? 'Add to Home Screen for best experience'
@@ -107,7 +107,7 @@ export const PwaInstallPrompt: React.FC = () => {
             type="button"
             className={styles.installBtn}
             onClick={handleInstallClick}
-            aria-label={isIos ? 'Show iOS Installation Guide' : 'Install SE Bulletin App'}
+            aria-label={isIos ? 'Show iOS Installation Guide' : 'Install SE-Connect App'}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
               {isIos ? 'help_outline' : 'download'}

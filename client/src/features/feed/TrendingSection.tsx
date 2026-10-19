@@ -29,7 +29,7 @@ export const TrendingSection: React.FC<Props> = ({ posts, onSelectPost, onOpenCo
             <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#EF4444' }}>
               local_fire_department
             </span>
-            <span>Trending Across SESB</span>
+            <span>Trending Across SE</span>
           </span>
         </div>
         <span className={styles.subtext}>Most discussed updates statewide</span>
@@ -74,7 +74,7 @@ export const TrendingSection: React.FC<Props> = ({ posts, onSelectPost, onOpenCo
             {/* Author info & Discussion metrics */}
             <div className={styles.cardBottom}>
               <div className={styles.authorRow}>
-                <span className={styles.authorName}>{post.author?.name || 'SESB Staff'}</span>
+                <span className={styles.authorName}>{post.author?.name || 'SE Staff'}</span>
                 <span className={styles.dotSeparator}>•</span>
                 <span className="font-mono tabular-nums text-xs">{post.timestamp}</span>
               </div>

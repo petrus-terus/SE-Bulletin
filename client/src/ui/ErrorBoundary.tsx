@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   refresh
                 </span>
-                <span>Reload SE Bulletin</span>
+                <span>Reload SE-Connect</span>
               </button>
 
               <button

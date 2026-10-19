@@ -23,7 +23,6 @@ interface Props {
   onOpenCreate: () => void;
   onPostClick?: (post: Post) => void;
   onImageClick?: (url: string, title?: string) => void;
-  onCallExt?: (employee: Employee) => void;
   onLogout?: () => void;
   onUpdateProfile?: (updated: Employee) => void;
   onBookmarkToggle?: (postId: string) => void;
@@ -62,7 +61,7 @@ const SESB_ROLES = [
 ];
 
 const SESB_LOCATIONS = [
-  'Wisma SESB HQ, Kota Kinabalu',
+  'Wisma SE HQ, Kota Kinabalu',
   'Bangunan KWASA',
   'Tenom Pangi Hydro Power Station',
   'Sepanggar Bay Power Station',
@@ -83,7 +82,6 @@ export const ProfilePage: React.FC<Props> = ({
   onOpenCreate,
   onPostClick,
   onImageClick,
-  onCallExt,
   onUpdateProfile,
   onBookmarkToggle,
   onVotePoll,
@@ -458,35 +456,7 @@ export const ProfilePage: React.FC<Props> = ({
                   </span>
                   <span>Edit Profile</span>
                 </button>
-              ) : (
-                <>
-                  <a
-                    href={`mailto:${activeEmployee.email}`}
-                    className={styles.contactActionBtn}
-                    title={`Send email to ${activeEmployee.name}`}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      mail
-                    </span>
-                    <span>Email</span>
-                  </a>
-
-                  <button
-                    type="button"
-                    className={styles.callExtBtn}
-                    onClick={() => {
-                      if (onCallExt) {
-                        onCallExt(activeEmployee);
-                      }
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      call
-                    </span>
-                    <span className="font-mono tabular-nums">{activeEmployee.phoneExtension || 'Call Ext'}</span>
-                  </button>
-                </>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -563,7 +533,7 @@ export const ProfilePage: React.FC<Props> = ({
               </span>
               <div>
                 <h2 className={styles.onboardingTitle}>
-                  Welcome to SE Bulletin, {profileData.name.split(' ')[0]}! 👋
+                  Welcome to SE-Connect, {profileData.name.split(' ')[0]}! 👋
                 </h2>
                 <p className={styles.onboardingSubtitle}>
                   Set up your employee profile and publish your first bulletin to connect with Sabah Electricity colleagues.
@@ -765,7 +735,7 @@ export const ProfilePage: React.FC<Props> = ({
             <h3 className={styles.noPostsTitle}>No bulletins published yet</h3>
             <p className={styles.noPostsDesc}>
               {isOwnProfile
-                ? 'Share your department announcements, plant inspection logs, or safety notices with statewide SESB colleagues.'
+                ? 'Share your department announcements, plant inspection logs, or safety notices with statewide SE colleagues.'
                 : 'This staff member has not published any public bulletins yet.'}
             </p>
             {isOwnProfile && (

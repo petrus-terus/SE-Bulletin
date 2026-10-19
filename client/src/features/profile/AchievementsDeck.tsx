@@ -22,7 +22,7 @@ const ACHIEVEMENTS: Achievement[] = [
     tierName: 'Bronze Tier',
     title: 'Bronze Broadcaster',
     threshold: 1,
-    description: 'Publish 1 bulletin to the SESB internal network',
+    description: 'Publish 1 bulletin to the SE internal network',
   },
   {
     id: 'ach-silver',
@@ -30,7 +30,7 @@ const ACHIEVEMENTS: Achievement[] = [
     tierName: 'Silver Tier',
     title: 'Silver Correspondent',
     threshold: 5,
-    description: 'Publish 5 bulletins to the SESB internal network',
+    description: 'Publish 5 bulletins to the SE internal network',
   },
   {
     id: 'ach-gold',
@@ -38,7 +38,7 @@ const ACHIEVEMENTS: Achievement[] = [
     tierName: 'Gold Tier',
     title: 'Gold Champion',
     threshold: 10,
-    description: 'Publish 10 bulletins to the SESB internal network',
+    description: 'Publish 10 bulletins to the SE internal network',
   },
 ];
 
@@ -48,7 +48,7 @@ export const AchievementsDeck: React.FC<Props> = ({ bulletinCount }) => {
   const unlockedCount = ACHIEVEMENTS.filter((a) => bulletinCount >= a.threshold).length;
 
   return (
-    <section className={styles.achievementsSection} aria-label="SESB Honors & Achievements">
+    <section className={styles.achievementsSection} aria-label="SE Honors & Achievements">
       <div className={styles.sectionHeader}>
         <div className={styles.titleRow}>
           <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary-text)' }}>

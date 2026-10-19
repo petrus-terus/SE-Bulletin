@@ -613,3 +613,104 @@
     align-items: stretch;
   }
 }
+
+/* ===================================================================
+   Phase 1: Collapsible Telemetry Accordion & Toggle Pill (Emil Kowalski)
+   =================================================================== */
+
+.telemetryToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border: 1px solid rgba(0, 85, 164, 0.14);
+  background: rgba(255, 255, 255, 0.85);
+  color: #1E293B;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms var(--ease-expo), background 200ms ease, border-color 200ms ease;
+  user-select: none;
+}
+
+.telemetryToggleBtn:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .telemetryToggleBtn:hover {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(0, 85, 164, 0.3);
+  }
+}
+
+.themeNight .telemetryToggleBtn {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  color: #E2E8F0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .themeNight .telemetryToggleBtn:hover {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: rgba(56, 189, 248, 0.45);
+  }
+}
+
+.telemetryDivider {
+  color: #94A3B8;
+  opacity: 0.6;
+}
+
+.toggleChevron {
+  font-size: 17px !important;
+  color: #64748B;
+  transition: transform 260ms var(--ease-expo);
+}
+
+.themeNight .toggleChevron {
+  color: #94A3B8;
+}
+
+.toggleChevronOpen {
+  transform: rotate(180deg);
+}
+
+/* Collapsible Grid Animation (60fps GPU, zero layout thrashing) */
+.collapsibleTelemetry {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.collapsibleTelemetryOpen {
+  grid-template-rows: 1fr;
+}
+
+.collapsibleTelemetryInner {
+  overflow: hidden;
+  min-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 220ms ease-out, transform 240ms var(--ease-expo);
+}
+
+.collapsibleTelemetryOpen .collapsibleTelemetryInner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsibleTelemetry,
+  .collapsibleTelemetryInner,
+  .toggleChevron {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+

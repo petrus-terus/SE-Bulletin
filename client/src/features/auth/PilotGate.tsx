@@ -132,7 +132,7 @@ export const PilotGate: React.FC<Props> = ({ onUnlock }) => {
               <span>Verifying Passcode...</span>
             ) : (
               <>
-                <span>Unlock SE Bulletin</span>
+                <span>Unlock SE-Connect</span>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   lock_open
                 </span>

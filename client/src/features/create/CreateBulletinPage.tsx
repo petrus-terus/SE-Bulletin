@@ -26,7 +26,7 @@ interface AttachedPhoto {
 }
 
 const COMMON_LOCATIONS = [
-  'Wisma SESB HQ',
+  'Wisma SE HQ',
   'Tenom Pangi Hydro',
   'Sepanggar Power Station',
   'Sandakan Regional Station',
@@ -56,7 +56,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
   const [audienceScope, setAudienceScope] = useState('All Sabah Staff');
   const [isAudienceOpen, setIsAudienceOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(
-    initialPost?.location || activeUser.officeLocation || 'Wisma SESB HQ'
+    initialPost?.location || activeUser.officeLocation || 'Wisma SE HQ'
   );
   const [isPinned, setIsPinned] = useState(Boolean(initialPost?.isPinned));
   const [allowComments, setAllowComments] = useState(initialPost ? initialPost.commentsEnabled : true);
@@ -240,7 +240,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
     }
 
     const newPost: CreatePostPayload = {
-      title: title.trim() || 'Sabah Electricity Bulletin',
+      title: title.trim() || 'SE-Connect',
       content: content.trim(),
       authorName: activeUser.name,
       department: currentDept.name,
@@ -633,7 +633,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
                     <span className="material-symbols-outlined" style={{ color: '#0055A4' }}>
                       how_to_vote
                     </span>
-                    <span>SESB Staff Poll Creator</span>
+                    <span>SE Staff Poll Creator</span>
                   </div>
                   <button
                     type="button"
@@ -747,7 +747,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
               <div className={styles.modalSheetHeader}>
                 <div className={styles.modalSheetTitleWrap}>
                   <span className={styles.modalSheetTitle}>Select Department</span>
-                  <span className={styles.modalSheetSub}>Choose which SESB department this bulletin originates from</span>
+                  <span className={styles.modalSheetSub}>Choose which SE department this bulletin originates from</span>
                 </div>
                 <button
                   type="button"

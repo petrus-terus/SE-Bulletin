@@ -62,7 +62,6 @@ export interface TabRouterProps {
   onNotificationClick: (notif: AppNotification) => void;
   onMarkAllNotificationsAsRead: () => void;
   onImageClick: (url: string, title?: string) => void;
-  onCallExt: (emp: Employee) => void;
   onLogout: () => void;
   onUpdateProfile: (updatedUser: Employee) => void;
 }
@@ -100,7 +99,6 @@ export const TabRouter: React.FC<TabRouterProps> = ({
   onNotificationClick,
   onMarkAllNotificationsAsRead,
   onImageClick,
-  onCallExt,
   onLogout,
   onUpdateProfile,
 }) => {
@@ -122,7 +120,7 @@ export const TabRouter: React.FC<TabRouterProps> = ({
           {/* SESI Knowledge Hub Cross-Promo Banner */}
           <SesiKnowledgeHubBanner />
 
-          {/* Trending Across SESB Section */}
+          {/* Trending Across SE Section */}
           <TrendingSection
             posts={posts}
             onSelectPost={onSelectPost}
@@ -272,7 +270,6 @@ export const TabRouter: React.FC<TabRouterProps> = ({
             onOpenCreate={onOpenCreate}
             onPostClick={onSelectPost}
             onImageClick={onImageClick}
-            onCallExt={onCallExt}
             onLogout={onLogout}
             onUpdateProfile={onUpdateProfile}
             onBookmarkToggle={onBookmarkToggle}

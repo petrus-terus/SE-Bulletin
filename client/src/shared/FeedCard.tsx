@@ -201,15 +201,17 @@ export const FeedCard: React.FC<Props> = ({
         <div ref={optionsWrapperRef} className={styles.optionsWrapper}>
           <button
             type="button"
-            className={styles.optionsButton}
+            className={`${styles.optionsButton} ${post.isBookmarked ? styles.optionsButtonBookmarked : ''}`}
             aria-label="Post options"
             aria-expanded={isMenuOpen}
             onClick={(e) => {
               e.stopPropagation();
               setIsMenuOpen(!isMenuOpen);
             }}
+            title={post.isBookmarked ? 'Bookmarked • Click for options' : 'Post options'}
           >
             <span className="material-symbols-outlined">more_horiz</span>
+            {post.isBookmarked && <span className={styles.bookmarkedDot} aria-hidden="true" />}
           </button>
 
           {isMenuOpen && (
@@ -218,6 +220,51 @@ export const FeedCard: React.FC<Props> = ({
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* 1. Bookmark / Save Post */}
+              <button
+                type="button"
+                className={`${styles.optionsMenuItem} ${post.isBookmarked ? styles.optionsMenuItemActive : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBookmarkToggle(post.id);
+                  setIsMenuOpen(false);
+                }}
+                role="menuitem"
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: '18px',
+                    fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
+                  }}
+                >
+                  bookmark
+                </span>
+                <span>{post.isBookmarked ? 'Remove from Saved' : 'Save to Bookmarks'}</span>
+              </button>
+
+              {/* 2. Share Bulletin */}
+              <button
+                type="button"
+                className={styles.optionsMenuItem}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMenuOpen(false);
+                  if (onSharePost) {
+                    onSharePost(post);
+                  } else {
+                    handleCopyLink(e);
+                  }
+                }}
+                role="menuitem"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  share
+                </span>
+                <span>Share Bulletin</span>
+              </button>
+
+              {/* 3. Copy Link */}
               <button
                 type="button"
                 className={styles.optionsMenuItem}
@@ -229,6 +276,8 @@ export const FeedCard: React.FC<Props> = ({
                 </span>
                 <span>{linkCopied ? 'Link Copied!' : 'Copy Link'}</span>
               </button>
+
+              {(canEdit || canDelete) && <div className={styles.optionsMenuDivider} />}
 
               {canEdit && onEditPost && (
                 <button
@@ -507,62 +556,22 @@ export const FeedCard: React.FC<Props> = ({
             <span className="tabular-nums font-mono">{post.resharesCount || 0}</span>
           </button>
 
-          {/* View Count */}
+        </div>
+
+        <div className={styles.rightActions}>
+          {/* View Count floated cleanly to the right */}
           <span
             className={styles.viewMetric}
             title={`${(post.viewsCount || 0).toLocaleString()} Views`}
             aria-label={`${post.viewsCount || 0} views`}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
               visibility
             </span>
             <span className="tabular-nums font-mono">
               {formatCompactNumber(post.viewsCount || 0)}
             </span>
           </span>
-        </div>
-
-        <div className={styles.rightActions}>
-          {/* Bookmark Toggle */}
-          <button
-            type="button"
-            className={`${styles.actionButton} ${post.isBookmarked ? styles.bookmarkActive : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBookmarkToggle(post.id);
-            }}
-            aria-label="Bookmark post"
-            title="Save post"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              bookmark
-            </span>
-          </button>
-
-          {/* Share Button */}
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onSharePost) {
-                onSharePost(post);
-              } else {
-                handleCopyLink(e);
-              }
-            }}
-            aria-label="Share post"
-            title="Share post"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-              share
-            </span>
-          </button>
         </div>
       </div>
 

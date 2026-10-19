@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee } from '@/types/bulletin';
 import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
+import { APP_NAME } from '@/constants/brand';
 import styles from './BrandSidebarDrawer.module.css';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
   currentUser: Employee;
   savedCount: number;
   onOpenSavedPosts: () => void;
+  onOpenShowcase: () => void;
   onLogout: () => void;
 }
 
@@ -19,6 +21,7 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
   currentUser,
   savedCount,
   onOpenSavedPosts,
+  onOpenShowcase,
   onLogout,
 }) => {
   // Close on ESC key
@@ -78,7 +81,7 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
               }}
             />
             <div className={styles.brandText}>
-              <span className={styles.brandTitle}>SE Bulletin</span>
+              <span className={styles.brandTitle}>{APP_NAME}</span>
               <span className={styles.brandSubtitle}>Sabah Electricity Sdn. Bhd.</span>
             </div>
           </div>
@@ -146,6 +149,31 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
             </div>
           </button>
 
+          {/* Screen tour */}
+          <button
+            type="button"
+            className={styles.menuItem}
+            onClick={() => {
+              onClose();
+              onOpenShowcase();
+            }}
+          >
+            <div className={styles.menuItemLeft}>
+              <div className={styles.menuIconWrap}>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                  devices
+                </span>
+              </div>
+              <div className={styles.menuItemText}>
+                <span className={styles.menuItemLabel}>Screen Tour</span>
+                <span className={styles.menuItemSub}>Explore every screen in {APP_NAME}</span>
+              </div>
+            </div>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-text-muted)' }}>
+              chevron_right
+            </span>
+          </button>
+
           <div className={styles.divider} />
 
           {/* 2. Appearance Selector */}
@@ -185,7 +213,7 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
 
         {/* Drawer Footer */}
         <div className={styles.drawerFooter}>
-          <span className={styles.footerNote}>Wisma SESB HQ • Phase 1 Pilot</span>
+          <span className={styles.footerNote}>Wisma SE HQ • Phase 1 Pilot</span>
           <span className={styles.footerSub}>Sabah Electricity Corporate Intranet</span>
         </div>
       </nav>

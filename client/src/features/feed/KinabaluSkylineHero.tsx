@@ -66,6 +66,25 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     return `${dayName}, ${dateNum} ${monthName}`;
   });
 
+  // Persistent Collapsible Telemetry State (User Preference)
+  const [isTelemetryExpanded, setIsTelemetryExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sesb_hero_telemetry_expanded') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleTelemetry = () => {
+    setIsTelemetryExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sesb_hero_telemetry_expanded', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   // Kota Kinabalu Live Weather State
   const [weather, setWeather] = useState<KotaKinabaluWeather>({
     temperature: 28,
@@ -90,7 +109,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
     };
   }, []);
 
-  // Division text: replace Bahagian with Division or prefix with Division, no SESB ID
+  // Division text: replace Bahagian with Division or prefix with Division, no SE ID
   const divisionLabel = useMemo(() => {
     if (!department) return 'Division Operasi & Grid';
     let formatted = department.trim();
@@ -307,7 +326,7 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
 
       {/* Main Content Layout */}
       <div className={styles.cardContent}>
-        {/* Top Status Row: Left Date Pill & Right Live Weather Pill */}
+        {/* Top Status Row: Left Date Pill & Right Interactive Collapsible Telemetry Toggle Pill */}
         <div className={styles.metaRow}>
           <div className={styles.pillBadge}>
             <span className="material-symbols-outlined" style={{ fontSize: '15px' }} aria-hidden="true">
@@ -316,7 +335,14 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             <span className="font-mono tabular-nums">{currentDateStr}</span>
           </div>
 
-          <div className={styles.pillBadge} title={`Cuaca Semasa Kota Kinabalu: ${weather.condition}, ${weather.temperature}°C`}>
+          <button
+            type="button"
+            className={`${styles.telemetryToggleBtn} ${isTelemetryExpanded ? styles.telemetryToggleBtnActive : ''}`}
+            onClick={toggleTelemetry}
+            aria-expanded={isTelemetryExpanded}
+            aria-label={isTelemetryExpanded ? 'Sembunyikan Telemetri Bursa & Cuaca' : 'Papar Telemetri Bursa & Cuaca'}
+            title="Ketik untuk togol telemetri Bursa & Cuaca"
+          >
             <span
               className="material-symbols-outlined"
               style={{ fontSize: '15px', color: isDark ? '#38BDF8' : '#0284C7' }}
@@ -324,11 +350,21 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
             >
               {weather.icon}
             </span>
-            <span className={styles.weatherTextWrap}>
-              KK <strong className="font-mono tabular-nums font-semibold">{weather.temperature}°C</strong>
-              <span className={styles.weatherCondition}> • {weather.condition}</span>
+            <span className="font-mono tabular-nums font-semibold" style={{ fontSize: '12px' }}>
+              {weather.temperature}°C
             </span>
-          </div>
+            <span className={styles.telemetryDivider} aria-hidden="true">•</span>
+            <span className={styles.brandLiveDot} aria-hidden="true" />
+            <span className="font-mono tabular-nums font-semibold" style={{ fontSize: '12px' }}>
+              RM {displayPrice.toFixed(2)}
+            </span>
+            <span
+              className={`material-symbols-outlined ${styles.toggleChevron} ${isTelemetryExpanded ? styles.toggleChevronOpen : ''}`}
+              aria-hidden="true"
+            >
+              expand_more
+            </span>
+          </button>
         </div>
 
         {/* Central Executive Greeting */}
@@ -341,134 +377,142 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */}
-        <div className={styles.sharesWidget} aria-label="Tenaga Nasional Berhad Market Telemetry">
-          {/* Top Pill Row: TNB Bursa 5347 on Left & Live Status on Right */}
-          <div className={styles.sharesTopRow}>
-            <div className={styles.brandPill} title="Tenaga Nasional Berhad (Bursa: 5347)">
-              <span className={styles.brandLiveDot} />
-              <span className={styles.brandPillText}>TNB • Bursa 5347</span>
-            </div>
+        {/* Collapsible Telemetry Accordion (Smooth 60fps GPU Grid Animation) */}
+        <div
+          className={`${styles.collapsibleTelemetry} ${isTelemetryExpanded ? styles.collapsibleTelemetryOpen : ''}`}
+          aria-hidden={!isTelemetryExpanded}
+        >
+          <div className={styles.collapsibleTelemetryInner}>
+            {/* Real-time Tenaga Shares (TNB 5347 • Bursa Malaysia) Minimalist Telemetry Card */}
+            <div className={styles.sharesWidget} aria-label="Tenaga Nasional Berhad Market Telemetry">
+              {/* Top Pill Row: TNB Bursa 5347 on Left & Live Status on Right */}
+              <div className={styles.sharesTopRow}>
+                <div className={styles.brandPill} title="Tenaga Nasional Berhad (Bursa: 5347)">
+                  <span className={styles.brandLiveDot} />
+                  <span className={styles.brandPillText}>TNB • Bursa 5347</span>
+                </div>
 
-            <div className={styles.liveStatusPill}>
-              <span className="font-mono tabular-nums">
-                {activePoint
-                  ? 'Live 11:30 MYT'
-                  : marketData?.lastUpdated
-                  ? `Live ${marketData.lastUpdated}`
-                  : 'Live 11:30 MYT'}
-              </span>
-            </div>
-          </div>
+                <div className={styles.liveStatusPill}>
+                  <span className="font-mono tabular-nums">
+                    {activePoint
+                      ? 'Live 11:30 MYT'
+                      : marketData?.lastUpdated
+                      ? `Live ${marketData.lastUpdated}`
+                      : 'Live 11:30 MYT'}
+                  </span>
+                </div>
+              </div>
 
-          {/* Main Content Row: Price on Left, Compact Chart + Day Range on Right */}
-          <div className={styles.sharesBottomRow}>
-            {/* Left Column: Compact Bold Price + Change */}
-            <div className={styles.priceContainer}>
-              <span className={styles.currencyLabel}>MYR</span>
-              <span className={`font-mono tabular-nums ${styles.priceNumber}`}>
-                {displayPrice.toFixed(2)}
-              </span>
-              <span className={`${styles.changeBadge} ${isPositive ? styles.changeBadgeUp : styles.changeBadgeDown}`}>
-                <span className={styles.changeArrow}>{isPositive ? '▲' : '▼'}</span>
-                <span className="font-mono tabular-nums">
-                  {isPositive ? '+' : ''}
-                  {pctDiff.toFixed(2)}%
-                </span>
-              </span>
-            </div>
+              {/* Main Content Row: Price on Left, Compact Chart + Day Range on Right */}
+              <div className={styles.sharesBottomRow}>
+                {/* Left Column: Compact Bold Price + Change */}
+                <div className={styles.priceContainer}>
+                  <span className={styles.currencyLabel}>MYR</span>
+                  <span className={`font-mono tabular-nums ${styles.priceNumber}`}>
+                    {displayPrice.toFixed(2)}
+                  </span>
+                  <span className={`${styles.changeBadge} ${isPositive ? styles.changeBadgeUp : styles.changeBadgeDown}`}>
+                    <span className={styles.changeArrow}>{isPositive ? '▲' : '▼'}</span>
+                    <span className="font-mono tabular-nums">
+                      {isPositive ? '+' : ''}
+                      {pctDiff.toFixed(2)}%
+                    </span>
+                  </span>
+                </div>
 
-            {/* Right Column: Compact Sparkline & Day Range Slider */}
-            <div
-              className={styles.chartSideContainer}
-              onPointerDown={(e) => {
-                try {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                } catch {}
-                handlePointerAction(e);
-              }}
-              onPointerMove={(e) => {
-                if (isScrubbing || e.pointerType === 'mouse') {
-                  handlePointerAction(e);
-                }
-              }}
-              onPointerUp={(e) => {
-                try {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                } catch {}
-                handlePointerEnd();
-              }}
-              onPointerCancel={handlePointerEnd}
-              onPointerLeave={(e) => {
-                if (e.pointerType === 'mouse') {
-                  handlePointerEnd();
-                }
-              }}
-            >
-              {/* Floating Magnetic Tooltip above active touch point */}
-              {activePoint && (
+                {/* Right Column: Compact Sparkline & Day Range Slider */}
                 <div
-                  className={styles.floatingTooltip}
-                  style={{
-                    left: `${(activePoint.x / sparkWidth) * 100}%`,
+                  className={styles.chartSideContainer}
+                  onPointerDown={(e) => {
+                    try {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    } catch {}
+                    handlePointerAction(e);
+                  }}
+                  onPointerMove={(e) => {
+                    if (isScrubbing || e.pointerType === 'mouse') {
+                      handlePointerAction(e);
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    try {
+                      e.currentTarget.releasePointerCapture(e.pointerId);
+                    } catch {}
+                    handlePointerEnd();
+                  }}
+                  onPointerCancel={handlePointerEnd}
+                  onPointerLeave={(e) => {
+                    if (e.pointerType === 'mouse') {
+                      handlePointerEnd();
+                    }
                   }}
                 >
-                  <span className={`font-mono tabular-nums ${styles.tooltipPrice}`}>
-                    {activePoint.price.toFixed(2)}
-                  </span>
-                  <span className={styles.tooltipDot}>•</span>
-                  <span className={`font-mono tabular-nums ${styles.tooltipTime}`}>
-                    {activePoint.timeStr}
-                  </span>
-                </div>
-              )}
+                  {/* Floating Magnetic Tooltip above active touch point */}
+                  {activePoint && (
+                    <div
+                      className={styles.floatingTooltip}
+                      style={{
+                        left: `${(activePoint.x / sparkWidth) * 100}%`,
+                      }}
+                    >
+                      <span className={`font-mono tabular-nums ${styles.tooltipPrice}`}>
+                        {activePoint.price.toFixed(2)}
+                      </span>
+                      <span className={styles.tooltipDot}>•</span>
+                      <span className={`font-mono tabular-nums ${styles.tooltipTime}`}>
+                        {activePoint.timeStr}
+                      </span>
+                    </div>
+                  )}
 
-              {/* Mini Sparkline Curve */}
-              <svg
-                className={styles.miniSparklineSvg}
-                viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
-                preserveAspectRatio="none"
-              >
-                {linePath && (
-                  <path
-                    d={linePath}
-                    fill="none"
-                    stroke={strokeColor}
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-                {/* Active or Current End Dot */}
-                {coordPoints.length > 0 && (
-                  <circle
-                    cx={activePoint ? activePoint.x : coordPoints[coordPoints.length - 1].x}
-                    cy={activePoint ? activePoint.y : coordPoints[coordPoints.length - 1].y}
-                    r="3"
-                    fill={strokeColor}
-                    stroke={isDark ? '#0A101D' : '#FFFFFF'}
-                    strokeWidth="1.2"
-                  />
-                )}
-              </svg>
-
-              {/* Day Range Telemetry: 13.10 ────────●──────── 13.28 */}
-              <div className={styles.miniDayRange}>
-                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
-                  {dayLow.toFixed(2)}
-                </span>
-                <div className={styles.rangeTrack}>
-                  <div className={styles.rangeTrackLine} />
-                  <div
-                    className={styles.rangeIndicator}
-                    style={{ left: `${rangeProgress}%` }}
+                  {/* Mini Sparkline Curve */}
+                  <svg
+                    className={styles.miniSparklineSvg}
+                    viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
+                    preserveAspectRatio="none"
                   >
-                    <span className={styles.rangeIndicatorDot} />
+                    {linePath && (
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                    {/* Active or Current End Dot */}
+                    {coordPoints.length > 0 && (
+                      <circle
+                        cx={activePoint ? activePoint.x : coordPoints[coordPoints.length - 1].x}
+                        cy={activePoint ? activePoint.y : coordPoints[coordPoints.length - 1].y}
+                        r="3"
+                        fill={strokeColor}
+                        stroke={isDark ? '#0A101D' : '#FFFFFF'}
+                        strokeWidth="1.2"
+                      />
+                    )}
+                  </svg>
+
+                  {/* Day Range Telemetry: 13.10 ────────●──────── 13.28 */}
+                  <div className={styles.miniDayRange}>
+                    <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+                      {dayLow.toFixed(2)}
+                    </span>
+                    <div className={styles.rangeTrack}>
+                      <div className={styles.rangeTrackLine} />
+                      <div
+                        className={styles.rangeIndicator}
+                        style={{ left: `${rangeProgress}%` }}
+                      >
+                        <span className={styles.rangeIndicatorDot} />
+                      </div>
+                    </div>
+                    <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
+                      {dayHigh.toFixed(2)}
+                    </span>
                   </div>
                 </div>
-                <span className={`font-mono tabular-nums ${styles.rangeBound}`}>
-                  {dayHigh.toFixed(2)}
-                </span>
               </div>
             </div>
           </div>

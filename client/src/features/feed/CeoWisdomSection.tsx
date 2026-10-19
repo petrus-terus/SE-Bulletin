@@ -90,7 +90,7 @@ export const CeoWisdomSection: React.FC<Props> = ({
               <span className={styles.roleTag}>CEO</span>
             </div>
             <span className={styles.authorMeta}>
-              Chief Executive Officer • Executive Suite, Wisma SESB
+              Chief Executive Officer • Executive Suite, Wisma SE
               {ceoPost?.timestamp ? ` • ${ceoPost.timestamp}` : ''}
             </span>
           </div>

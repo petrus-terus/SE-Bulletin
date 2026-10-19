@@ -126,7 +126,7 @@ export function usePostActions({
             : post.poll.totalVotes + 1;
 
           setToast({
-            message: currentVoted ? 'Vote changed' : 'Vote submitted to SESB poll',
+            message: currentVoted ? 'Vote changed' : 'Vote submitted to SE poll',
             icon: 'how_to_vote',
           });
 
@@ -279,7 +279,7 @@ export function usePostActions({
     if (navigator.share) {
       navigator
         .share({
-          title: post.title || 'Sabah Electricity Bulletin',
+          title: post.title || 'SE-Connect',
           text: post.content.slice(0, 100),
           url,
         })

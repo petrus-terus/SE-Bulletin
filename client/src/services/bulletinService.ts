@@ -48,7 +48,7 @@ function markPostIdAsViewed(postId: string) {
  * Universal Bulletin Service Layer (Repository Pattern)
  * 
  * Protects frontend components from tight coupling with Supabase or any specific backend.
- * When SESB approves the project for internal deployment, this service can easily be
+ * When SE approves the project for internal deployment, this service can easily be
  * redirected to ASP.NET Core 8 Web API + SQL Server without changing React UI code.
  */
 class BulletinService {
@@ -174,7 +174,7 @@ class BulletinService {
         isVerified: currentUser.isVerified ?? true,
       },
       timestamp: 'Just now',
-      location: 'Wisma SESB HQ',
+      location: 'Wisma SE HQ',
       imageUrl: payload.mediaUrls?.[0] || payload.imageUrl || null,
       mediaUrls: payload.mediaUrls,
       isPinned: Boolean(payload.isPinned),
@@ -644,7 +644,7 @@ class BulletinService {
         email: data.email,
         avatarUrl: data.avatar_url || '/sabah_electricity_logo.png',
         coverUrl: data.cover_url || '/grid_horizon_hero.jpg',
-        officeLocation: data.office_location || 'Wisma SESB HQ, Kota Kinabalu',
+        officeLocation: data.office_location || 'Wisma SE HQ, Kota Kinabalu',
         phoneExtension: data.phone_extension || 'Ext. 4102',
         bio: data.bio || '',
         role: (data.role as any) || 'GeneralStaff',
@@ -689,7 +689,7 @@ class BulletinService {
         email: row.email,
         avatarUrl: row.avatar_url || '/sabah_electricity_logo.png',
         coverUrl: row.cover_url || '/grid_horizon_hero.jpg',
-        officeLocation: row.office_location || 'Wisma SESB HQ, Kota Kinabalu',
+        officeLocation: row.office_location || 'Wisma SE HQ, Kota Kinabalu',
         phoneExtension: row.phone_extension || 'Ext. 4102',
         bio: row.bio || '',
         role: row.role || 'GeneralStaff',
@@ -740,7 +740,7 @@ class BulletinService {
             email: employee.email,
             avatar_url: employee.avatarUrl || '/sabah_electricity_logo.png',
             cover_url: employee.coverUrl || '/grid_horizon_hero.jpg',
-            office_location: employee.officeLocation || 'Wisma SESB HQ, Kota Kinabalu',
+            office_location: employee.officeLocation || 'Wisma SE HQ, Kota Kinabalu',
             phone_extension: employee.phoneExtension || 'Ext. 4102',
             bio: employee.bio || '',
             role: employee.role || 'GeneralStaff',

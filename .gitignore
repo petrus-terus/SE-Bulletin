@@ -44,3 +44,5 @@ Thumbs.db
 *.log
 output/
 scratch/
+brag-output/
+brag-output-mobile/

@@ -61,6 +61,7 @@ export function App() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
   const [isBrandSidebarOpen, setIsBrandSidebarOpen] = useState(false);
+  const [isShowcaseOpen, setIsShowcaseOpen] = useState(false);
   const [isSavedPostsOpen, setIsSavedPostsOpen] = useState(false);
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [activeResharePostId, setActiveResharePostId] = useState<string | null>(null);
@@ -138,14 +139,14 @@ export function App() {
             const fallbackUser: Employee = {
               id: user.id,
               employeeId: 'SESB-' + user.id.slice(0, 4).toUpperCase(),
-              name: user.email ? user.email.split('@')[0] : 'SESB Staff',
-              fullName: user.email || 'SESB Staff',
+              name: user.email ? user.email.split('@')[0] : 'SE Staff',
+              fullName: user.email || 'SE Staff',
               designation: 'Sabah Electricity Staff',
               department: 'Operations',
               email: user.email || 'staff@sesb.com.my',
               avatarUrl: '/sabah_electricity_logo.png',
               coverUrl: '/grid_horizon_hero.jpg',
-              officeLocation: 'Wisma SESB HQ, Kota Kinabalu',
+              officeLocation: 'Wisma SE HQ, Kota Kinabalu',
               phoneExtension: 'Ext. 4102',
               bio: 'Sabah Electricity Staff Member',
               role: 'GeneralStaff',
@@ -490,12 +491,6 @@ export function App() {
               setToast({ message: 'All notifications marked as read', icon: 'done_all' });
             }}
             onImageClick={(url, title) => setLightboxImage({ url, title })}
-            onCallExt={(emp) =>
-              setToast({
-                message: `Calling ${emp.name} (${emp.phoneExtension || 'Ext. 4102'})...`,
-                icon: 'phone_in_talk',
-              })
-            }
             onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
           />
@@ -560,6 +555,18 @@ export function App() {
           setIsSavedPostsOpen(true);
         }}
         onLogout={handleLogout}
+        isShowcaseOpen={isShowcaseOpen}
+        onOpenShowcase={() => setIsShowcaseOpen(true)}
+        onCloseShowcase={() => setIsShowcaseOpen(false)}
+        onOpenScreen={(target) => {
+          setSelectedPostId(null);
+          if (target === 'create') {
+            setIsCreateOpen(true);
+            return;
+          }
+          if (target === 'profile') setViewedProfileEmployee(null);
+          setActiveTab(target);
+        }}
         savedCount={posts.filter((p) => p.isBookmarked).length}
         isSavedPostsOpen={isSavedPostsOpen}
         onCloseSavedPosts={() => setIsSavedPostsOpen(false)}

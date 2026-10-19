@@ -3,7 +3,7 @@ import styles from './DesktopWidgetsRail.module.css';
 
 export const DesktopWidgetsRail: React.FC = () => {
   return (
-    <aside className={styles.rail} aria-label="SESB Operations & Grid Info">
+    <aside className={styles.rail} aria-label="SE Operations & Grid Info">
       {/* 1. Live Grid Telemetry Widget */}
       <div className={styles.widgetCard}>
         <div className={styles.widgetHeader}>
@@ -82,12 +82,12 @@ export const DesktopWidgetsRail: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. SESB Internal Notice Card */}
+      {/* 3. SE Internal Notice Card */}
       <div className={styles.eventCard}>
         <span className={styles.eventTag}>Upcoming Event</span>
         <h3 className={styles.eventTitle}>Kinabalu Eco-Run 2026</h3>
         <p className={styles.eventMeta}>
-          Oct 14, 2026 • Wisma SESB Sports Arena
+          Oct 14, 2026 • Wisma SE Sports Arena
         </p>
       </div>
     </aside>

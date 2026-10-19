@@ -193,6 +193,48 @@ export const PostDetailView: React.FC<Props> = ({
         <div className={styles.headerSpacer} />
 
         <div className={styles.headerActions}>
+          {/* Bookmark Toggle Button */}
+          <button
+            type="button"
+            className={`${styles.iconButton} ${post.isBookmarked ? styles.iconButtonActive : ''}`}
+            onClick={() => onBookmarkToggle(post.id)}
+            title={post.isBookmarked ? 'Remove bookmark' : 'Bookmark bulletin'}
+            aria-label={post.isBookmarked ? 'Remove bookmark' : 'Bookmark bulletin'}
+          >
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: '22px',
+                fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
+              }}
+            >
+              bookmark
+            </span>
+          </button>
+
+          {/* Share Bulletin Button */}
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: post.title || 'SE-Connect',
+                  url: window.location.href,
+                }).catch(() => {});
+              } else {
+                handleCopyLink();
+              }
+            }}
+            title="Share bulletin"
+            aria-label="Share bulletin"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
+              {linkCopied ? 'done' : 'share'}
+            </span>
+          </button>
+
+          {/* More Options */}
           <button
             type="button"
             className={styles.iconButton}
@@ -455,7 +497,10 @@ export const PostDetailView: React.FC<Props> = ({
               </span>
             </button>
 
-            {/* View Count Metric */}
+          </div>
+
+          <div className={styles.engagementRight}>
+            {/* View Count Metric floated cleanly to right */}
             <span
               className={styles.statItem}
               title={`${(post.viewsCount || 1).toLocaleString()} Views`}
@@ -468,38 +513,6 @@ export const PostDetailView: React.FC<Props> = ({
                 {formatCompactNumber(post.viewsCount || 1)}
               </span>
             </span>
-          </div>
-
-          <div className={styles.engagementRight}>
-            {/* Bookmark Toggle */}
-            <button
-              type="button"
-              className={`${styles.engagementBtn} ${post.isBookmarked ? styles.bookmarkActive : ''}`}
-              onClick={() => onBookmarkToggle(post.id)}
-              aria-label={post.isBookmarked ? 'Remove bookmark' : 'Bookmark post'}
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontSize: '20px',
-                  fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
-                }}
-              >
-                bookmark
-              </span>
-            </button>
-
-            {/* Share / Copy Link */}
-            <button
-              type="button"
-              className={styles.engagementBtn}
-              onClick={handleCopyLink}
-              aria-label="Copy link to bulletin"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                {linkCopied ? 'check' : 'share'}
-              </span>
-            </button>
           </div>
         </div>
 

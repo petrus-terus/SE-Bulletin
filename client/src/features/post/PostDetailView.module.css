@@ -48,6 +48,50 @@
   flex: 1;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconButton {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease-out, background 150ms ease, color 150ms ease;
+}
+
+.iconButton:active {
+  transform: scale(0.92);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .iconButton:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text-main);
+  }
+}
+
+.iconButtonActive {
+  color: var(--color-primary-text, #0055A4) !important;
+  background: var(--color-primary-light, #EBF3FB);
+}
+
+.themeNight .iconButtonActive {
+  color: #38BDF8 !important;
+  background: rgba(56, 189, 248, 0.14);
+}
+
 /* Bottom Action Sheet for Post Options */
 .actionSheetBackdrop {
   position: fixed;
@@ -319,7 +363,7 @@
   width: 100%;
   border-radius: var(--radius-card);
   overflow: hidden;
-  background: #0B0F17;
+  background: var(--color-surface-muted, #F1F5F9);
   border: 1px solid var(--color-border-subtle);
   cursor: pointer;
   touch-action: manipulation;
@@ -328,14 +372,15 @@
 }
 
 .mediaFrame:active {
-  transform: scale(0.99);
+  transform: scale(0.985);
 }
 
 .fullImage {
   width: 100%;
   height: auto;
-  max-height: 600px;
-  object-fit: contain;
+  max-height: 520px;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
   display: block;
 }
 

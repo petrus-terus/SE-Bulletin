@@ -300,7 +300,7 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
                     {isCompressing ? 'Optimizing Photo...' : 'Take Photo or Choose from Gallery'}
                   </h3>
                   <p className={styles.placeholderSub}>
-                    Capture photo at substation, power station, or Wisma SESB office
+                    Capture photo at substation, power station, or Wisma SE office
                   </p>
                 </div>
               )}

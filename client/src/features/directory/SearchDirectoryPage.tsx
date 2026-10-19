@@ -3,7 +3,6 @@ import type { Department, Employee, Post } from '@/types/bulletin';
 import { ALL_EMPLOYEES, getRegisteredEmployees } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
 import { FeedCard } from '@/shared/FeedCard';
-import { Toast } from '@/ui/Toast';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import styles from './SearchDirectoryPage.module.css';
 
@@ -75,7 +74,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | 'staff' | 'circulars' | 'departments'>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const scopeChipsRef = useHorizontalScroll<HTMLDivElement>();
   const trendingTagsRef = useHorizontalScroll<HTMLDivElement>();
@@ -295,30 +293,37 @@ export const SearchDirectoryPage: React.FC<Props> = ({
 
             <div className={styles.staffGrid}>
               {filteredEmployees.map((emp) => (
-                <div key={emp.id} className={styles.employeeCard}>
-                  <div
-                    className={styles.empHeader}
-                    onClick={() => onViewProfile?.(emp)}
-                    style={onViewProfile ? { cursor: 'pointer' } : undefined}
-                    title={onViewProfile ? `View ${emp.name}'s profile` : undefined}
-                  >
-                    <div className={styles.avatarHolder}>
-                      <img
-                        src={emp.avatarUrl}
-                        alt={emp.name}
-                        className={styles.empAvatar}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                        }}
-                      />
-                      {emp.isOnline && <span className={styles.onlineBadge} title="Available online"></span>}
+                <div
+                  key={emp.id}
+                  className={styles.employeeCard}
+                  onClick={() => onViewProfile?.(emp)}
+                  style={onViewProfile ? { cursor: 'pointer' } : undefined}
+                  title={onViewProfile ? `View ${emp.name}'s profile` : undefined}
+                >
+                  <div className={styles.empHeader}>
+                    <div className={styles.empHeaderLeft}>
+                      <div className={styles.avatarHolder}>
+                        <img
+                          src={emp.avatarUrl}
+                          alt={emp.name}
+                          className={styles.empAvatar}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
+                          }}
+                        />
+                        {emp.isOnline && <span className={styles.onlineBadge} title="Available online"></span>}
+                      </div>
+
+                      <div className={styles.empBio}>
+                        <span className={styles.empName}>{emp.name}</span>
+                        <span className={styles.empRole}>{emp.designation}</span>
+                        <span className={styles.empDeptPill}>{emp.department}</span>
+                      </div>
                     </div>
 
-                    <div className={styles.empBio}>
-                      <span className={styles.empName}>{emp.name}</span>
-                      <span className={styles.empRole}>{emp.designation}</span>
-                      <span className={styles.empDeptPill}>{emp.department}</span>
-                    </div>
+                    <span className={`material-symbols-outlined ${styles.empChevron}`} aria-hidden="true">
+                      chevron_right
+                    </span>
                   </div>
 
                   <div className={styles.empContactRow}>
@@ -328,35 +333,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                       </span>
                       <span className="font-mono tabular-nums">{emp.staffId}</span>
                     </div>
-                    <div className={styles.empMetaTag}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        call
-                      </span>
-                      <span className="font-mono tabular-nums">{emp.extension}</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.empActionButtons}>
-                    <a
-                      href={`mailto:${emp.email}`}
-                      className={styles.contactBtn}
-                      title={`Send email to ${emp.name}`}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                        mail
-                      </span>
-                      <span>Email</span>
-                    </a>
-                    <button
-                      type="button"
-                      className={styles.callExtBtn}
-                      onClick={() => setToastMessage(`Calling ${emp.name} (${emp.extension})...`)}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                        phone_in_talk
-                      </span>
-                      <span>Call {emp.extension}</span>
-                    </button>
                   </div>
                 </div>
               ))}
@@ -372,7 +348,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                 <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-forest-text)' }}>
                   corporate_fare
                 </span>
-                <span>SESB Directorates & Units</span>
+                <span>SE Directorates & Units</span>
               </h2>
             </div>
 
@@ -386,7 +362,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                   </div>
                   <div className={styles.deptCardInfo}>
                     <span className={styles.deptCardName}>{dept.name}</span>
-                    <span className={styles.deptCardSub}>Wisma SESB HQ & Regional Substations</span>
+                    <span className={styles.deptCardSub}>Wisma SE HQ & Regional Substations</span>
                   </div>
                   <span className={styles.deptActionArrow}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
@@ -457,13 +433,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
         )}
       </div>
 
-      {toastMessage && (
-        <Toast
-          message={toastMessage}
-          icon="phone_in_talk"
-          onDismiss={() => setToastMessage(null)}
-        />
-      )}
     </div>
   );
 };

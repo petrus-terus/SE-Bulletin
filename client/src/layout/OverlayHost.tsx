@@ -6,6 +6,7 @@ import { CommentDrawer } from '@/features/post/CommentDrawer';
 import { ReshareBottomSheet } from '@/shared/ReshareBottomSheet';
 import { QuoteBulletinModal } from '@/shared/QuoteBulletinModal';
 import { BrandSidebarDrawer } from '@/layout/BrandSidebarDrawer';
+import { ScreenShowcaseModal, type ShowcaseTarget } from '@/features/showcase/ScreenShowcaseModal';
 import { PwaInstallPrompt } from '@/ui/PwaInstallPrompt';
 import { Toast } from '@/ui/Toast';
 
@@ -65,7 +66,12 @@ export interface OverlayHostProps {
   isBrandSidebarOpen: boolean;
   onCloseBrandSidebar: () => void;
   onOpenSavedPosts: () => void;
+  onOpenShowcase: () => void;
   onLogout: () => void;
+  // Screen tour
+  isShowcaseOpen: boolean;
+  onCloseShowcase: () => void;
+  onOpenScreen: (target: ShowcaseTarget) => void;
   savedCount: number;
   // Saved posts
   isSavedPostsOpen: boolean;
@@ -106,7 +112,11 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
   isBrandSidebarOpen,
   onCloseBrandSidebar,
   onOpenSavedPosts,
+  onOpenShowcase,
   onLogout,
+  isShowcaseOpen,
+  onCloseShowcase,
+  onOpenScreen,
   savedCount,
   isSavedPostsOpen,
   onCloseSavedPosts,
@@ -228,7 +238,15 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
         currentUser={currentUser}
         savedCount={savedCount}
         onOpenSavedPosts={onOpenSavedPosts}
+        onOpenShowcase={onOpenShowcase}
         onLogout={onLogout}
+      />
+
+      {/* Interactive screen tour */}
+      <ScreenShowcaseModal
+        isOpen={isShowcaseOpen}
+        onClose={onCloseShowcase}
+        onOpenScreen={onOpenScreen}
       />
 
       {/* Dedicated Saved Posts Slide-over Drawer */}

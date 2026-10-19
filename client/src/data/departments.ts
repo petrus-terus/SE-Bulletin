@@ -1,8 +1,8 @@
 import type { Department } from '@/types/bulletin';
 
 /**
- * The 12 Canonical Bahagian of Sabah Electricity Sdn. Bhd. (SESB)
- * Source: Official SESB Organizational Chart (20 August 2026)
+ * The 12 Canonical Bahagian of Sabah Electricity Sdn. Bhd. (SE)
+ * Source: Official SE Organizational Chart (20 August 2026)
  */
 export const DEPARTMENTS: Department[] = [
   {
