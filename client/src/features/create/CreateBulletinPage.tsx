@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
 import { CURRENT_USER } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
+import { MediaCropModal } from '@/ui/MediaCropModal';
 import styles from './CreateBulletinPage.module.css';
 
 interface Props {
@@ -104,32 +105,89 @@ export const CreateBulletinPage: React.FC<Props> = ({
     if (validationError) setValidationError('');
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Sequential photo crop queue state
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [cropQueueIndex, setCropQueueIndex] = useState<number>(0);
+  const [isCropProcessing, setIsCropProcessing] = useState<boolean>(false);
+  const [editingPhoto, setEditingPhoto] = useState<AttachedPhoto | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Launch sequential crop staging queue
+    setCropQueue(files);
+    setCropQueueIndex(0);
+  };
+
+  const processQueueItem = async (fileToUpload: File) => {
+    setIsCropProcessing(true);
     setIsCompressing(true);
-
     try {
-      const compressedList: AttachedPhoto[] = await Promise.all(
-        files.map(async (file, idx) => {
-          const uploadedUrl = await bulletinService.uploadPhoto(file);
+      const uploadedUrl = await bulletinService.uploadPhoto(fileToUpload);
+      const newPhoto: AttachedPhoto = {
+        id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        url: uploadedUrl,
+        name: fileToUpload.name,
+        file: fileToUpload,
+      };
+      setPhotos((prev) => [...prev, newPhoto]);
 
-          return {
-            id: `photo-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
-            url: uploadedUrl,
-            name: file.name,
-            file,
-          };
-        })
-      );
-
-      setPhotos((prev) => [...prev, ...compressedList]);
+      // Advance or complete queue
+      if (cropQueueIndex + 1 < cropQueue.length) {
+        setCropQueueIndex((prev) => prev + 1);
+      } else {
+        setCropQueue([]);
+        setCropQueueIndex(0);
+      }
     } catch (err) {
       console.error('[CreateBulletinPage] Image upload failed:', err);
-      alert('Failed to upload some images. Please check your connection.');
+      alert('Failed to upload image. Please check your connection.');
     } finally {
+      setIsCropProcessing(false);
       setIsCompressing(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleQueueCropConfirm = async (croppedFile: File) => {
+    await processQueueItem(croppedFile);
+  };
+
+  const handleQueueCropSkip = async () => {
+    const currentFile = cropQueue[cropQueueIndex];
+    if (currentFile) {
+      await processQueueItem(currentFile);
+    }
+  };
+
+  const handleQueueCancel = () => {
+    setCropQueue([]);
+    setCropQueueIndex(0);
+  };
+
+  const handleStartEditPhotoCrop = (photo: AttachedPhoto) => {
+    setEditingPhoto(photo);
+  };
+
+  const handleEditPhotoCropConfirm = async (croppedFile: File) => {
+    if (!editingPhoto) return;
+    setIsCropProcessing(true);
+    try {
+      const uploadedUrl = await bulletinService.uploadPhoto(croppedFile);
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.id === editingPhoto.id
+            ? { ...p, url: uploadedUrl, file: croppedFile, name: croppedFile.name || p.name }
+            : p
+        )
+      );
+      setEditingPhoto(null);
+    } catch (err) {
+      console.error('[CreateBulletinPage] Photo re-crop failed:', err);
+      alert('Failed to update cropped photo.');
+    } finally {
+      setIsCropProcessing(false);
     }
   };
 
@@ -568,17 +626,30 @@ export const CreateBulletinPage: React.FC<Props> = ({
                       </span>
                       <span className="truncate">{photo.name}</span>
                     </span>
-                    <button
-                      type="button"
-                      className={styles.removeTileBtn}
-                      onClick={() => handleRemovePhoto(photo.id)}
-                      title="Remove this photo"
-                      aria-label="Remove photo"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        close
-                      </span>
-                    </button>
+                    <div className={styles.photoTileActions}>
+                      <button
+                        type="button"
+                        className={styles.editCropTileBtn}
+                        onClick={() => handleStartEditPhotoCrop(photo)}
+                        title="Crop & adjust this photo"
+                        aria-label="Crop and adjust photo"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                          crop
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.removeTileBtn}
+                        onClick={() => handleRemovePhoto(photo.id)}
+                        title="Remove this photo"
+                        aria-label="Remove photo"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                          close
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -855,6 +926,37 @@ export const CreateBulletinPage: React.FC<Props> = ({
           </div>,
           document.body
         )}
+
+      {/* Sequential Crop Queue Modal */}
+      {cropQueue.length > 0 && cropQueue[cropQueueIndex] && (
+        <MediaCropModal
+          imageFile={cropQueue[cropQueueIndex]}
+          title="Adjust Bulletin Photo"
+          stepIndicator={`${cropQueueIndex + 1} of ${cropQueue.length}`}
+          initialAspect="original"
+          allowedAspects={['original', '16:9', '4:3', '1:1', '4:5', '9:16']}
+          onConfirm={handleQueueCropConfirm}
+          onSkip={handleQueueCropSkip}
+          skipLabel="Skip (Keep Original)"
+          confirmLabel={cropQueueIndex === cropQueue.length - 1 ? 'Done' : 'Next Photo'}
+          onCancel={handleQueueCancel}
+          isProcessing={isCropProcessing}
+        />
+      )}
+
+      {/* Single Photo Tile Re-frame Modal */}
+      {editingPhoto && (
+        <MediaCropModal
+          imageSrc={editingPhoto.url}
+          imageFile={editingPhoto.file}
+          title="Re-frame Photo"
+          initialAspect="original"
+          allowedAspects={['original', '16:9', '4:3', '1:1', '4:5', '9:16']}
+          onConfirm={handleEditPhotoCropConfirm}
+          onCancel={() => setEditingPhoto(null)}
+          isProcessing={isCropProcessing}
+        />
+      )}
     </div>
   );
 };

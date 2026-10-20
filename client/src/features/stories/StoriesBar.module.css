@@ -14,6 +14,11 @@
   overscroll-behavior-x: contain;
 }
 
+.storyItemWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .storyItem {
   display: flex;
   flex-direction: column;
@@ -28,6 +33,11 @@
   user-select: none;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: transform var(--transition-fast) var(--ease-out, ease-out);
+}
+
+.storyItem:active {
+  transform: scale(0.97);
 }
 
 .avatarRingUnread {
@@ -40,7 +50,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast) var(--ease-out, ease-out);
 }
 
 .avatarRingRead {
@@ -53,7 +63,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast) var(--ease-out, ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -82,12 +92,13 @@
   pointer-events: none;
 }
 
+/* Floating '+' Add Story CTA */
 .addStoryBtn {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 20px;
-  height: 20px;
+  bottom: 22px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-pill);
   background: var(--color-accent-green);
   color: var(--color-dark-ink);
@@ -95,7 +106,22 @@
   align-items: center;
   justify-content: center;
   border: 2px solid var(--color-surface-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--transition-fast) var(--ease-out, ease-out);
+  z-index: 2;
+}
+
+.addStoryBtn:active {
+  transform: scale(0.9);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .addStoryBtn:hover {
+    transform: scale(1.1);
+  }
 }
 
 .storyLabel {
@@ -107,4 +133,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storyItem,
+  .storyItem:active,
+  .avatarRingUnread,
+  .avatarRingRead,
+  .addStoryBtn {
+    transition: none;
+    transform: none;
+  }
 }

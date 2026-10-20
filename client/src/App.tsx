@@ -114,6 +114,24 @@ export function App() {
     activeQuotePostId,
   });
 
+  // Story Deletion Handler
+  const handleDeleteStory = async (storyId: string) => {
+    try {
+      setStories((prev) => prev.filter((s) => s.id !== storyId));
+      await bulletinService.deleteStory(storyId);
+      setToast({
+        message: 'Story deleted successfully.',
+        icon: 'delete',
+      });
+    } catch (err) {
+      console.error('[App] Failed to delete story:', err);
+      setToast({
+        message: 'Failed to delete story from cloud.',
+        icon: 'error',
+      });
+    }
+  };
+
   // Corporate Staff Logout Handler
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
@@ -474,6 +492,7 @@ export function App() {
             onBookmarkToggle={handleBookmarkToggle}
             onViewAuthorProfile={handleViewAuthorProfile}
             onAddStoryClick={() => setIsCreateStoryOpen(true)}
+            onDeleteStory={handleDeleteStory}
             onDeletePost={handleDeletePost}
             onEditPost={(post) => setEditingPost(post)}
             onReactionSelect={handleReactionSelect}
@@ -535,10 +554,15 @@ export function App() {
         onQuoteSubmit={(quotedPost, commentText) => handleQuotePost(quotedPost, commentText)}
         isCreateStoryOpen={isCreateStoryOpen}
         onCloseCreateStory={() => setIsCreateStoryOpen(false)}
-        onStoryCreated={(newStory) => {
-          setStories((prev) => [newStory, ...prev]);
-          bulletinService.createStory(newStory);
-          setToast({ message: '24h Story shared successfully!', icon: 'schedule' });
+        onStoryCreated={async (newStory) => {
+          setStories((prev) => [newStory, ...prev.filter((s) => s.id !== newStory.id)]);
+          try {
+            await bulletinService.createStory(newStory);
+            setToast({ message: '24h Story shared successfully!', icon: 'schedule' });
+          } catch (err) {
+            console.error('[App] Failed to sync story to Supabase:', err);
+            setToast({ message: 'Story posted locally; syncing in background.', icon: 'cloud_off' });
+          }
         }}
         isCreateOpen={isCreateOpen}
         onCloseCreateBulletin={() => setIsCreateOpen(false)}

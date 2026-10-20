@@ -43,14 +43,51 @@ function supportsWebpEncoding(): boolean {
   return webpEncodingSupported;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.decoding = 'async';
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Could not read that photo.'));
-    img.src = src;
-  });
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  // 1. Data URLs and Blob URLs are already in-memory local data; cannot taint the canvas
+  if (src.startsWith('data:') || src.startsWith('blob:')) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Could not read that photo.'));
+      img.src = src;
+    });
+  }
+
+  // 2. For remote URLs (Supabase Storage, CDN, external links), fetch as Blob first.
+  // Converting to a local object URL guarantees the canvas is same-origin and never tainted.
+  try {
+    const res = await fetch(src, { mode: 'cors' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not read that photo.'));
+      };
+      img.src = objectUrl;
+    });
+  } catch {
+    // 3. Fallback: try direct Image element with crossOrigin = 'anonymous' and cache-buster
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'async';
+      img.onload = () => resolve(img);
+      img.onerror = () =>
+        reject(new Error('Could not read that photo due to cross-origin security restrictions.'));
+      const sep = src.includes('?') ? '&' : '?';
+      img.src = `${src}${sep}_cors=${Date.now()}`;
+    });
+  }
 }
 
 /**
@@ -78,42 +115,127 @@ export function validateAvatarDimensions(width: number, height: number): string 
   return null;
 }
 
+export interface CropImageOptions {
+  size?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+  rotation?: number;
+  fileName?: string;
+}
+
+export const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
+
+/** Validates arbitrary bulletin and story media files before processing. */
+export function validateMediaFile(file: File): string | null {
+  const type = (file.type || '').toLowerCase();
+  if (!(ACCEPTED_AVATAR_TYPES as readonly string[]).includes(type)) {
+    return 'We only support JPG, PNG, WebP, or GIF photos.';
+  }
+  if (file.size === 0) return 'This file is empty.';
+  if (file.size > MEDIA_MAX_BYTES) return 'Please choose a photo smaller than 25 MB.';
+  return null;
+}
+
+function getRadianAngle(degreeValue: number) {
+  return (degreeValue * Math.PI) / 180;
+}
+
+function rotateSize(width: number, height: number, rotation: number) {
+  const rotRad = getRadianAngle(rotation);
+  return {
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  };
+}
+
 /**
- * Renders the selected crop region of `imageSrc` into a square canvas and
- * returns it as a File.
+ * Renders the selected crop region of `imageSrc` into a canvas and returns it as a File.
  *
- * `imageSrc` must be a URL that produced an HTMLImageElement (an object URL or
- * a same-origin URL) — not raw image bytes. The browser applies EXIF
- * orientation when decoding into an <img>, and a canvas drawImage of that
- * element inherits it. Cropping from createImageBitmap() instead would silently
- * rotate iPhone portrait shots by 90°.
+ * Supports arbitrary aspect ratios, 90-degree rotations, and high-definition output
+ * downscaled to fit within maxWidth/maxHeight. Preserves EXIF orientation safely.
  */
 export async function cropImageToBlob(
   imageSrc: string,
   cropArea: Area,
-  options: { size?: number; quality?: number } = {}
+  options: CropImageOptions = {}
 ): Promise<File> {
-  const { size = AVATAR_OUTPUT_SIZE, quality = 0.9 } = options;
+  const {
+    size,
+    maxWidth = 1920,
+    maxHeight = 1920,
+    quality = 0.88,
+    rotation = 0,
+    fileName,
+  } = options;
 
   const image = await loadImage(imageSrc);
 
+  let sourceCanvas: HTMLCanvasElement | HTMLImageElement = image;
+  let sourceNaturalWidth = image.naturalWidth;
+  let sourceNaturalHeight = image.naturalHeight;
+
+  // Handle rotation via off-screen rotated canvas
+  const normalizedRotation = ((rotation % 360) + 360) % 360;
+  if (normalizedRotation !== 0) {
+    const rotRad = getRadianAngle(normalizedRotation);
+    const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
+      image.naturalWidth,
+      image.naturalHeight,
+      normalizedRotation
+    );
+
+    const rotCanvas = document.createElement('canvas');
+    rotCanvas.width = Math.round(bBoxWidth);
+    rotCanvas.height = Math.round(bBoxHeight);
+    const rotCtx = rotCanvas.getContext('2d');
+    if (!rotCtx) throw new Error('This browser cannot process rotated images right now.');
+
+    rotCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
+    rotCtx.rotate(rotRad);
+    rotCtx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+
+    sourceCanvas = rotCanvas;
+    sourceNaturalWidth = rotCanvas.width;
+    sourceNaturalHeight = rotCanvas.height;
+  }
+
   // Clamp to the decoded bitmap so a stale crop rect can never read outside it.
-  const sourceX = Math.max(0, Math.min(cropArea.x, image.naturalWidth - 1));
-  const sourceY = Math.max(0, Math.min(cropArea.y, image.naturalHeight - 1));
-  const sourceWidth = Math.max(1, Math.min(cropArea.width, image.naturalWidth - sourceX));
-  const sourceHeight = Math.max(1, Math.min(cropArea.height, image.naturalHeight - sourceY));
+  const sourceX = Math.max(0, Math.min(cropArea.x, sourceNaturalWidth - 1));
+  const sourceY = Math.max(0, Math.min(cropArea.y, sourceNaturalHeight - 1));
+  const sourceWidth = Math.max(1, Math.min(cropArea.width, sourceNaturalWidth - sourceX));
+  const sourceHeight = Math.max(1, Math.min(cropArea.height, sourceNaturalHeight - sourceY));
+
+  // Determine destination canvas dimensions
+  let destWidth: number;
+  let destHeight: number;
+
+  if (typeof size === 'number' && size > 0) {
+    destWidth = size;
+    destHeight = size;
+  } else {
+    // Preserve cropped area's aspect ratio while capping within maxWidth / maxHeight
+    const scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight, 1);
+    destWidth = Math.max(1, Math.round(sourceWidth * scale));
+    destHeight = Math.max(1, Math.round(sourceHeight * scale));
+  }
 
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = destWidth;
+  canvas.height = destHeight;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('This browser cannot process images right now.');
 
-  // Photos downscale into a small square badly without high-quality smoothing.
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, size, size);
+  ctx.drawImage(sourceCanvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, destWidth, destHeight);
+
+  // Free memory if a rotated canvas was allocated
+  if (sourceCanvas instanceof HTMLCanvasElement) {
+    sourceCanvas.width = 0;
+    sourceCanvas.height = 0;
+  }
 
   const mimeType = supportsWebpEncoding() ? 'image/webp' : 'image/jpeg';
   const blob = await new Promise<Blob | null>((resolve) =>
@@ -122,8 +244,10 @@ export async function cropImageToBlob(
   if (!blob) throw new Error('Could not encode the cropped photo.');
 
   const extension = mimeType === 'image/webp' ? 'webp' : 'jpg';
-  return new File([blob], `avatar-${Date.now()}.${extension}`, {
+  const defaultName = `media-${Date.now()}.${extension}`;
+  return new File([blob], fileName || defaultName, {
     type: mimeType,
     lastModified: Date.now(),
   });
 }
+

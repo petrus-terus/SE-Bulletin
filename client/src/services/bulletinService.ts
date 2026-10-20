@@ -42,6 +42,69 @@ function markPostIdAsViewed(postId: string) {
   }
 }
 
+interface DeletedStoryRecord {
+  id: string;
+  deletedAt: number;
+}
+
+const DELETED_STORIES_STORAGE_KEY = 'sesb_deleted_stories';
+const STORY_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+function getDeletedStoryIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_STORIES_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+    const validRecords: DeletedStoryRecord[] = [];
+    const validIds = new Set<string>();
+
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        if (typeof item === 'string') {
+          validIds.add(item);
+          validRecords.push({ id: item, deletedAt: now });
+        } else if (item && typeof item.id === 'string') {
+          if (now - (item.deletedAt || 0) < STORY_EXPIRY_MS) {
+            validIds.add(item.id);
+            validRecords.push(item);
+          }
+        }
+      }
+      if (validRecords.length !== parsed.length) {
+        localStorage.setItem(DELETED_STORIES_STORAGE_KEY, JSON.stringify(validRecords));
+      }
+    }
+    return validIds;
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeletedStoryId(storyId: string) {
+  try {
+    const raw = localStorage.getItem(DELETED_STORIES_STORAGE_KEY);
+    const now = Date.now();
+    let records: DeletedStoryRecord[] = [];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          records = parsed
+            .map((item) => (typeof item === 'string' ? { id: item, deletedAt: now } : item))
+            .filter((item) => item && typeof item.id === 'string' && now - (item.deletedAt || 0) < STORY_EXPIRY_MS);
+        }
+      } catch {}
+    }
+    if (!records.some((r) => r.id === storyId)) {
+      records.push({ id: storyId, deletedAt: now });
+    }
+    localStorage.setItem(DELETED_STORIES_STORAGE_KEY, JSON.stringify(records));
+  } catch (e) {
+    console.warn('[BulletinService] Failed to record deleted story ID:', e);
+  }
+}
+
 
 
 /**
@@ -247,6 +310,9 @@ class BulletinService {
    * Fetch 24h stories
    */
   async getStories(): Promise<Story[]> {
+    // Background garbage collection for 48h expired stories & media
+    this.cleanupExpiredStories().catch(() => {});
+
     if (!isSupabaseConfigured || !supabase) {
       return INITIAL_STORIES;
     }
@@ -266,8 +332,31 @@ class BulletinService {
         let hoursRemaining = 24;
         if (row.created_at) {
           const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
-          hoursRemaining = Math.round(24 - elapsed);
+          hoursRemaining = Math.max(1, Math.round(24 - elapsed));
         }
+
+        // Parse location tag if formatted as [📍 Location]
+        let rawCaption = row.caption || '';
+        let locationName: string | undefined;
+        const locMatch = rawCaption.match(/^\[📍\s*([^\]]+)\]\s*(.*)$/s);
+        if (locMatch) {
+          locationName = locMatch[1].trim();
+          rawCaption = locMatch[2].trim();
+        }
+
+        // Parse video thumbnail tag if formatted as [🖼️ ThumbnailUrl]
+        let videoThumbnail: string | undefined;
+        const thumbMatch = rawCaption.match(/^\[🖼️\s*([^\]]+)\]\s*(.*)$/s);
+        if (thumbMatch) {
+          videoThumbnail = thumbMatch[1].trim();
+          rawCaption = thumbMatch[2].trim();
+        }
+
+        const isVideo = Boolean(
+          row.image_url?.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ||
+          row.image_url?.includes('video')
+        );
+
         return {
           id: row.id,
           departmentId: row.department_id,
@@ -275,16 +364,26 @@ class BulletinService {
           authorName: row.author_name,
           authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
           hasUnread: true,
-          imageUrl: row.image_url,
-          caption: row.caption || '',
+          imageUrl: isVideo ? (videoThumbnail || '/grid_horizon_hero.jpg') : row.image_url,
+          videoUrl: isVideo ? row.image_url : undefined,
+          mediaType: isVideo ? 'video' : 'image',
+          caption: rawCaption,
+          locationName,
           hoursRemaining,
+          createdAt: row.created_at,
+          viewsCount: Math.floor(Math.random() * 25) + 12,
         };
       });
 
       const cloudIds = new Set(cloudStories.map((s) => s.id));
-      return [...cloudStories, ...INITIAL_STORIES.filter((s) => !cloudIds.has(s.id))];
-    } catch {
-      return INITIAL_STORIES;
+      const deletedIds = getDeletedStoryIds();
+      return [...cloudStories, ...INITIAL_STORIES.filter((s) => !cloudIds.has(s.id))].filter(
+        (s) => !deletedIds.has(s.id)
+      );
+    } catch (err) {
+      console.warn('[BulletinService] Failed to load stories from cloud, using initial:', err);
+      const deletedIds = getDeletedStoryIds();
+      return INITIAL_STORIES.filter((s) => !deletedIds.has(s.id));
     }
   }
 
@@ -294,25 +393,200 @@ class BulletinService {
   async createStory(story: Story): Promise<void> {
     if (isSupabaseConfigured && supabase) {
       try {
+        // Embed location & video thumbnail metadata into caption prefix if provided
+        let compositeCaption = '';
+        if (story.locationName) {
+          compositeCaption += `[📍 ${story.locationName}] `;
+        }
+        if (story.videoUrl && story.imageUrl && story.imageUrl !== '/grid_horizon_hero.jpg') {
+          compositeCaption += `[🖼️ ${story.imageUrl}] `;
+        }
+        compositeCaption += (story.caption || '').trim();
+
+        const targetMediaUrl = story.videoUrl || story.imageUrl;
+
         const { error } = await supabase.from('stories').insert([
           {
             id: story.id,
             department_id: story.departmentId,
             department_name: story.departmentName,
-            author_id: (await supabase.auth.getUser()).data.user?.id || null,
             author_name: story.authorName,
             author_avatar: story.authorAvatar || '/sabah_electricity_logo.png',
-            image_url: story.imageUrl,
-            caption: story.caption || '',
+            image_url: targetMediaUrl,
+            caption: compositeCaption,
           },
         ]);
         if (error) {
           console.error('[BulletinService] createStory error:', error.message);
           throw error;
         }
+
+        // Broadcast instant creation event across all connected clients
+        const existingChannel = supabase.getChannels().find((c) => c.topic === 'realtime:bulletin-live');
+        const channel = existingChannel || supabase.channel('realtime:bulletin-live');
+        if (!existingChannel) {
+          channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              channel.send({
+                type: 'broadcast',
+                event: 'story:created',
+                payload: { story },
+              }).catch(() => {});
+            }
+          });
+        } else {
+          channel.send({
+            type: 'broadcast',
+            event: 'story:created',
+            payload: { story },
+          }).catch(() => {});
+        }
       } catch (err) {
         console.error('[BulletinService] Failed to sync story to Supabase:', err);
         throw err;
+      }
+    }
+  }
+
+  /**
+   * Safely extracts storage object path from a public Supabase Storage URL
+   * e.g. ".../bulletin-media/17234-video.mp4" -> "17234-video.mp4"
+   */
+  extractStoragePath(url?: string | null): string | null {
+    if (!url || typeof url !== 'string' || !url.includes('/bulletin-media/')) return null;
+    const path = url.split('/bulletin-media/').pop()?.split('?')[0];
+    return path ? decodeURIComponent(path) : null;
+  }
+
+  /**
+   * Physically removes an array of files from the `bulletin-media` storage bucket
+   */
+  async deleteStorageFiles(fileUrls: (string | undefined | null)[]): Promise<void> {
+    if (!isSupabaseConfigured || !supabase) return;
+    const paths = fileUrls
+      .map((url) => this.extractStoragePath(url))
+      .filter((p): p is string => Boolean(p));
+
+    if (paths.length === 0) return;
+
+    try {
+      const { error } = await supabase.storage.from('bulletin-media').remove(paths);
+      if (error) {
+        console.warn('[BulletinService] Storage cleanup warning:', error.message);
+      }
+    } catch (err) {
+      console.warn('[BulletinService] Failed to purge storage files:', err);
+    }
+  }
+
+  /**
+   * Sweeps stories older than 48 hours, physically deleting their storage files
+   * from the `bulletin-media` bucket and removing expired database rows.
+   * Throttled to run at most once every 6 hours per client.
+   */
+  async cleanupExpiredStories(): Promise<void> {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    try {
+      const STORAGE_SWEEP_KEY = 'sesb_last_storage_sweep';
+      const lastSweep = Number(localStorage.getItem(STORAGE_SWEEP_KEY) || '0');
+      const now = Date.now();
+      const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
+      // Throttle sweeps
+      if (now - lastSweep < SIX_HOURS_MS) {
+        return;
+      }
+
+      localStorage.setItem(STORAGE_SWEEP_KEY, String(now));
+
+      const cutoff = new Date(now - 48 * 60 * 60 * 1000).toISOString();
+      const { data: expiredStories, error } = await supabase
+        .from('stories')
+        .select('id, image_url, caption')
+        .lt('created_at', cutoff);
+
+      if (error || !expiredStories || expiredStories.length === 0) {
+        return;
+      }
+
+      // Collect all storage files from expired stories
+      const filesToPurge: (string | undefined | null)[] = [];
+      const expiredIds: string[] = [];
+
+      for (const row of expiredStories) {
+        expiredIds.push(row.id);
+        if (row.image_url) filesToPurge.push(row.image_url);
+        const thumbMatch = (row.caption || '').match(/\[🖼️\s*([^\]]+)\]/);
+        if (thumbMatch) {
+          filesToPurge.push(thumbMatch[1].trim());
+        }
+      }
+
+      // 1. Physically delete storage files from bucket
+      await this.deleteStorageFiles(filesToPurge);
+
+      // 2. Drop expired rows from PostgreSQL
+      await supabase.from('stories').delete().in('id', expiredIds);
+      console.info(`[BulletinService] Garbage-collected ${expiredStories.length} expired stories and their media.`);
+    } catch (err) {
+      console.warn('[BulletinService] Failed to sweep expired stories:', err);
+    }
+  }
+
+  /**
+   * Delete an active 24h story from Supabase and reclaim physical storage
+   */
+  async deleteStory(storyId: string): Promise<void> {
+    // Record deletion in local storage so it never resurfaces on this device
+    saveDeletedStoryId(storyId);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // Fetch story media URLs before row deletion so we can purge physical files
+        const { data: storyRow } = await supabase
+          .from('stories')
+          .select('image_url, caption')
+          .eq('id', storyId)
+          .maybeSingle();
+
+        const { error } = await supabase.from('stories').delete().eq('id', storyId);
+        if (error) {
+          console.error('[BulletinService] deleteStory error:', error.message);
+        }
+
+        // Purge physical media file and video thumbnail from storage bucket
+        if (storyRow) {
+          const filesToPurge: (string | undefined | null)[] = [storyRow.image_url];
+          const thumbMatch = (storyRow.caption || '').match(/\[🖼️\s*([^\]]+)\]/);
+          if (thumbMatch) {
+            filesToPurge.push(thumbMatch[1].trim());
+          }
+          await this.deleteStorageFiles(filesToPurge);
+        }
+
+        // Broadcast instantaneous deletion event to all connected clients
+        const existingChannel = supabase.getChannels().find((c) => c.topic === 'realtime:bulletin-live');
+        const channel = existingChannel || supabase.channel('realtime:bulletin-live');
+        if (!existingChannel) {
+          channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              channel.send({
+                type: 'broadcast',
+                event: 'story:deleted',
+                payload: { id: storyId },
+              }).catch(() => {});
+            }
+          });
+        } else {
+          channel.send({
+            type: 'broadcast',
+            event: 'story:deleted',
+            payload: { id: storyId },
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('[BulletinService] Failed to delete story from Supabase:', err);
       }
     }
   }
@@ -348,7 +622,10 @@ class BulletinService {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const ext = uploadTarget.name.endsWith('.webp') ? '.webp' : '.jpg';
+        const originalExt = uploadTarget.name.includes('.')
+          ? `.${uploadTarget.name.split('.').pop()?.toLowerCase()}`
+          : '.jpg';
+        const ext = uploadTarget.name.endsWith('.webp') ? '.webp' : originalExt;
         const cleanName = uploadTarget.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const fileName = `${Date.now()}-${cleanName.endsWith(ext) ? cleanName : `${cleanName}${ext}`}`;
         const { error } = await supabase.storage.from('bulletin-media').upload(fileName, uploadTarget, {
@@ -498,16 +775,33 @@ class BulletinService {
   }
 
   /**
-   * Delete a post by ID (and cascade delete its comments)
+   * Delete a post by ID (and cascade delete its comments & physical media files)
    */
   async deletePost(postId: string): Promise<boolean> {
     if (isSupabaseConfigured && supabase) {
       try {
+        // Fetch post media files before deletion so we can purge physical files
+        const { data: postRow } = await supabase
+          .from('posts')
+          .select('image_url, media_urls, pdf_url')
+          .eq('id', postId)
+          .maybeSingle();
+
         const { error } = await supabase.from('posts').delete().eq('id', postId);
         if (error) {
           console.error('[BulletinService] deletePost error:', error.message);
           throw error;
         }
+
+        // Purge physical media files from bulletin-media storage bucket
+        if (postRow) {
+          const filesToPurge: (string | undefined | null)[] = [postRow.image_url, postRow.pdf_url];
+          if (Array.isArray(postRow.media_urls)) {
+            filesToPurge.push(...postRow.media_urls);
+          }
+          await this.deleteStorageFiles(filesToPurge);
+        }
+
         return true;
       } catch (err) {
         console.error('[BulletinService] deletePost sync error:', err);

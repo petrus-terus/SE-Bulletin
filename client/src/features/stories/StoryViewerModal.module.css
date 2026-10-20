@@ -4,14 +4,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0, 0, 0, 0.94);
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  animation: overlayFade 180ms var(--ease-expo) forwards;
+  animation: overlayFade 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  touch-action: pan-y;
 }
 
 @keyframes overlayFade {
@@ -26,44 +27,44 @@
 .modalFrame {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 430px;
   height: 100%;
-  max-height: 840px;
+  max-height: 860px;
   background: #0B0F17;
   border-radius: var(--radius-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  animation: frameScale 200ms var(--ease-expo) forwards;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform, opacity;
 }
 
-@keyframes frameScale {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+@media (max-width: 640px) {
+  .modalFrame {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
   }
 }
 
 /* Progress Bar at Top */
 .progressTrack {
   position: absolute;
-  top: 12px;
+  top: max(12px, env(safe-area-inset-top));
   left: 12px;
   right: 12px;
   display: flex;
-  gap: 6px;
-  z-index: 20;
+  gap: 5px;
+  z-index: 25;
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms ease-out;
 }
 
 .progressSegment {
   flex: 1;
   height: 3px;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-pill);
   overflow: hidden;
 }
@@ -74,34 +75,55 @@
   background: #FFFFFF;
   border-radius: var(--radius-pill);
   transform-origin: left;
-  transition: transform 100ms linear;
   will-change: transform;
 }
 
 /* Header with Department & Author */
 .storyHeader {
   position: absolute;
-  top: 24px;
-  left: 14px;
-  right: 14px;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: max(28px, calc(env(safe-area-inset-top) + 16px)) 14px 28px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 20;
+  z-index: 25;
+  /* Top Scrim Gradient: Guarantees 100% white text contrast over bright/white photos */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.45) 60%, transparent 100%);
+  pointer-events: none;
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms ease-out;
+}
+
+/* Smooth Hold-to-Clean-View: Hides all UI when screen is pressed & held */
+.overlayHidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-4px);
 }
 
 .authorMeta {
   display: flex;
   align-items: center;
   gap: 10px;
+  /* Frosted Glass Meta Backdrop for Author Info */
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px 4px 4px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: auto;
 }
 
 .authorAvatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-pill);
   object-fit: cover;
   border: 1.5px solid #FFFFFF;
+  background: #1E293B;
+  flex-shrink: 0;
 }
 
 .authorInfo {
@@ -113,40 +135,189 @@
   font-size: var(--font-size-xs);
   font-weight: 700;
   color: #FFFFFF;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.6);
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .timeRemaining {
   font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.actionBtn,
 .closeButton {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.45);
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-pill);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   user-select: none;
   -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  transition: background-color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform var(--transition-fast) var(--ease-out, ease-out), background-color var(--transition-fast);
+}
+
+.actionBtn:active,
+.closeButton:active {
+  transform: scale(0.92);
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .actionBtn:hover,
   .closeButton:hover {
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.75);
   }
 }
 
-/* Story Image Media */
+/* 3-Dots Dropdown Sheet */
+.menuDropdown {
+  position: absolute;
+  top: max(68px, calc(env(safe-area-inset-top) + 56px));
+  right: 14px;
+  background: rgba(24, 30, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  z-index: 35;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+  animation: menuIn 160ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: #FFFFFF;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.menuItem:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.menuItemDanger {
+  color: #EF4444;
+}
+
+.menuItemDanger:active {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* Delete Confirmation Modal */
+.confirmBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  padding: 24px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.confirmDialog {
+  background: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  max-width: 320px;
+  width: 100%;
+  color: #FFFFFF;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.confirmTitle {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.confirmDesc {
+  font-size: var(--font-size-xs);
+  color: #94A3B8;
+  line-height: 1.45;
+  margin-bottom: 20px;
+}
+
+.confirmRow {
+  display: flex;
+  gap: 10px;
+}
+
+.confirmCancelBtn,
+.confirmDeleteBtn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+}
+
+.confirmCancelBtn {
+  background: #334155;
+  color: #FFFFFF;
+}
+
+.confirmDeleteBtn {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+/* Media Frame & Tap Navigation Zones */
 .mediaContainer {
   position: relative;
   width: 100%;
@@ -155,74 +326,168 @@
   align-items: center;
   justify-content: center;
   background: #0B0F17;
-  user-select: none;
+  overflow: hidden;
 }
 
 .storyImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-/* Touch Control Zones (Left / Right) */
+.storyVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Touch Control Zones (Left 30% / Right 70%) */
 .tapZoneLeft {
   position: absolute;
-  top: 60px;
+  top: 70px;
   bottom: 120px;
   left: 0;
-  width: 40%;
+  width: 30%;
   z-index: 15;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tapZoneRight {
   position: absolute;
-  top: 60px;
+  top: 70px;
   bottom: 120px;
   right: 0;
-  width: 60%;
+  width: 70%;
   z-index: 15;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Bottom Caption Overlay */
+/* Bottom Caption & Location Overlay */
 .captionOverlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 36px 16px 20px 16px;
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
+  padding: 56px 16px max(24px, env(safe-area-inset-bottom)) 16px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.65) 30%, rgba(0, 0, 0, 0.92) 75%, rgba(0, 0, 0, 0.98) 100%);
   color: #FFFFFF;
-  z-index: 20;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms ease-out;
+}
+
+/* Location Badge */
+.locationPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #FFFFFF;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  width: fit-content;
+  pointer-events: auto;
+}
+
+/* Author Views Badge */
+.viewsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
 }
 
 .captionText {
   font-size: var(--font-size-md);
-  font-weight: 500;
-  line-height: 1.4;
-  margin-bottom: 10px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 2px 0 6px 0;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
 }
 
-.pauseHint {
+.dragDownHint {
   font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.65);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
+  margin-top: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+}
+
+/* Buffering Overlay Indicator */
+.bufferingIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: bufferFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: bufferSpin 700ms linear infinite;
+}
+
+@keyframes bufferSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bufferFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
   .modalFrame,
-  .progressBarFill {
+  .menuDropdown,
+  .bufferingIndicator,
+  .spinner {
     animation: none;
-  }
-  .modalFrame {
-    transform: none;
-  }
-  .progressBarFill {
     transition: none;
   }
 }

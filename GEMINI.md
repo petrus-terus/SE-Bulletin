@@ -118,6 +118,15 @@ For **ANY** UI/UX changes, new UI component generation, styling modifications, v
   4. **Initial Mount Fetch**: Verify every top-level feature state (`posts`, `stories`, `profiles`, `comments`) calls its corresponding `get*()` service in `useEffect(..., [])` on mount.
   5. **Foreign Key Resolution**: In data mappers (e.g. `getPosts`), verify relational ID columns (e.g. `quote_post_id`) are resolved against cache/memory rather than expecting non-existent flat object columns.
   6. **Counter Math Integrity**: Never add local state array lengths to server count fields (e.g. `localComments.length + post.commentsCount`) which causes double-counting. Always use the active collection length: `activeComments.length || post.commentsCount`.
+- **Canvas Tainting & CORS-Clean Cropping Protocol**:
+  Whenever loading images for canvas processing (`drawImage`, `toBlob`, `toDataURL` in `cropImage.ts` or `MediaCropModal.tsx`):
+  1. **Local File Priority**: Always prioritize local device `File` objects by converting them to in-memory `data:` URLs via `FileReader.readAsDataURL()`. Local data URLs never make network calls and cannot taint the canvas.
+  2. **Remote URL Blob Conversion**: For remote URLs (Supabase Storage, CDNs), fetch the image via `fetch(src, { mode: 'cors' })` and convert to a local `blob:` URL (`URL.createObjectURL(blob)`).
+  3. **Disk Cache Collision Defense**: Set `crossOrigin = 'anonymous'` on `new Image()` and `<Cropper>` `mediaProps`, and append a cache-buster query parameter (`_cors=${Date.now()}`) to prevent the browser from reusing a non-CORS cached entry from an earlier `<img>` tag. This eliminates `SecurityError: Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported.`
+- **Unified Media Crop Architecture (`MediaCropModal.tsx`)**:
+  - **Stories**: In-canvas "Crop & Frame" floating button, defaulted to `9:16` full-screen vertical portrait with freeform/ratio presets (`Original`, `1:1`, `4:5`, `16:9`).
+  - **Bulletins**: Sequential staging queue (`cropQueue`) on file selection with "Skip (Keep Original)" and on-demand thumbnail edit buttons.
+  - **Avatars**: Dedicated circular 1:1 modal in `AvatarCropSheet.tsx`. Both share the underlying `cropImageToBlob()` engine with 90° rotation support.
 
 ---
 

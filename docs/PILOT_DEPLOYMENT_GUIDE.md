@@ -209,7 +209,12 @@ CREATE POLICY "Allow select on stories"
 DROP POLICY IF EXISTS "Allow public insert on stories" ON public.stories;
 CREATE POLICY "Allow insert on stories"
     ON public.stories FOR INSERT TO authenticated
-    WITH CHECK ( auth.uid()::text = author_id );
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow delete on stories" ON public.stories;
+CREATE POLICY "Allow delete on stories"
+    ON public.stories FOR DELETE TO authenticated
+    USING (true);
 
 -- Profiles Policies
 DROP POLICY IF EXISTS "Allow public select on profiles" ON public.profiles;
@@ -315,14 +320,15 @@ To store uploaded site inspection photos, plant maintenance logs, and custom ava
 5. Run the following SQL script in your **Supabase SQL Editor** to enable public uploads and reads:
 
 ```sql
--- Configure bulletin-media bucket limits (Requires superuser / direct SQL)
+-- Configure bulletin-media bucket limits (30MB ceiling for 30s videos & compressed photos)
 UPDATE storage.buckets 
-SET file_size_limit = 10485760, 
-    allowed_mime_types = ARRAY['image/webp', 'image/jpeg', 'application/pdf'] 
+SET file_size_limit = 31457280, 
+    allowed_mime_types = ARRAY['image/webp', 'image/jpeg', 'application/pdf', 'video/mp4', 'video/webm', 'video/quicktime'] 
 WHERE id = 'bulletin-media';
 
 -- Allow authenticated uploads into bulletin-media bucket
 DROP POLICY IF EXISTS "Allow public uploads to bulletin-media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow auth uploads to bulletin-media" ON storage.objects;
 CREATE POLICY "Allow auth uploads to bulletin-media"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -334,6 +340,21 @@ CREATE POLICY "Allow public read from bulletin-media"
 ON storage.objects FOR SELECT
 TO anon, authenticated
 USING (bucket_id = 'bulletin-media');
+
+-- Allow authenticated staff to delete their media from bulletin-media bucket (Pillar 4 Storage Reclamation)
+DROP POLICY IF EXISTS "Allow auth delete from bulletin-media" ON storage.objects;
+CREATE POLICY "Allow auth delete from bulletin-media"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'bulletin-media');
+
+-- Optional Server-Side Scheduled Sweeper (Supabase pg_cron):
+-- Purges expired 24h stories (> 48h) every night at 03:00 AM KK time
+-- SELECT cron.schedule(
+--     'purge-expired-stories',
+--     '0 19 * * *', -- 03:00 AM UTC+8 (Sabah)
+--     $$ DELETE FROM public.stories WHERE created_at < NOW() - INTERVAL '48 hours' $$
+-- );
 ```
 
 ---

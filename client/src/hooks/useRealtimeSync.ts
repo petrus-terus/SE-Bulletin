@@ -45,6 +45,27 @@ export function useRealtimeSync({
             const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
             hoursRemaining = Math.max(1, Math.round(24 - elapsed));
           }
+
+          let rawCaption = row.caption || '';
+          let locationName: string | undefined;
+          const locMatch = rawCaption.match(/^\[📍\s*([^\]]+)\]\s*(.*)$/s);
+          if (locMatch) {
+            locationName = locMatch[1].trim();
+            rawCaption = locMatch[2].trim();
+          }
+
+          let videoThumbnail: string | undefined;
+          const thumbMatch = rawCaption.match(/^\[🖼️\s*([^\]]+)\]\s*(.*)$/s);
+          if (thumbMatch) {
+            videoThumbnail = thumbMatch[1].trim();
+            rawCaption = thumbMatch[2].trim();
+          }
+
+          const isVideo = Boolean(
+            row.image_url?.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ||
+            row.image_url?.includes('video')
+          );
+
           const liveStory: Story = {
             id: row.id,
             departmentId: row.department_id,
@@ -52,11 +73,46 @@ export function useRealtimeSync({
             authorName: row.author_name,
             authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
             hasUnread: true,
-            imageUrl: row.image_url,
-            caption: row.caption || '',
+            imageUrl: isVideo ? (videoThumbnail || '/grid_horizon_hero.jpg') : row.image_url,
+            videoUrl: isVideo ? row.image_url : undefined,
+            mediaType: isVideo ? 'video' : 'image',
+            caption: rawCaption,
+            locationName,
             hoursRemaining,
+            createdAt: row.created_at,
+            viewsCount: 1,
           };
           setStories((prev) => [liveStory, ...prev.filter((s) => s.id !== liveStory.id)]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'stories' },
+        (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const deletedId = (payload.old as any)?.id;
+          if (deletedId) {
+            setStories((prev) => prev.filter((s) => s.id !== deletedId));
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'story:deleted' },
+        ({ payload }) => {
+          const deletedId = payload?.id;
+          if (deletedId) {
+            setStories((prev) => prev.filter((s) => s.id !== deletedId));
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'story:created' },
+        ({ payload }) => {
+          if (payload?.story) {
+            setStories((prev) => [payload.story, ...prev.filter((s) => s.id !== payload.story.id)]);
+          }
         }
       )
       .on(

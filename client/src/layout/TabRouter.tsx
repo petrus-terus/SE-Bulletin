@@ -52,6 +52,7 @@ export interface TabRouterProps {
   onBookmarkToggle: (postId: string) => void;
   onViewAuthorProfile: (author: { id?: string; name: string; avatarUrl?: string; designation?: string; department?: string }) => void;
   onAddStoryClick: () => void;
+  onDeleteStory?: (storyId: string) => Promise<void> | void;
   onDeletePost: (postId: string) => void;
   onEditPost: (post: Post) => void;
   onReactionSelect: (postId: string, reaction: EmojiReactionType) => void;
@@ -89,6 +90,7 @@ export const TabRouter: React.FC<TabRouterProps> = ({
   onBookmarkToggle,
   onViewAuthorProfile,
   onAddStoryClick,
+  onDeleteStory,
   onDeletePost,
   onEditPost,
   onReactionSelect,
@@ -151,6 +153,7 @@ export const TabRouter: React.FC<TabRouterProps> = ({
             currentUser={currentUser}
             stories={stories}
             onAddStoryClick={onAddStoryClick}
+            onDeleteStory={onDeleteStory}
           />
 
           {/* Department Filter Chips */}

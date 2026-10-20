@@ -36,9 +36,26 @@ export interface Story {
   authorAvatar?: string;
   hasUnread: boolean;
   imageUrl: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
   backgroundColor?: string;
   caption: string;
   hoursRemaining: number;
+  locationName?: string;
+  viewsCount?: number;
+  createdAt?: string;
+}
+
+export interface StoryGroup {
+  id: string;
+  title: string;
+  authorName: string;
+  authorAvatar: string;
+  departmentName: string;
+  isDepartment: boolean;
+  hasUnread: boolean;
+  stories: Story[];
+  isCurrentUser: boolean;
 }
 
 export interface Comment {
