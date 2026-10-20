@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { EmojiReactionType, Post } from '@/types/bulletin';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
+import { FormattedContent } from '@/shared/FormattedContent';
+import { PostPdfCard } from '@/shared/PostPdfCard';
+import { QuotedPostCard } from '@/shared/QuotedPostCard';
+import { DeletePostDialog } from '@/shared/DeletePostDialog';
+import { getPostPermissions } from '@/utils/postPermissions';
 import { formatCompactNumber } from '@/utils/format';
 import styles from './FeedCard.module.css';
 
@@ -54,22 +58,11 @@ export const FeedCard: React.FC<Props> = ({
 
   const optionsWrapperRef = useRef<HTMLDivElement>(null);
 
-  // SuperAdmin Lockdown: ADMIN_USER / TEST_USER is the global moderator capable of editing/deleting any post.
-  // All other registered users can ONLY edit and delete their own posts.
-  const isSuperAdmin = Boolean(
-    (currentUserName && (currentUserName.trim().toUpperCase() === 'ADMIN_USER' || currentUserName.trim().toUpperCase() === 'TEST_USER')) ||
-    (currentUserId && (currentUserId === 'user-test' || currentUserId === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
-    ((currentUserRole || '').toLowerCase() === 'superadmin')
-  );
-
-  const isOwnPost = Boolean(
-    (currentUserId && post.author.id === currentUserId) ||
-    (currentUserName &&
-      post.author.name &&
-      post.author.name.trim().toLowerCase() === currentUserName.trim().toLowerCase())
-  );
-  const canDelete = isSuperAdmin || isOwnPost;
-  const canEdit = isSuperAdmin || isOwnPost;
+  const { canEdit, canDelete } = getPostPermissions(post, {
+    currentUserId,
+    currentUserName,
+    currentUserRole,
+  });
 
   // Dismiss options menu on outside click or escape
   useEffect(() => {
@@ -115,20 +108,7 @@ export const FeedCard: React.FC<Props> = ({
     setTimeout(() => setJustLiked(false), 400);
   };
 
-  // Format content with highlighted tags
-  const renderFormattedContent = (content: string) => {
-    const parts = content.split(/(#[a-zA-Z0-9_-]+)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('#')) {
-        return (
-          <span key={i} style={{ color: 'var(--color-primary-text)', fontWeight: 600 }}>
-            {part}
-          </span>
-        );
-      }
-      return part;
-    });
-  };
+
 
   return (
     <article
@@ -328,7 +308,9 @@ export const FeedCard: React.FC<Props> = ({
       {/* 3. Main Post Content */}
       <div className={styles.postContent}>
         {post.title && <h2 className={styles.postTitle}>{post.title}</h2>}
-        <p className={styles.postBody}>{renderFormattedContent(post.content)}</p>
+        <p className={styles.postBody}>
+          <FormattedContent content={post.content} />
+        </p>
       </div>
 
       {/* 4. Interactive Poll Card (if present) */}
@@ -343,101 +325,19 @@ export const FeedCard: React.FC<Props> = ({
 
       {/* 4.5 Attached Interactive PDF Document Card */}
       {post.pdfUrl && (
-        <div
-          className={styles.pdfCard}
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(post.pdfUrl, '_blank', 'noopener,noreferrer');
-          }}
-          title={`Click to view/download ${post.pdfName || 'Document.pdf'}`}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-              window.open(post.pdfUrl, '_blank', 'noopener,noreferrer');
-            }
-          }}
-        >
-          <div className={styles.pdfCardLeft}>
-            <div className={styles.pdfBadgeWrap}>
-              <span className={`material-symbols-outlined ${styles.pdfBadgeIcon}`}>
-                picture_as_pdf
-              </span>
-            </div>
-            <div className={styles.pdfCardInfo}>
-              <span className={styles.pdfCardFileName}>
-                {post.pdfName || 'Official-Bulletin-Document.pdf'}
-              </span>
-              <span className={`font-mono tabular-nums ${styles.pdfCardMeta}`}>
-                {post.pdfSize ? `${post.pdfSize} • ` : ''}PDF Document
-              </span>
-            </div>
-          </div>
-
-          <a
-            href={post.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={post.pdfName || 'Document.pdf'}
-            className={styles.pdfCardActionBtn}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Open or download ${post.pdfName || 'document'}`}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-              open_in_new
-            </span>
-            <span>View PDF</span>
-          </a>
-        </div>
+        <PostPdfCard
+          pdfUrl={post.pdfUrl}
+          pdfName={post.pdfName}
+          pdfSize={post.pdfSize}
+        />
       )}
 
       {/* 5. Quoted Post Card (if this is a Quote post) */}
       {post.quotedPost && (
-        <div
-          className={styles.quotedCard}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPostClick?.(post.quotedPost!);
-          }}
-        >
-          <div className={styles.quotedCardHeader}>
-            <img
-              src={post.quotedPost.author.avatarUrl || '/sabah_electricity_logo.png'}
-              alt=""
-              className={styles.quotedCardAvatar}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
-            />
-            <span className={styles.quotedCardAuthor}>{post.quotedPost.author.name}</span>
-            <span className={styles.quotedCardMeta}>• {post.quotedPost.author.department}</span>
-            <span className={`tabular-nums font-mono ${styles.quotedCardMeta}`}>
-              • {post.quotedPost.timestamp}
-            </span>
-          </div>
-          <div className={styles.quotedCardText}>
-            {post.quotedPost.title ? <strong>{post.quotedPost.title} — </strong> : null}
-            {post.quotedPost.content}
-          </div>
-          {(post.quotedPost.imageUrl ||
-            (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0])) && (
-            <div className={styles.quotedCardMedia}>
-              <img
-                src={
-                  (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0]) ||
-                  post.quotedPost.imageUrl!
-                }
-                alt=""
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-        </div>
+        <QuotedPostCard
+          post={post.quotedPost}
+          onClick={() => onPostClick?.(post.quotedPost!)}
+        />
       )}
 
       {/* 6. Multi-Image Gallery or Single High-Res Imagery */}
@@ -617,69 +517,16 @@ export const FeedCard: React.FC<Props> = ({
       )}
 
       {/* Two-Step Post Deletion Confirmation Modal */}
-      {showDeleteConfirm &&
-        createPortal(
-          <div
-            className={styles.modalBackdrop}
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDeleteConfirm(false);
-            }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`delete-dialog-title-${post.id}`}
-          >
-            <div
-              className={styles.confirmDialog}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.dialogIconWrap}>
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '28px', color: 'var(--color-alert-red)' }}
-                >
-                  delete_forever
-                </span>
-              </div>
-
-              <h3 id={`delete-dialog-title-${post.id}`} className={styles.dialogTitle}>
-                Delete Bulletin?
-              </h3>
-              <p className={styles.dialogDesc}>
-                Are you sure you want to delete this bulletin? This action cannot be undone and will
-                permanently remove this post and all its comments.
-              </p>
-
-              <div className={styles.dialogActions}>
-                <button
-                  type="button"
-                  className={styles.cancelDialogBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(false);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.confirmDeleteBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(false);
-                    onDeletePost?.(post.id);
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                    delete
-                  </span>
-                  <span>Delete</span>
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+      {showDeleteConfirm && (
+        <DeletePostDialog
+          postId={post.id}
+          onConfirm={() => {
+            setShowDeleteConfirm(false);
+            onDeletePost?.(post.id);
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </article>
   );
 };

@@ -212,6 +212,50 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
   const mediaPickerInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const captionInputRef = useRef<HTMLInputElement>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Video preview player & scrub state
+  const [isPlayingPreview, setIsPlayingPreview] = useState(true);
+  const [previewProgress, setPreviewProgress] = useState(0);
+  const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
+  const [isPreviewScrubbing, setIsPreviewScrubbing] = useState(false);
+
+  const formatVideoTime = (secs: number) => {
+    const s = Math.max(0, Math.floor(secs));
+    const mins = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
+  };
+
+  const handlePreviewTimeUpdate = () => {
+    if (!previewVideoRef.current || isPreviewScrubbing) return;
+    const { currentTime, duration } = previewVideoRef.current;
+    setPreviewCurrentTime(currentTime);
+    if (duration > 0) {
+      setPreviewProgress((currentTime / duration) * 100);
+    }
+  };
+
+  const togglePreviewPlay = () => {
+    if (!previewVideoRef.current) return;
+    if (previewVideoRef.current.paused) {
+      previewVideoRef.current.play().catch(() => {});
+      setIsPlayingPreview(true);
+    } else {
+      previewVideoRef.current.pause();
+      setIsPlayingPreview(false);
+    }
+  };
+
+  const handlePreviewScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newProgress = Number(e.target.value);
+    setPreviewProgress(newProgress);
+    if (previewVideoRef.current && previewVideoRef.current.duration) {
+      const targetTime = (newProgress / 100) * previewVideoRef.current.duration;
+      previewVideoRef.current.currentTime = targetTime;
+      setPreviewCurrentTime(targetTime);
+    }
+  };
 
   // Revoke any created object URLs when resetting or unmounting to prevent memory leaks
   const revokeObjectUrls = useCallback(() => {
@@ -606,51 +650,6 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
                 <span>Share</span>
               </button>
             </header>
-
-            {/* Mode Switcher */}
-            <div className={styles.modeSwitcherRow}>
-              <div className={styles.segmentedPill}>
-                <button
-                  type="button"
-                  className={`${styles.segmentedBtn} ${mode === 'photo' ? styles.segmentedBtnActive : ''}`}
-                  onClick={() => {
-                    setMode('photo');
-                    setErrorMessage(null);
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    photo_camera
-                  </span>
-                  <span>Photo</span>
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.segmentedBtn} ${mode === 'video' ? styles.segmentedBtnActive : ''}`}
-                  onClick={() => {
-                    setMode('video');
-                    setErrorMessage(null);
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    videocam
-                  </span>
-                  <span>Video</span>
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.segmentedBtn} ${mode === 'text' ? styles.segmentedBtnActive : ''}`}
-                  onClick={() => {
-                    setMode('text');
-                    setErrorMessage(null);
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    title
-                  </span>
-                  <span>Text</span>
-                </button>
-              </div>
-            </div>
           </>
         )}
 
@@ -796,13 +795,57 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
               {videoUrl ? (
                 <>
                   <video
+                    ref={previewVideoRef}
                     src={videoUrl}
                     className={styles.photoPreview}
-                    controls
                     playsInline
                     autoPlay
                     muted
+                    onTimeUpdate={handlePreviewTimeUpdate}
+                    onPlay={() => setIsPlayingPreview(true)}
+                    onPause={() => setIsPlayingPreview(false)}
+                    onClick={togglePreviewPlay}
                   />
+
+                  {/* Custom Glassmorphism Video Scrubber Bar */}
+                  <div className={styles.videoScrubDeck}>
+                    <button
+                      type="button"
+                      className={styles.scrubPlayBtn}
+                      onClick={togglePreviewPlay}
+                      aria-label={isPlayingPreview ? 'Pause video preview' : 'Play video preview'}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                        {isPlayingPreview ? 'pause' : 'play_arrow'}
+                      </span>
+                    </button>
+
+                    <div className={styles.scrubSliderWrap}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={previewProgress}
+                        onChange={handlePreviewScrub}
+                        onMouseDown={() => setIsPreviewScrubbing(true)}
+                        onMouseUp={() => setIsPreviewScrubbing(false)}
+                        onTouchStart={() => setIsPreviewScrubbing(true)}
+                        onTouchEnd={() => setIsPreviewScrubbing(false)}
+                        className={styles.scrubSlider}
+                        aria-label="Seek video position"
+                      />
+                      <div
+                        className={styles.scrubSliderFill}
+                        style={{ width: `${previewProgress}%` }}
+                      />
+                    </div>
+
+                    <span className={`font-mono tabular-nums ${styles.scrubTimeReadout}`}>
+                      {formatVideoTime(previewCurrentTime)} / {formatVideoTime(videoDuration || 0)}
+                    </span>
+                  </div>
+
                   {uploadStatus && (
                     <div className={styles.statusBadge}>
                       <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>

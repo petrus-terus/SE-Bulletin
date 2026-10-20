@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post, Comment } from '@/types/bulletin';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
+import { FormattedContent } from '@/shared/FormattedContent';
+import { PostPdfCard } from '@/shared/PostPdfCard';
+import { QuotedPostCard } from '@/shared/QuotedPostCard';
+import { DeletePostDialog } from '@/shared/DeletePostDialog';
+import { getPostPermissions } from '@/utils/postPermissions';
 import { formatCompactNumber } from '@/utils/format';
 import styles from './PostDetailView.module.css';
 
@@ -45,22 +50,11 @@ export const PostDetailView: React.FC<Props> = ({
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // SuperAdmin Lockdown: ADMIN_USER / TEST_USER is the global moderator capable of editing/deleting any post.
-  // All other registered users can ONLY edit and delete their own posts.
-  const isSuperAdmin = Boolean(
-    (currentUserName && (currentUserName.trim().toUpperCase() === 'ADMIN_USER' || currentUserName.trim().toUpperCase() === 'TEST_USER')) ||
-    (currentUserId && (currentUserId === 'user-test' || currentUserId === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
-    ((currentUserRole || '').toLowerCase() === 'superadmin')
-  );
-
-  const isOwnPost = Boolean(
-    (currentUserId && post.author.id === currentUserId) ||
-    (currentUserName &&
-      post.author.name &&
-      post.author.name.trim().toLowerCase() === currentUserName.trim().toLowerCase())
-  );
-  const canDelete = isSuperAdmin || isOwnPost;
-  const canEdit = isSuperAdmin || isOwnPost;
+  const { canEdit, canDelete } = getPostPermissions(post, {
+    currentUserId,
+    currentUserName,
+    currentUserRole,
+  });
 
   const handleCopyLink = () => {
     const link = `${window.location.origin}/#post-${post.id}`;
@@ -92,21 +86,6 @@ export const PostDetailView: React.FC<Props> = ({
 
     onAddComment(post.id, commentInput.trim());
     setCommentInput('');
-  };
-
-  // Format content with highlighted tags
-  const renderFormattedContent = (content: string) => {
-    const parts = content.split(/(#[a-zA-Z0-9_-]+)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('#')) {
-        return (
-          <span key={i} style={{ color: '#0055A4', fontWeight: 600 }}>
-            {part}
-          </span>
-        );
-      }
-      return part;
-    });
   };
 
   // Edge Swipe-to-Dismiss Touch Gesture Handler
@@ -310,47 +289,16 @@ export const PostDetailView: React.FC<Props> = ({
         <h1 className={styles.postTitle}>{post.title}</h1>
 
         {/* Post Text Body */}
-        <div className={styles.postBody}>{renderFormattedContent(post.content)}</div>
+        <div className={styles.postBody}>
+          <FormattedContent content={post.content} />
+        </div>
 
         {/* Quoted Post Embedded Card (Twitter/X Style) */}
         {post.quotedPost && (
-          <div className={styles.quotedCard}>
-            <div className={styles.quotedCardHeader}>
-              <img
-                src={post.quotedPost.author.avatarUrl || '/sabah_electricity_logo.png'}
-                alt=""
-                className={styles.quotedCardAvatar}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                }}
-              />
-              <span className={styles.quotedCardAuthor}>{post.quotedPost.author.name}</span>
-              <span className={styles.quotedCardMeta}>• {post.quotedPost.author.department}</span>
-              <span className={`tabular-nums font-mono ${styles.quotedCardMeta}`}>
-                • {post.quotedPost.timestamp}
-              </span>
-            </div>
-            <div className={styles.quotedCardContent}>
-              {post.quotedPost.title ? <strong>{post.quotedPost.title} — </strong> : null}
-              {post.quotedPost.content}
-            </div>
-            {(post.quotedPost.imageUrl ||
-              (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0])) && (
-              <div className={styles.quotedCardMedia}>
-                <img
-                  src={
-                    (post.quotedPost.mediaUrls && post.quotedPost.mediaUrls[0]) ||
-                    post.quotedPost.imageUrl!
-                  }
-                  alt=""
-                  className={styles.quotedCardImg}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-          </div>
+          <QuotedPostCard
+            post={post.quotedPost}
+            className={styles.quotedCard}
+          />
         )}
 
         {/* Interactive Poll (if attached) */}
@@ -365,50 +313,12 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Attached Interactive PDF Document Card */}
         {post.pdfUrl && (
-          <div
+          <PostPdfCard
+            pdfUrl={post.pdfUrl}
+            pdfName={post.pdfName}
+            pdfSize={post.pdfSize}
             className={styles.pdfCard}
-            onClick={() => window.open(post.pdfUrl, '_blank', 'noopener,noreferrer')}
-            title={`Click to view/download ${post.pdfName || 'Document.pdf'}`}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-                window.open(post.pdfUrl, '_blank', 'noopener,noreferrer');
-              }
-            }}
-          >
-            <div className={styles.pdfCardLeft}>
-              <div className={styles.pdfBadgeWrap}>
-                <span className={`material-symbols-outlined ${styles.pdfBadgeIcon}`}>
-                  picture_as_pdf
-                </span>
-              </div>
-              <div className={styles.pdfCardInfo}>
-                <span className={styles.pdfCardFileName}>
-                  {post.pdfName || 'Official-Bulletin-Document.pdf'}
-                </span>
-                <span className={`font-mono tabular-nums ${styles.pdfCardMeta}`}>
-                  {post.pdfSize ? `${post.pdfSize} • ` : ''}PDF Document
-                </span>
-              </div>
-            </div>
-
-            <a
-              href={post.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              download={post.pdfName || 'Document.pdf'}
-              className={styles.pdfCardActionBtn}
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`Open or download ${post.pdfName || 'document'}`}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                open_in_new
-              </span>
-              <span>View PDF</span>
-            </a>
-          </div>
+          />
         )}
 
         {/* Uncropped Full Photo (Tap to zoom) */}
@@ -592,64 +502,18 @@ export const PostDetailView: React.FC<Props> = ({
         </button>
       </form>
 
-      {/* Two-Step Post Deletion Confirmation Modal (Portaled to document.body) */}
-      {showDeleteConfirm &&
-        createPortal(
-          <div
-            className={styles.modalBackdrop}
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDeleteConfirm(false);
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div
-              className={styles.confirmDialog}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.dialogIconWrap}>
-                <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#DC2626' }}>
-                  delete_forever
-                </span>
-              </div>
-
-              <h3 className={styles.dialogTitle}>Delete Bulletin?</h3>
-              <p className={styles.dialogDesc}>
-                Are you sure you want to delete this bulletin? This action cannot be undone and will permanently remove this post and all its comments.
-              </p>
-
-              <div className={styles.dialogActions}>
-                <button
-                  type="button"
-                  className={styles.cancelDialogBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(false);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.confirmDeleteBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(false);
-                    onDeletePost?.(post.id);
-                    onBack();
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                    delete
-                  </span>
-                  <span>Delete</span>
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+      {/* Two-Step Post Deletion Confirmation Modal */}
+      {showDeleteConfirm && (
+        <DeletePostDialog
+          postId={post.id}
+          onConfirm={() => {
+            setShowDeleteConfirm(false);
+            onDeletePost?.(post.id);
+            onBack();
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
 
       {/* 5. Bottom Action Sheet for Post Options */}
       {showActionSheet &&

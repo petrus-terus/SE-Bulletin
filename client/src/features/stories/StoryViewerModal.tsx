@@ -128,12 +128,80 @@ export const StoryViewerModal: React.FC<Props> = ({
     };
   }, [currentStory, isPaused, showMenu, showDeleteConfirm, handleNext]);
 
-  // Video timeupdate sync
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubTime, setScrubTime] = useState<number | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const wasPlayingBeforeScrubRef = useRef(false);
+
+  // Helper to format seconds into m:ss
+  const formatTime = (secs: number) => {
+    const s = Math.max(0, Math.floor(secs));
+    const mins = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
+  };
+
+  // Video timeupdate sync & metadata duration load
+  const handleVideoLoadedMetadata = () => {
+    if (videoRef.current && videoRef.current.duration) {
+      setVideoDuration(videoRef.current.duration);
+    }
+  };
+
   const handleVideoTimeUpdate = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isScrubbing) return;
     const { currentTime, duration } = videoRef.current;
     if (duration > 0) {
       setProgress((currentTime / duration) * 100);
+      setVideoDuration(duration);
+    }
+  };
+
+  // Interactive scrubbing directly on the active story segment
+  const handleScrubStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!videoRef.current || !videoDuration) return;
+    e.stopPropagation();
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+
+    setIsScrubbing(true);
+    wasPlayingBeforeScrubRef.current = !videoRef.current.paused;
+    videoRef.current.pause();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = e.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const targetTime = ratio * videoDuration;
+
+    videoRef.current.currentTime = targetTime;
+    setProgress(ratio * 100);
+    setScrubTime(targetTime);
+  };
+
+  const handleScrubMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isScrubbing || !videoRef.current || !videoDuration) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const targetTime = ratio * videoDuration;
+
+    videoRef.current.currentTime = targetTime;
+    setProgress(ratio * 100);
+    setScrubTime(targetTime);
+  };
+
+  const handleScrubEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isScrubbing) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    setIsScrubbing(false);
+    setScrubTime(null);
+
+    if (videoRef.current && wasPlayingBeforeScrubRef.current) {
+      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -284,23 +352,50 @@ export const StoryViewerModal: React.FC<Props> = ({
         <div
           className={`${styles.progressTrack} ${isHolding ? styles.overlayHidden : ''}`}
         >
-          {currentGroup.stories.map((s, idx) => (
-            <div key={s.id} className={styles.progressSegment}>
+          {currentGroup.stories.map((s, idx) => {
+            const isCurrent = idx === storyIndex;
+            const isVideoStory = s.mediaType === 'video' || Boolean(s.videoUrl);
+
+            return (
               <div
-                className={styles.progressBarFill}
-                style={{
-                  transform: `scaleX(${
-                    idx < storyIndex
-                      ? 1
-                      : idx === storyIndex
-                      ? progress / 100
-                      : 0
-                  })`,
-                }}
-              />
-            </div>
-          ))}
+                key={s.id}
+                className={`${styles.progressSegment} ${
+                  isCurrent && isVideoStory ? styles.progressSegmentInteractive : ''
+                }`}
+                onPointerDown={isCurrent && isVideoStory ? handleScrubStart : undefined}
+                onPointerMove={isCurrent && isVideoStory ? handleScrubMove : undefined}
+                onPointerUp={isCurrent && isVideoStory ? handleScrubEnd : undefined}
+                onPointerCancel={isCurrent && isVideoStory ? handleScrubEnd : undefined}
+                title={isCurrent && isVideoStory ? 'Drag or tap to scrub video' : undefined}
+              >
+                <div
+                  className={styles.progressBarFill}
+                  style={{
+                    transform: `scaleX(${
+                      idx < storyIndex
+                        ? 1
+                        : isCurrent
+                        ? progress / 100
+                        : 0
+                    })`,
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
+
+        {/* Live Scrubbing Time Badge (Shows floating timestamp when dragging top progress bar) */}
+        {isScrubbing && scrubTime !== null && videoDuration > 0 && (
+          <div className={styles.scrubTooltip}>
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              play_circle
+            </span>
+            <span className="font-mono tabular-nums">
+              {formatTime(scrubTime)} / {formatTime(videoDuration)}
+            </span>
+          </div>
+        )}
 
         {/* Story Header (Fades out when screen is held for clean unobstructed view) */}
         <div
@@ -443,6 +538,7 @@ export const StoryViewerModal: React.FC<Props> = ({
                 onWaiting={() => setIsBuffering(true)}
                 onPlaying={() => setIsBuffering(false)}
                 onCanPlay={() => setIsBuffering(false)}
+                onLoadedMetadata={handleVideoLoadedMetadata}
                 onTimeUpdate={handleVideoTimeUpdate}
                 onEnded={handleNext}
               />

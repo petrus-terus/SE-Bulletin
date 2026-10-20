@@ -2,6 +2,17 @@ import { useEffect, useRef } from 'react';
 import type { AppNotification, Comment, Employee, Post, Story } from '@/types/bulletin';
 import { isSupabaseConfigured, supabase } from '@/services/supabaseClient';
 import { saveStoredNotifications } from '@/services/notificationService';
+import {
+  mapRowToPost,
+  mergeUpdatedPostRow,
+  mapRowToStory,
+  mapRowToComment,
+  isAuthorSelf,
+  getAvatarInitials,
+  type PostRow,
+  type StoryRow,
+  type CommentRow,
+} from '@/services/rowMappers';
 
 interface UseRealtimeSyncParams {
   setStories: React.Dispatch<React.SetStateAction<Story[]>>;
@@ -38,50 +49,9 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'stories' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const row = payload.new as any;
-          let hoursRemaining = 24;
-          if (row.created_at) {
-            const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
-            hoursRemaining = Math.max(1, Math.round(24 - elapsed));
-          }
-
-          let rawCaption = row.caption || '';
-          let locationName: string | undefined;
-          const locMatch = rawCaption.match(/^\[📍\s*([^\]]+)\]\s*(.*)$/s);
-          if (locMatch) {
-            locationName = locMatch[1].trim();
-            rawCaption = locMatch[2].trim();
-          }
-
-          let videoThumbnail: string | undefined;
-          const thumbMatch = rawCaption.match(/^\[🖼️\s*([^\]]+)\]\s*(.*)$/s);
-          if (thumbMatch) {
-            videoThumbnail = thumbMatch[1].trim();
-            rawCaption = thumbMatch[2].trim();
-          }
-
-          const isVideo = Boolean(
-            row.image_url?.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ||
-            row.image_url?.includes('video')
-          );
-
-          const liveStory: Story = {
-            id: row.id,
-            departmentId: row.department_id,
-            departmentName: row.department_name,
-            authorName: row.author_name,
-            authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
-            hasUnread: true,
-            imageUrl: isVideo ? (videoThumbnail || '/grid_horizon_hero.jpg') : row.image_url,
-            videoUrl: isVideo ? row.image_url : undefined,
-            mediaType: isVideo ? 'video' : 'image',
-            caption: rawCaption,
-            locationName,
-            hoursRemaining,
-            createdAt: row.created_at,
-            viewsCount: 1,
-          };
+          const row = payload.new as StoryRow;
+          if (!row || !row.id) return;
+          const liveStory = mapRowToStory(row, { viewsCount: 1, hasUnread: true });
           setStories((prev) => [liveStory, ...prev.filter((s) => s.id !== liveStory.id)]);
         }
       )
@@ -119,54 +89,20 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const row = payload.new as any;
-          const livePost: Post = {
-            id: row.id,
-            title: row.title,
-            content: row.content,
-            author: {
-              id: row.author_id || `author-${(row.author_name || 'user').toLowerCase()}`,
-              name: row.author_name,
-              designation: row.author_role || 'Sabah Electricity Staff',
-              department: row.department,
-              avatarUrl: row.author_avatar || '/sabah_electricity_logo.png',
-              isVerified: true,
-            },
-            timestamp: 'Just now',
-            location: row.location,
-            imageUrl: row.image_url,
-            mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : row.image_url ? [row.image_url] : [],
-            isPinned: Boolean(row.is_pinned),
-            commentsEnabled: Boolean(row.comments_enabled ?? true),
-            likesCount: Number(row.likes_count || 0),
-            commentsCount: Number(row.comments_count || 0),
-            sharesCount: 0,
-            viewsCount: Number(row.views_count || 1),
-            resharesCount: Number(row.reshares_count || 0),
-            isLiked: false,
-            isBookmarked: false,
-            departmentId: row.department_id || 'dept-ops',
-            departmentName: row.department,
-            departmentColor: row.department_color || '#0055A4',
-            officialNotice: Boolean(row.official_notice),
-            poll: row.poll_data || row.poll || undefined,
-            pdfUrl: row.pdf_url || undefined,
-            pdfName: row.pdf_name || undefined,
-            pdfSize: row.pdf_size || undefined,
-            reactions: row.reactions_breakdown || undefined,
-          };
+          const row = payload.new as PostRow;
+          if (!row || !row.id) return;
 
-          setPosts((prev) => [livePost, ...prev.filter((p) => p.id !== livePost.id)]);
+          setPosts((prev) => {
+            const existingMap = new Map(prev.map((p) => [p.id, p]));
+            const livePost = mapRowToPost(row, {
+              timestamp: 'Just now',
+              viewsCountFloor: 1,
+              existingPostsMap: existingMap,
+            });
+            return [livePost, ...prev.filter((p) => p.id !== livePost.id)];
+          });
 
-          const currUser = currentUserRef.current;
-          const isSelf = Boolean(
-            currUser &&
-              ((row.author_id && row.author_id === currUser.id) ||
-                (row.author_name &&
-                  currUser.name &&
-                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
-          );
+          const isSelf = isAuthorSelf(row.author_id, row.author_name, currentUserRef.current);
 
           if (!isSelf) {
             setToast({
@@ -189,16 +125,15 @@ export function useRealtimeSync({
               iconColor: row.official_notice ? '#EF4444' : '#0055A4',
               targetPostId: row.id,
               avatarUrl: row.author_avatar || undefined,
-              avatarInitials: (row.author_name || 'SE')
-                .split(' ')
-                .map((n: string) => n[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase(),
+              avatarInitials: getAvatarInitials(row.author_name),
             };
             setNotifications((prev) => {
               const updated = [newNotif, ...prev];
-              saveStoredNotifications(updated);
+              try {
+                saveStoredNotifications(updated);
+              } catch (e) {
+                console.warn('[useRealtimeSync] Failed to save notifications:', e);
+              }
               return updated;
             });
           }
@@ -208,59 +143,14 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const row = payload.new as any;
+          const row = payload.new as Partial<PostRow>;
           if (!row || !row.id) return;
 
           setPosts((prev) =>
-            prev.map((post) => {
-              if (post.id !== row.id) return post;
-              return {
-                ...post,
-                title: row.title !== undefined ? row.title : post.title,
-                content: row.content !== undefined ? row.content : post.content,
-                location: row.location !== undefined ? row.location : post.location,
-                imageUrl: row.image_url !== undefined ? row.image_url : post.imageUrl,
-                mediaUrls: Array.isArray(row.media_urls)
-                  ? row.media_urls
-                  : row.image_url
-                  ? [row.image_url]
-                  : post.mediaUrls,
-                isPinned: row.is_pinned !== undefined ? Boolean(row.is_pinned) : post.isPinned,
-                commentsEnabled:
-                  row.comments_enabled !== undefined
-                    ? Boolean(row.comments_enabled)
-                    : post.commentsEnabled,
-                likesCount: Number(row.likes_count ?? post.likesCount),
-                commentsCount: Number(row.comments_count ?? post.commentsCount),
-                viewsCount: Number(row.views_count ?? post.viewsCount),
-                resharesCount: Number(row.reshares_count ?? post.resharesCount),
-                departmentName: row.department || post.departmentName,
-                departmentId: row.department_id || post.departmentId,
-                departmentColor: row.department_color || post.departmentColor,
-                officialNotice:
-                  row.official_notice !== undefined
-                    ? Boolean(row.official_notice)
-                    : post.officialNotice,
-                poll: row.poll_data || row.poll || post.poll,
-                reactions: row.reactions_breakdown !== undefined ? row.reactions_breakdown : post.reactions,
-                pdfUrl: row.pdf_url !== undefined ? row.pdf_url : post.pdfUrl,
-                pdfName: row.pdf_name !== undefined ? row.pdf_name : post.pdfName,
-                pdfSize: row.pdf_size !== undefined ? row.pdf_size : post.pdfSize,
-                isEdited: row.is_edited !== undefined ? Boolean(row.is_edited) : post.isEdited,
-                editedAt: row.edited_at || post.editedAt,
-              };
-            })
+            prev.map((post) => (post.id === row.id ? mergeUpdatedPostRow(post, row) : post))
           );
 
-          const currUser = currentUserRef.current;
-          const isSelf = Boolean(
-            currUser &&
-              ((row.author_id && row.author_id === currUser.id) ||
-                (row.author_name &&
-                  currUser.name &&
-                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
-          );
+          const isSelf = isAuthorSelf(row.author_id, row.author_name, currentUserRef.current);
 
           if (row.is_edited && !isSelf) {
             setToast({
@@ -274,23 +164,9 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const row = payload.new as any;
-          const liveComment: Comment = {
-            id: row.id,
-            authorName: row.author_name,
-            department: row.department,
-            avatarInitials: (row.author_name || 'SE')
-              .split(' ')
-              .map((n: string) => n[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase(),
-            avatarUrl: row.author_avatar || undefined,
-            text: row.text,
-            timestamp: 'Just now',
-            likesCount: 0,
-          };
+          const row = payload.new as CommentRow;
+          if (!row || !row.id) return;
+          const liveComment = mapRowToComment(row, { timestamp: 'Just now' });
 
           setCommentsByPost((prev) => {
             const list = prev[row.post_id] || [];
@@ -301,14 +177,7 @@ export function useRealtimeSync({
             };
           });
 
-          const currUser = currentUserRef.current;
-          const isCommentSelf = Boolean(
-            currUser &&
-              ((row.author_id && row.author_id === currUser.id) ||
-                (row.author_name &&
-                  currUser.name &&
-                  row.author_name.toLowerCase().trim() === currUser.name.toLowerCase().trim()))
-          );
+          const isCommentSelf = isAuthorSelf(row.author_id, row.author_name, currentUserRef.current);
 
           setPosts((prev) =>
             prev.map((p) =>
@@ -341,17 +210,15 @@ export function useRealtimeSync({
               iconColor: '#0055A4',
               targetPostId: row.post_id,
               targetCommentId: row.id,
-              avatarUrl: row.author_avatar || undefined,
-              avatarInitials: (row.author_name || 'SE')
-                .split(' ')
-                .map((n: string) => n[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase(),
+              avatarInitials: getAvatarInitials(row.author_name),
             };
             setNotifications((prev) => {
               const updated = [commentNotif, ...prev];
-              saveStoredNotifications(updated);
+              try {
+                saveStoredNotifications(updated);
+              } catch (e) {
+                console.warn('[useRealtimeSync] Failed to save notifications:', e);
+              }
               return updated;
             });
           }

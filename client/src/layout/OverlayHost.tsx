@@ -193,9 +193,13 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
             currentUser={currentUser}
             onClose={onCloseCreateBulletin}
             onSubmit={async (newPostData) => {
-              const newPost = await bulletinService.createPost(newPostData, currentUser);
-              onPublishPost(newPost);
-              onCloseCreateBulletin();
+              try {
+                const newPost = await bulletinService.createPost(newPostData, currentUser);
+                onPublishPost(newPost);
+                onCloseCreateBulletin();
+              } catch (err) {
+                console.error('[OverlayHost] Failed to publish bulletin:', err);
+              }
             }}
           />
         </Suspense>

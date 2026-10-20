@@ -7,6 +7,8 @@ import { getStoredNotifications, saveStoredNotifications } from '@/services/noti
 import { supabase } from '@/services/supabaseClient';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { usePostActions } from '@/hooks/usePostActions';
+import { useOverlayManager } from '@/hooks/useOverlayManager';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import { AppShell } from '@/layout/AppShell';
 import { TopAppBar } from '@/layout/TopAppBar';
 import { BottomNav } from '@/layout/BottomNav';
@@ -33,8 +35,7 @@ const ViewFallback = () => (
 );
 
 export function App() {
-  const [currentUser, setCurrentUser] = useState<Employee | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const { currentUser, setCurrentUser, isAuthenticated, setIsAuthenticated } = useAuthSession();
   const [isPilotUnlocked, setIsPilotUnlocked] = useState<boolean>(() => {
     return localStorage.getItem('sesb_pilot_unlocked') === 'true';
   });
@@ -55,24 +56,37 @@ export function App() {
 
   const [viewedProfileEmployee, setViewedProfileEmployee] = useState<Employee | null>(null);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
-
-  // Modals & Drawers State (ID based to prevent state desync with feed)
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
-  const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
-  const [isBrandSidebarOpen, setIsBrandSidebarOpen] = useState(false);
-  const [isShowcaseOpen, setIsShowcaseOpen] = useState(false);
-  const [isSavedPostsOpen, setIsSavedPostsOpen] = useState(false);
-  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
-  const [activeResharePostId, setActiveResharePostId] = useState<string | null>(null);
-  const [activeQuotePostId, setActiveQuotePostId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [lightboxImage, setLightboxImage] = useState<{
-    url: string;
-    title?: string;
-    location?: string | null;
-  } | null>(null);
+  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
+
+  // Overlay state manager
+  const {
+    openCreate,
+    openEdit,
+    openStory,
+    openSidebar,
+    openShowcase,
+    openSaved,
+    openComment,
+    openReshare,
+    openQuote,
+    openLightbox,
+    closeOverlay,
+    setActiveCommentPostId,
+    setActiveResharePostId,
+    setActiveQuotePostId,
+    setEditingPost,
+    isCreateOpen,
+    editingPost,
+    isCreateStoryOpen,
+    isBrandSidebarOpen,
+    isShowcaseOpen,
+    isSavedPostsOpen,
+    activeCommentPostId,
+    activeResharePostId,
+    activeQuotePostId,
+    lightboxImage,
+  } = useOverlayManager();
 
   // Gesture-linked 1:1 scroll choreography with snap-to-rest
   useScrollChoreography({ activeTab, selectedPostId });
@@ -142,56 +156,6 @@ export function App() {
       icon: 'logout',
     });
   };
-
-  // 0. Supabase Auth State Listener
-  useEffect(() => {
-    if (!supabase) return;
-
-    const syncSessionUser = (user: import('@supabase/supabase-js').User | undefined) => {
-      if (user) {
-        setIsAuthenticated(true);
-        bulletinService.getProfile(user.id).then((matched) => {
-          if (matched) {
-            setCurrentUser(matched);
-          } else {
-            const fallbackUser: Employee = {
-              id: user.id,
-              employeeId: 'SESB-' + user.id.slice(0, 4).toUpperCase(),
-              name: user.email ? user.email.split('@')[0] : 'SE Staff',
-              fullName: user.email || 'SE Staff',
-              designation: 'Sabah Electricity Staff',
-              department: 'Operations',
-              email: user.email || 'staff@sesb.com.my',
-              avatarUrl: '/sabah_electricity_logo.png',
-              coverUrl: '/grid_horizon_hero.jpg',
-              officeLocation: 'Wisma SE HQ, Kota Kinabalu',
-              phoneExtension: 'Ext. 4102',
-              bio: 'Sabah Electricity Staff Member',
-              role: 'GeneralStaff',
-              adminDepartments: [],
-              isVerified: true,
-            };
-            setCurrentUser(fallbackUser);
-          }
-        });
-      } else {
-        setIsAuthenticated(false);
-        setCurrentUser(null);
-      }
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      syncSessionUser(session?.user);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      syncSessionUser(session?.user);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // 1. Initial Load from BulletinService / Supabase (Posts & 24h Stories)
   useEffect(() => {
@@ -412,7 +376,7 @@ export function App() {
           currentUser={currentUser}
           unreadCount={unreadCount}
           onNotificationClick={() => setActiveTab('notifications')}
-          onBrandClick={() => setIsBrandSidebarOpen(true)}
+          onBrandClick={openSidebar}
           onProfileClick={() => {
             setViewedProfileEmployee(null);
             setActiveTab('profile');
@@ -432,7 +396,7 @@ export function App() {
               if (tab === 'profile') setViewedProfileEmployee(null);
               setActiveTab(tab);
             }}
-            onCreateClick={() => setIsCreateOpen(true)}
+            onCreateClick={openCreate}
             currentUser={currentUser}
             unreadCount={unreadCount}
           />
@@ -452,13 +416,13 @@ export function App() {
               currentUserName={currentUser.name}
               currentUserRole={currentUser.role}
               onDeletePost={handleDeletePost}
-              onEditPost={(post) => setEditingPost(post)}
+              onEditPost={(post) => openEdit(post)}
               onImageClick={(imageUrl, title, location) => {
-                setLightboxImage({ url: imageUrl, title, location });
+                openLightbox({ url: imageUrl, title, location });
               }}
               onAddComment={handleAddComment}
               onVotePoll={handleVotePoll}
-              onReshareClick={(post: Post) => setActiveResharePostId(post.id)}
+              onReshareClick={(post: Post) => openReshare(post.id)}
             />
           </Suspense>
         ) : (
@@ -483,23 +447,23 @@ export function App() {
                   }
                 : undefined
             }
-            onOpenCreate={() => setIsCreateOpen(true)}
+            onOpenCreate={openCreate}
             onNavigateExplore={() => setActiveTab('explore')}
             onSelectPost={handleOpenPostDetail}
-            onOpenComments={(id) => setActiveCommentPostId(id)}
+            onOpenComments={(id) => openComment(id)}
             onVotePoll={handleVotePoll}
             onLikeToggle={handleLikeToggle}
             onBookmarkToggle={handleBookmarkToggle}
             onViewAuthorProfile={handleViewAuthorProfile}
-            onAddStoryClick={() => setIsCreateStoryOpen(true)}
+            onAddStoryClick={openStory}
             onDeleteStory={handleDeleteStory}
             onDeletePost={handleDeletePost}
-            onEditPost={(post) => setEditingPost(post)}
+            onEditPost={(post) => openEdit(post)}
             onReactionSelect={handleReactionSelect}
             onReshareToggle={handleReshareToggle}
             onQuotePost={handleQuotePost}
             onSharePost={handleSharePost}
-            onReshareClick={(id) => setActiveResharePostId(id)}
+            onReshareClick={(id) => openReshare(id)}
             onNotificationClick={handleNotificationClick}
             onMarkAllNotificationsAsRead={() => {
               setNotifications((prev) => {
@@ -509,7 +473,7 @@ export function App() {
               });
               setToast({ message: 'All notifications marked as read', icon: 'done_all' });
             }}
-            onImageClick={(url, title) => setLightboxImage({ url, title })}
+            onImageClick={(url, title) => openLightbox({ url, title })}
             onLogout={handleLogout}
             onUpdateProfile={handleUpdateProfile}
           />
@@ -526,13 +490,13 @@ export function App() {
               if (tab === 'profile') setViewedProfileEmployee(null);
               setActiveTab(tab);
             }}
-            onCreateClick={() => setIsCreateOpen(true)}
+            onCreateClick={openCreate}
             unreadCount={unreadCount}
           />
 
           {/* Sequenced Docked FAB is exclusive to Home feed when BottomNav scrubs out */}
           {activeTab === 'home' && (
-            <DockedFab onClick={() => setIsCreateOpen(true)} />
+            <DockedFab onClick={openCreate} />
           )}
         </>
       )}
@@ -542,18 +506,18 @@ export function App() {
         currentUser={currentUser}
         activeCommentPost={activeCommentPost}
         commentsByPost={commentsByPost}
-        onCloseCommentDrawer={() => setActiveCommentPostId(null)}
+        onCloseCommentDrawer={closeOverlay}
         onAddComment={handleAddComment}
         onAuthorProfileClick={(author) => handleViewAuthorProfile(author)}
         activeResharePost={activeResharePost}
-        onCloseReshareSheet={() => setActiveResharePostId(null)}
+        onCloseReshareSheet={closeOverlay}
         onReshareToggle={handleReshareToggle}
-        onOpenQuoteModal={(targetId) => setActiveQuotePostId(targetId)}
+        onOpenQuoteModal={(targetId) => openQuote(targetId)}
         activeQuotePost={activeQuotePost}
-        onCloseQuoteModal={() => setActiveQuotePostId(null)}
+        onCloseQuoteModal={closeOverlay}
         onQuoteSubmit={(quotedPost, commentText) => handleQuotePost(quotedPost, commentText)}
         isCreateStoryOpen={isCreateStoryOpen}
-        onCloseCreateStory={() => setIsCreateStoryOpen(false)}
+        onCloseCreateStory={closeOverlay}
         onStoryCreated={async (newStory) => {
           setStories((prev) => [newStory, ...prev.filter((s) => s.id !== newStory.id)]);
           try {
@@ -565,27 +529,26 @@ export function App() {
           }
         }}
         isCreateOpen={isCreateOpen}
-        onCloseCreateBulletin={() => setIsCreateOpen(false)}
+        onCloseCreateBulletin={closeOverlay}
         onPublishPost={handlePublishPost}
         editingPost={editingPost}
-        onCloseEditBulletin={() => setEditingPost(null)}
+        onCloseEditBulletin={closeOverlay}
         onUpdatePost={handleUpdatePost}
         lightboxImage={lightboxImage}
-        onCloseLightbox={() => setLightboxImage(null)}
+        onCloseLightbox={closeOverlay}
         isBrandSidebarOpen={isBrandSidebarOpen}
-        onCloseBrandSidebar={() => setIsBrandSidebarOpen(false)}
+        onCloseBrandSidebar={closeOverlay}
         onOpenSavedPosts={() => {
-          setIsBrandSidebarOpen(false);
-          setIsSavedPostsOpen(true);
+          openSaved();
         }}
         onLogout={handleLogout}
         isShowcaseOpen={isShowcaseOpen}
-        onOpenShowcase={() => setIsShowcaseOpen(true)}
-        onCloseShowcase={() => setIsShowcaseOpen(false)}
+        onOpenShowcase={openShowcase}
+        onCloseShowcase={closeOverlay}
         onOpenScreen={(target) => {
           setSelectedPostId(null);
           if (target === 'create') {
-            setIsCreateOpen(true);
+            openCreate();
             return;
           }
           if (target === 'profile') setViewedProfileEmployee(null);
@@ -593,10 +556,10 @@ export function App() {
         }}
         savedCount={posts.filter((p) => p.isBookmarked).length}
         isSavedPostsOpen={isSavedPostsOpen}
-        onCloseSavedPosts={() => setIsSavedPostsOpen(false)}
+        onCloseSavedPosts={closeOverlay}
         savedPosts={posts.filter((p) => p.isBookmarked)}
         onSavedPostClick={(id) => {
-          setIsSavedPostsOpen(false);
+          closeOverlay();
           setSelectedPostId(id);
         }}
         onRemoveBookmark={handleBookmarkToggle}

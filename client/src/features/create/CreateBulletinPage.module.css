@@ -810,29 +810,6 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.photoCompressBadge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 2;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #10B981;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  font-family: var(--font-mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-
 .spinning {
   animation: spin 1s linear infinite;
 }
@@ -887,11 +864,11 @@
 
 .editCropTileBtn,
 .removeTileBtn {
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(11, 15, 23, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
   cursor: pointer;
   display: flex;
@@ -904,16 +881,18 @@
 
 .editCropTileBtn:active,
 .removeTileBtn:active {
-  transform: scale(0.92);
-  background: rgba(0, 0, 0, 0.85);
+  transform: scale(0.94);
+  background: rgba(11, 15, 23, 0.95);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .editCropTileBtn:hover {
     background: #1A7A5A;
+    border-color: #10B981;
   }
   .removeTileBtn:hover {
     background: #EF4444;
+    border-color: #F87171;
   }
 }
 

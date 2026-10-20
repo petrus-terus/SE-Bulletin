@@ -2,22 +2,12 @@ import type { CreatePostPayload, Employee, Post, Story } from '@/types/bulletin'
 import { ALL_EMPLOYEES, INITIAL_POSTS, INITIAL_STORIES, getRegisteredEmployees } from './mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { compressImageFile } from '@/utils/imageCompressor';
-import { z } from 'zod';
-
-const PollOptionSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-  votes: z.number().default(0),
-});
-
-const PollDataSchema = z.object({
-  id: z.string(),
-  question: z.string(),
-  options: z.array(PollOptionSchema),
-  totalVotes: z.number().default(0),
-  expiresText: z.string().optional(),
-  userVotedId: z.string().optional(),
-});
+import {
+  mapRowToPost,
+  mapRowToStory,
+  mapRowToComment,
+  getAvatarInitials,
+} from './rowMappers';
 
 const VIEWED_POSTS_STORAGE_KEY = 'sesb_viewed_bulletin_ids';
 
@@ -94,7 +84,9 @@ function saveDeletedStoryId(storyId: string) {
             .map((item) => (typeof item === 'string' ? { id: item, deletedAt: now } : item))
             .filter((item) => item && typeof item.id === 'string' && now - (item.deletedAt || 0) < STORY_EXPIRY_MS);
         }
-      } catch {}
+      } catch (parseErr) {
+        console.warn('[BulletinService] Corrupted deleted stories in localStorage:', parseErr);
+      }
     }
     if (!records.some((r) => r.id === storyId)) {
       records.push({ id: storyId, deletedAt: now });
@@ -139,52 +131,7 @@ class BulletinService {
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
-      const cloudPosts: Post[] = data.map((row) => ({
-        id: row.id,
-        title: row.title,
-        content: row.content,
-        author: {
-          id: row.author_id || `author-${row.author_name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
-          name: row.author_name,
-          designation: row.author_role || 'Sabah Electricity Staff',
-          department: row.department,
-          avatarUrl:
-            row.author_id === 'user-ceo' || (row.author_name || '').toLowerCase().includes('yaakob')
-              ? '/ceo_portrait.png'
-              : row.author_avatar || '/sabah_electricity_logo.png',
-          isVerified: true,
-        },
-        timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        location: row.location,
-        imageUrl: row.image_url,
-        mediaUrls: Array.isArray(row.media_urls) ? row.media_urls : row.image_url ? [row.image_url] : [],
-        isPinned: Boolean(row.is_pinned),
-        commentsEnabled: Boolean(row.comments_enabled ?? true),
-        likesCount: Number(row.likes_count || 0),
-        commentsCount: Number(row.comments_count || 0),
-        sharesCount: 0,
-        viewsCount: Number(row.views_count || 0),
-        resharesCount: Number(row.reshares_count || 0),
-        isLiked: false,
-        isBookmarked: false,
-        departmentId: row.department_id || 'dept-ops',
-        departmentName: row.department,
-        departmentColor: row.department_color || '#0055A4',
-        officialNotice: Boolean(row.official_notice),
-        poll: row.poll_data || row.poll ? (() => {
-          const raw = row.poll_data || row.poll;
-          const parsed = PollDataSchema.safeParse(raw);
-          if (parsed.success) return parsed.data;
-          console.warn('[BulletinService] Dropping malformed poll_data on post', row.id, parsed.error);
-          return undefined;
-        })() : undefined,
-        pdfUrl: row.pdf_url || undefined,
-        pdfName: row.pdf_name || undefined,
-        pdfSize: row.pdf_size || undefined,
-        quotedPost: row.quoted_post || undefined,
-        isEdited: Boolean(row.is_edited),
-        editedAt: row.edited_at || undefined,
-      }));
+      const cloudPosts: Post[] = data.map((row) => mapRowToPost(row));
 
       // Build a lookup map of all available posts to resolve quote_post_id
       const postLookup = new Map<string, Post>();
@@ -328,52 +275,9 @@ class BulletinService {
         return INITIAL_STORIES;
       }
 
-      const cloudStories: Story[] = data.map((row) => {
-        let hoursRemaining = 24;
-        if (row.created_at) {
-          const elapsed = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
-          hoursRemaining = Math.max(1, Math.round(24 - elapsed));
-        }
-
-        // Parse location tag if formatted as [📍 Location]
-        let rawCaption = row.caption || '';
-        let locationName: string | undefined;
-        const locMatch = rawCaption.match(/^\[📍\s*([^\]]+)\]\s*(.*)$/s);
-        if (locMatch) {
-          locationName = locMatch[1].trim();
-          rawCaption = locMatch[2].trim();
-        }
-
-        // Parse video thumbnail tag if formatted as [🖼️ ThumbnailUrl]
-        let videoThumbnail: string | undefined;
-        const thumbMatch = rawCaption.match(/^\[🖼️\s*([^\]]+)\]\s*(.*)$/s);
-        if (thumbMatch) {
-          videoThumbnail = thumbMatch[1].trim();
-          rawCaption = thumbMatch[2].trim();
-        }
-
-        const isVideo = Boolean(
-          row.image_url?.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ||
-          row.image_url?.includes('video')
-        );
-
-        return {
-          id: row.id,
-          departmentId: row.department_id,
-          departmentName: row.department_name,
-          authorName: row.author_name,
-          authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
-          hasUnread: true,
-          imageUrl: isVideo ? (videoThumbnail || '/grid_horizon_hero.jpg') : row.image_url,
-          videoUrl: isVideo ? row.image_url : undefined,
-          mediaType: isVideo ? 'video' : 'image',
-          caption: rawCaption,
-          locationName,
-          hoursRemaining,
-          createdAt: row.created_at,
-          viewsCount: Math.floor(Math.random() * 25) + 12,
-        };
-      });
+      const cloudStories: Story[] = data.map((row) =>
+        mapRowToStory(row, { viewsCount: Math.floor(Math.random() * 25) + 12 })
+      );
 
       const cloudIds = new Set(cloudStories.map((s) => s.id));
       const deletedIds = getDeletedStoryIds();
@@ -670,21 +574,7 @@ class BulletinService {
         return [];
       }
 
-      return data.map((row) => ({
-        id: row.id,
-        authorName: row.author_name,
-        department: row.department,
-        avatarInitials: row.author_name
-          .split(' ')
-          .map((n: string) => n[0])
-          .slice(0, 2)
-          .join('')
-          .toUpperCase(),
-        avatarUrl: row.author_avatar || undefined,
-        text: row.text,
-        timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        likesCount: 0,
-      }));
+      return data.map((row) => mapRowToComment(row));
     } catch (err) {
       console.warn('[BulletinService] getComments error:', err);
       return [];
@@ -704,12 +594,7 @@ class BulletinService {
       id: `c-${Date.now()}`,
       authorName: currentUser.name,
       department: currentUser.department || 'Operations',
-      avatarInitials: currentUser.name
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
+      avatarInitials: getAvatarInitials(currentUser.name),
       avatarUrl: currentUser.avatarUrl,
       text: commentText,
       timestamp: 'Just now',

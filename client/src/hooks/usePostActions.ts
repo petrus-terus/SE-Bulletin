@@ -1,6 +1,7 @@
 import type { Comment, CreatePostPayload, Employee, EmojiReactionType, Post } from '@/types/bulletin';
 import { bulletinService } from '@/services/bulletinService';
 import { saveBookmarkedPostId } from '@/services/bookmarkStorage';
+import { getAvatarInitials } from '@/services/rowMappers';
 
 interface UsePostActionsParams {
   currentUser: Employee | null;
@@ -305,12 +306,7 @@ export function usePostActions({
       authorName: currentUser.name,
       department: currentUser.department,
       avatarUrl: currentUser.avatarUrl,
-      avatarInitials: (currentUser.name || 'SE')
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
+      avatarInitials: getAvatarInitials(currentUser.name),
       text: commentText,
       timestamp: 'Just now',
       likesCount: 0,

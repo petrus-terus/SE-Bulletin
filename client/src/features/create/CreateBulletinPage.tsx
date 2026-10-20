@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
 import { CURRENT_USER } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
+import { compressImageFile } from '@/utils/imageCompressor';
 import { MediaCropModal } from '@/ui/MediaCropModal';
 import styles from './CreateBulletinPage.module.css';
 
@@ -17,13 +18,13 @@ interface Props {
   initialPostType?: 'status' | 'announcement';
 }
 
+const MAX_BULLETIN_PHOTOS = 10;
+
 interface AttachedPhoto {
   id: string;
   url: string;
   name: string;
   file?: File;
-  compressedSizeFormatted?: string;
-  savedPercentage?: number;
 }
 
 const COMMON_LOCATIONS = [
@@ -105,65 +106,79 @@ export const CreateBulletinPage: React.FC<Props> = ({
     if (validationError) setValidationError('');
   };
 
-  // Sequential photo crop queue state
-  const [cropQueue, setCropQueue] = useState<File[]>([]);
-  const [cropQueueIndex, setCropQueueIndex] = useState<number>(0);
+  // Photo crop and edit state
   const [isCropProcessing, setIsCropProcessing] = useState<boolean>(false);
   const [editingPhoto, setEditingPhoto] = useState<AttachedPhoto | null>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Revoke any created local blob: URLs when unmounting
+  useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.url.startsWith('blob:')) {
+          URL.revokeObjectURL(p.url);
+        }
+      });
+    };
+  }, [photos]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    const files = Array.from(e.target.files);
+    const incomingFiles = Array.from(e.target.files).filter((f) => f.type.startsWith('image/'));
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    // Launch sequential crop staging queue
-    setCropQueue(files);
-    setCropQueueIndex(0);
-  };
+    if (incomingFiles.length === 0) return;
 
-  const processQueueItem = async (fileToUpload: File) => {
-    setIsCropProcessing(true);
+    // Enforce 10 photos ceiling
+    const remainingSlots = MAX_BULLETIN_PHOTOS - photos.length;
+    if (remainingSlots <= 0) {
+      alert(`You have reached the maximum limit of ${MAX_BULLETIN_PHOTOS} photos per bulletin.`);
+      return;
+    }
+
+    const filesToProcess = incomingFiles.slice(0, remainingSlots);
+    if (incomingFiles.length > remainingSlots) {
+      alert(`Only the first ${remainingSlots} photo(s) were added. Bulletins support up to ${MAX_BULLETIN_PHOTOS} photos.`);
+    }
+
     setIsCompressing(true);
     try {
-      const uploadedUrl = await bulletinService.uploadPhoto(fileToUpload);
-      const newPhoto: AttachedPhoto = {
-        id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        url: uploadedUrl,
-        name: fileToUpload.name,
-        file: fileToUpload,
-      };
-      setPhotos((prev) => [...prev, newPhoto]);
+      const processedPhotos: AttachedPhoto[] = [];
 
-      // Advance or complete queue
-      if (cropQueueIndex + 1 < cropQueue.length) {
-        setCropQueueIndex((prev) => prev + 1);
-      } else {
-        setCropQueue([]);
-        setCropQueueIndex(0);
+      for (const file of filesToProcess) {
+        try {
+          // Pre-compress locally to generate high-efficiency WebP/JPEG blob
+          const compression = await compressImageFile(file, {
+            maxWidth: 1600,
+            maxHeight: 1600,
+            quality: 0.85,
+          });
+
+          const localUrl = URL.createObjectURL(compression.file);
+          processedPhotos.push({
+            id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            url: localUrl,
+            name: file.name,
+            file: compression.file,
+          });
+        } catch (compErr) {
+          console.warn('[CreateBulletinPage] Compression failed, falling back to raw file:', compErr);
+          const rawUrl = URL.createObjectURL(file);
+          processedPhotos.push({
+            id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            url: rawUrl,
+            name: file.name,
+            file: file,
+          });
+        }
       }
+
+      setPhotos((prev) => [...prev, ...processedPhotos]);
     } catch (err) {
-      console.error('[CreateBulletinPage] Image upload failed:', err);
-      alert('Failed to upload image. Please check your connection.');
+      console.error('[CreateBulletinPage] Image processing failed:', err);
+      alert('Failed to process photos. Please try again.');
     } finally {
-      setIsCropProcessing(false);
       setIsCompressing(false);
     }
-  };
-
-  const handleQueueCropConfirm = async (croppedFile: File) => {
-    await processQueueItem(croppedFile);
-  };
-
-  const handleQueueCropSkip = async () => {
-    const currentFile = cropQueue[cropQueueIndex];
-    if (currentFile) {
-      await processQueueItem(currentFile);
-    }
-  };
-
-  const handleQueueCancel = () => {
-    setCropQueue([]);
-    setCropQueueIndex(0);
   };
 
   const handleStartEditPhotoCrop = (photo: AttachedPhoto) => {
@@ -174,11 +189,23 @@ export const CreateBulletinPage: React.FC<Props> = ({
     if (!editingPhoto) return;
     setIsCropProcessing(true);
     try {
-      const uploadedUrl = await bulletinService.uploadPhoto(croppedFile);
+      // Free old blob URL if it was local to prevent memory leak
+      if (editingPhoto.url.startsWith('blob:')) {
+        URL.revokeObjectURL(editingPhoto.url);
+      }
+
+      // Create new instant local blob URL for zero-latency preview
+      const localCroppedUrl = URL.createObjectURL(croppedFile);
+
       setPhotos((prev) =>
         prev.map((p) =>
           p.id === editingPhoto.id
-            ? { ...p, url: uploadedUrl, file: croppedFile, name: croppedFile.name || p.name }
+            ? {
+                ...p,
+                url: localCroppedUrl,
+                file: croppedFile,
+                name: croppedFile.name || p.name,
+              }
             : p
         )
       );
@@ -192,7 +219,13 @@ export const CreateBulletinPage: React.FC<Props> = ({
   };
 
   const handleRemovePhoto = (id: string) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    setPhotos((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(target.url);
+      }
+      return prev.filter((p) => p.id !== id);
+    });
   };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +273,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       setValidationError('Please enter a title for the bulletin.');
@@ -274,50 +307,69 @@ export const CreateBulletinPage: React.FC<Props> = ({
           }
         : undefined;
 
-    if (isEditMode && initialPost && onUpdate) {
-      onUpdate(initialPost.id, {
-        title: title.trim(),
+    setIsCompressing(true);
+    try {
+      // Upload any local photos that have not been uploaded to Supabase Storage yet
+      const uploadedMediaUrls: string[] = [];
+      for (const photo of photos) {
+        if (photo.file && (!photo.url || photo.url.startsWith('blob:') || photo.url.startsWith('data:'))) {
+          const remoteUrl = await bulletinService.uploadPhoto(photo.file);
+          uploadedMediaUrls.push(remoteUrl);
+        } else if (photo.url && !photo.url.startsWith('blob:') && !photo.url.startsWith('data:')) {
+          uploadedMediaUrls.push(photo.url);
+        }
+      }
+
+      if (isEditMode && initialPost && onUpdate) {
+        onUpdate(initialPost.id, {
+          title: title.trim(),
+          content: content.trim(),
+          departmentName: currentDept.name,
+          departmentId: currentDept.id,
+          departmentColor: currentDept.color || '#0055A4',
+          location: selectedLocation,
+          isPinned: isPinned,
+          commentsEnabled: allowComments,
+          mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : [],
+          imageUrl: uploadedMediaUrls.length > 0 ? uploadedMediaUrls[0] : null,
+          pdfUrl: pdfFile?.url,
+          pdfName: pdfFile?.name,
+          pdfSize: pdfFile?.size,
+          poll: pollData,
+          isEdited: true,
+          editedAt: new Date().toISOString(),
+        });
+        onClose();
+        return;
+      }
+
+      const newPost: CreatePostPayload = {
+        title: title.trim() || 'SE-Connect',
         content: content.trim(),
-        departmentName: currentDept.name,
+        authorName: activeUser.name,
+        department: currentDept.name,
         departmentId: currentDept.id,
         departmentColor: currentDept.color || '#0055A4',
+        avatarUrl: activeUser.avatarUrl,
         location: selectedLocation,
         isPinned: isPinned,
+        mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
+        imageUrl: uploadedMediaUrls.length > 0 ? uploadedMediaUrls[0] : undefined,
+        officialNotice: isOfficial,
         commentsEnabled: allowComments,
-        mediaUrls: photos.length > 0 ? photos.map((p) => p.url) : [],
-        imageUrl: photos.length > 0 ? photos[0].url : null,
         pdfUrl: pdfFile?.url,
         pdfName: pdfFile?.name,
         pdfSize: pdfFile?.size,
         poll: pollData,
-        isEdited: true,
-        editedAt: new Date().toISOString(),
-      });
-      onClose();
-      return;
+      };
+
+      onSubmit(newPost);
+    } catch (publishErr) {
+      console.error('[CreateBulletinPage] Publish failed:', publishErr);
+      alert('Failed to upload photos or publish bulletin. Please check your connection.');
+    } finally {
+      setIsCompressing(false);
     }
-
-    const newPost: CreatePostPayload = {
-      title: title.trim() || 'SE-Connect',
-      content: content.trim(),
-      authorName: activeUser.name,
-      department: currentDept.name,
-      departmentId: currentDept.id,
-      departmentColor: currentDept.color || '#0055A4',
-      avatarUrl: activeUser.avatarUrl,
-      location: selectedLocation,
-      isPinned: isPinned,
-      mediaUrls: photos.length > 0 ? photos.map((p) => p.url) : undefined,
-      imageUrl: photos.length > 0 ? photos[0].url : undefined,
-      officialNotice: isOfficial,
-      commentsEnabled: allowComments,
-      pdfUrl: pdfFile?.url,
-      pdfName: pdfFile?.name,
-      pdfSize: pdfFile?.size,
-      poll: pollData,
-    };
-
-    onSubmit(newPost);
   };
 
   useEffect(() => {
@@ -531,7 +583,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
           <div className={styles.attachmentDeck}>
             <div className={styles.attachmentHeader}>
               <span className={styles.attachmentTitle}>
-                Attachments ({photos.length} photo{photos.length === 1 ? '' : 's'}{pdfFile ? ', 1 PDF' : ''})
+                Attachments ({photos.length}/{MAX_BULLETIN_PHOTOS} photos{pdfFile ? ', 1 PDF' : ''})
               </span>
               <div className={styles.attachmentControls}>
                 <input
@@ -555,8 +607,8 @@ export const CreateBulletinPage: React.FC<Props> = ({
                   type="button"
                   className={styles.addMediaBtn}
                   onClick={() => fileInputRef.current?.click()}
-                  title="Upload photos from phone or computer"
-                  disabled={isCompressing}
+                  title="Upload photos from phone or computer (max 10)"
+                  disabled={isCompressing || photos.length >= MAX_BULLETIN_PHOTOS}
                 >
                   <span
                     className={`material-symbols-outlined ${isCompressing ? styles.spinning : ''}`}
@@ -600,7 +652,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
             </div>
 
             <div className={styles.attachmentsGrid}>
-              {/* Photo Preview Tiles with Compression Badge */}
+              {/* Photo Preview Tiles */}
               {photos.map((photo, index) => (
                 <div key={photo.id} className={styles.photoTile}>
                   <img
@@ -608,17 +660,6 @@ export const CreateBulletinPage: React.FC<Props> = ({
                     alt={`Preview ${index + 1}`}
                     className={styles.photoPreviewImg}
                   />
-                  {photo.compressedSizeFormatted && (
-                    <div className={styles.photoCompressBadge}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
-                        check_circle
-                      </span>
-                      <span className="font-mono tabular-nums">{photo.compressedSizeFormatted}</span>
-                      {photo.savedPercentage && photo.savedPercentage > 0 ? (
-                        <span className="font-mono tabular-nums">(-{photo.savedPercentage}%)</span>
-                      ) : null}
-                    </div>
-                  )}
                   <div className={styles.photoOverlay}>
                     <span className={styles.photoLabel}>
                       <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
@@ -927,31 +968,15 @@ export const CreateBulletinPage: React.FC<Props> = ({
           document.body
         )}
 
-      {/* Sequential Crop Queue Modal */}
-      {cropQueue.length > 0 && cropQueue[cropQueueIndex] && (
-        <MediaCropModal
-          imageFile={cropQueue[cropQueueIndex]}
-          title="Adjust Bulletin Photo"
-          stepIndicator={`${cropQueueIndex + 1} of ${cropQueue.length}`}
-          initialAspect="original"
-          allowedAspects={['original', '16:9', '4:3', '1:1', '4:5', '9:16']}
-          onConfirm={handleQueueCropConfirm}
-          onSkip={handleQueueCropSkip}
-          skipLabel="Skip (Keep Original)"
-          confirmLabel={cropQueueIndex === cropQueue.length - 1 ? 'Done' : 'Next Photo'}
-          onCancel={handleQueueCancel}
-          isProcessing={isCropProcessing}
-        />
-      )}
-
-      {/* Single Photo Tile Re-frame Modal */}
+      {/* On-Demand Photo Crop & Adjust Studio (Matching 24h Story Mechanics) */}
       {editingPhoto && (
         <MediaCropModal
           imageSrc={editingPhoto.url}
           imageFile={editingPhoto.file}
-          title="Re-frame Photo"
-          initialAspect="original"
-          allowedAspects={['original', '16:9', '4:3', '1:1', '4:5', '9:16']}
+          title="Crop & Adjust Photo"
+          isFreeform={true}
+          initialAspect="freeform"
+          confirmLabel="Apply Crop"
           onConfirm={handleEditPhotoCropConfirm}
           onCancel={() => setEditingPhoto(null)}
           isProcessing={isCropProcessing}
