@@ -287,7 +287,7 @@ export function useScrollChoreography({ activeTab, selectedPostId }: Choreograph
       if (snapAnimIdRef.current !== null) cancelAnimationFrame(snapAnimIdRef.current);
       if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current);
     };
-  }, [applyStyles, getElements, getMaxDist, resetChrome, snapTo]);
+  }, [activeTab, applyStyles, getElements, getMaxDist, resetChrome, snapTo]);
 
   // Reset chrome on tab switch or navigation change
   useEffect(() => {

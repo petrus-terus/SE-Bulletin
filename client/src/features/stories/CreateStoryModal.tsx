@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Employee, Story } from '@/types/bulletin';
 import { bulletinService } from '@/services/bulletinService';
 import { MediaCropModal } from '@/ui/MediaCropModal';
+import { formatVideoTime } from '@/utils/format';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { StoryCaptionDeck } from './StoryCaptionDeck';
 import styles from './CreateStoryModal.module.css';
 
 interface Props {
@@ -10,181 +14,18 @@ interface Props {
   onSubmit: (newStory: Story) => void;
 }
 
-const SESB_GRADIENTS = [
-  { id: 'green', name: 'Kinabalu Forest', gradient: 'linear-gradient(135deg, #1A7A5A 0%, #0E4432 100%)' },
-  { id: 'blue', name: 'Sabah Blue', gradient: 'linear-gradient(135deg, #0055A4 0%, #002D5A 100%)' },
-  { id: 'amber', name: 'Sunset Amber', gradient: 'linear-gradient(135deg, #D97706 0%, #92400E 100%)' },
-  { id: 'slate', name: 'Night Grid', gradient: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)' },
-];
+import {
+  DEFAULT_DEPARTMENT_ID,
+  SESB_LOCATIONS,
+  DEFAULT_COVER_URL,
+} from '@/constants/bulletin';
 
-const SESB_LOCATIONS = [
-  'Wisma SESB HQ, KK',
-  'Tenom Pangi Hydro',
-  'Sepanggar Power Station',
-  'Sandakan Regional Depot',
-  'Tawau Substation',
-];
-
-/**
- * Creates an image dataURL from a gradient and text content
- */
-function createTextCardImage(text: string, gradient: string, authorName: string, deptName: string): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1080;
-  canvas.height = 1920;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.reject(new Error('No canvas context'));
-
-  // Background
-  const linear = ctx.createLinearGradient(0, 0, 1080, 1920);
-  if (gradient.includes('#1A7A5A')) {
-    linear.addColorStop(0, '#1A7A5A');
-    linear.addColorStop(1, '#0E4432');
-  } else if (gradient.includes('#0055A4')) {
-    linear.addColorStop(0, '#0055A4');
-    linear.addColorStop(1, '#002D5A');
-  } else if (gradient.includes('#D97706')) {
-    linear.addColorStop(0, '#D97706');
-    linear.addColorStop(1, '#92400E');
-  } else {
-    linear.addColorStop(0, '#1E293B');
-    linear.addColorStop(1, '#0F172A');
-  }
-  ctx.fillStyle = linear;
-  ctx.fillRect(0, 0, 1080, 1920);
-
-  // Decorative subtle grid circles
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(540, 960, 480, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Header Author / Dept
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 44px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(authorName, 540, 280);
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.font = '36px sans-serif';
-  ctx.fillText(deptName, 540, 340);
-
-  // Main Text
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 64px sans-serif';
-  ctx.textAlign = 'center';
-
-  // Word wrap
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > 900 && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-
-  const startY = 960 - (lines.length * 80) / 2;
-  lines.forEach((line, idx) => {
-    ctx.fillText(line, 540, startY + idx * 80);
-  });
-
-  // Footer Tagline
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.font = 'bold 32px sans-serif';
-  ctx.fillText('Sabah Electricity • 24h Story', 540, 1780);
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob);
-      } else {
-        reject(new Error('Canvas toBlob failed'));
-      }
-    }, 'image/jpeg', 0.85);
-  });
-}
-
-/**
- * Asynchronously inspects video duration using HTML5 video element metadata
- */
-function checkVideoDuration(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    const objectUrl = URL.createObjectURL(file);
-    video.src = objectUrl;
-
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(video.duration);
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('Incompatible video format or corrupted file'));
-    };
-  });
-}
-
-/**
- * Extracts a lightweight first-frame thumbnail (JPEG) from a video at 0.5s via hidden canvas
- */
-function captureVideoThumbnail(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.muted = true;
-    video.playsInline = true;
-    const objectUrl = URL.createObjectURL(file);
-    video.src = objectUrl;
-
-    video.onloadedmetadata = () => {
-      video.currentTime = Math.min(0.5, Math.max(0.1, video.duration / 4));
-    };
-
-    video.onseeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 720;
-        canvas.height = video.videoHeight || 1280;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          URL.revokeObjectURL(objectUrl);
-          reject(new Error('Canvas context unavailable'));
-          return;
-        }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(objectUrl);
-
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('Canvas toBlob failed'));
-            return;
-          }
-          const thumbFile = new File([blob], `thumb_${Date.now()}.jpg`, { type: 'image/jpeg' });
-          resolve(thumbFile);
-        }, 'image/jpeg', 0.82);
-      } catch (err) {
-        URL.revokeObjectURL(objectUrl);
-        reject(err);
-      }
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('Failed to render video thumbnail'));
-    };
-  });
-}
+import {
+  SESB_GRADIENTS,
+  createTextCardImage,
+  checkVideoDuration,
+  captureVideoThumbnail,
+} from '@/utils/storyMedia';
 
 export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubmit }) => {
   const [isLanding, setIsLanding] = useState(true);
@@ -220,12 +61,8 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
   const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
   const [isPreviewScrubbing, setIsPreviewScrubbing] = useState(false);
 
-  const formatVideoTime = (secs: number) => {
-    const s = Math.max(0, Math.floor(secs));
-    const mins = Math.floor(s / 60);
-    const rem = s % 60;
-    return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
-  };
+  useEscapeKey(onClose, !isUploading && !isCropOpen);
+  useBodyScrollLock(true);
 
   const handlePreviewTimeUpdate = () => {
     if (!previewVideoRef.current || isPreviewScrubbing) return;
@@ -471,19 +308,21 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
       console.error('Failed to upload story media to storage:', err);
       const msg = err instanceof Error ? err.message : 'Failed to publish story. Please check your connection and retry.';
       setErrorMessage(msg);
+      return;
+    } finally {
       setIsUploading(false);
       setUploadStatus(null);
-      return;
     }
 
+    const fallbackCover = DEFAULT_COVER_URL;
     const newStory: Story = {
       id: `story-${Date.now()}`,
-      departmentId: currentUser.adminDepartments?.[0] || 'dept-ops',
+      departmentId: currentUser.adminDepartments?.[0] || DEFAULT_DEPARTMENT_ID,
       departmentName: currentUser.department || 'Operations',
       authorName: currentUser.name,
       authorAvatar: currentUser.avatarUrl,
       hasUnread: true,
-      imageUrl: mode === 'video' ? (videoThumbnailUrl || '/grid_horizon_hero.jpg') : (finalImageUrl || '/grid_horizon_hero.jpg'),
+      imageUrl: mode === 'video' ? (videoThumbnailUrl || fallbackCover) : (finalImageUrl || fallbackCover),
       videoUrl: finalVideoUrl || undefined,
       mediaType: mode === 'video' ? 'video' : 'image',
       backgroundColor: selectedGradient,
@@ -496,6 +335,7 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
     onSubmit(newStory);
     onClose();
   };
+
 
   const canPublish =
     mode === 'photo'
@@ -726,47 +566,14 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
                   </div>
 
                   {/* Caption & Location Controls */}
-                  <div className={styles.floatingControls}>
-                    {selectedLocation && (
-                      <div className={styles.activeLocationPill}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
-                          location_on
-                        </span>
-                        <span>{selectedLocation}</span>
-                        <button
-                          type="button"
-                          className={styles.removeLocBtn}
-                          onClick={() => setSelectedLocation(null)}
-                          aria-label="Remove location"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    )}
-
-                    <div className={styles.captionRow}>
-                      <input
-                        ref={captionInputRef}
-                        type="text"
-                        className={styles.captionInput}
-                        placeholder="Add a caption..."
-                        value={caption}
-                        onChange={(e) => setCaption(e.target.value)}
-                        maxLength={120}
-                      />
-                      <button
-                        type="button"
-                        className={`${styles.locationBtn} ${selectedLocation ? styles.locationBtnActive : ''}`}
-                        onClick={() => setShowLocationPicker((prev) => !prev)}
-                        aria-label="Add location"
-                        title="Add location tag"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                          location_on
-                        </span>
-                      </button>
-                    </div>
-                  </div>
+                  <StoryCaptionDeck
+                    ref={captionInputRef}
+                    caption={caption}
+                    onCaptionChange={setCaption}
+                    selectedLocation={selectedLocation}
+                    onRemoveLocation={() => setSelectedLocation(null)}
+                    onToggleLocationPicker={() => setShowLocationPicker((prev) => !prev)}
+                  />
                 </>
               ) : (
                 <div
@@ -860,46 +667,14 @@ export const CreateStoryModal: React.FC<Props> = ({ currentUser, onClose, onSubm
                     </div>
                   )}
 
-                  <div className={styles.floatingControls}>
-                    {selectedLocation && (
-                      <div className={styles.activeLocationPill}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
-                          location_on
-                        </span>
-                        <span>{selectedLocation}</span>
-                        <button
-                          type="button"
-                          className={styles.removeLocBtn}
-                          onClick={() => setSelectedLocation(null)}
-                          aria-label="Remove location"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    )}
-
-                    <div className={styles.captionRow}>
-                      <input
-                        type="text"
-                        className={styles.captionInput}
-                        placeholder="Add a caption..."
-                        value={caption}
-                        onChange={(e) => setCaption(e.target.value)}
-                        maxLength={120}
-                      />
-                      <button
-                        type="button"
-                        className={`${styles.locationBtn} ${selectedLocation ? styles.locationBtnActive : ''}`}
-                        onClick={() => setShowLocationPicker((prev) => !prev)}
-                        aria-label="Add location"
-                        title="Add location tag"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                          location_on
-                        </span>
-                      </button>
-                    </div>
-                  </div>
+                  {/* Caption & Location Controls */}
+                  <StoryCaptionDeck
+                    caption={caption}
+                    onCaptionChange={setCaption}
+                    selectedLocation={selectedLocation}
+                    onRemoveLocation={() => setSelectedLocation(null)}
+                    onToggleLocationPicker={() => setShowLocationPicker((prev) => !prev)}
+                  />
                 </>
               ) : (
                 <div

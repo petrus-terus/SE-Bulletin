@@ -1,4 +1,4 @@
-.navContainer {
+﻿.navContainer {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -92,12 +92,6 @@
 }
 
 /* Elevated Center Floating FAB */
-.centerFabSpacer {
-  flex: 1;
-  height: 100%;
-  pointer-events: none;
-}
-
 .centerFabWrapper {
   flex: 1;
   display: flex;

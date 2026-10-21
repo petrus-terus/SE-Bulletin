@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import type { Comment, Post, Story } from '@/types/bulletin';
+import { DEFAULT_DEPARTMENT_ID } from '@/constants/bulletin';
+import { isPostLiked } from './likeStorage';
+import { getStoredPollVote } from './pollStorage';
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -17,15 +20,38 @@ export const PollDataSchema = z.object({
   options: z.array(PollOptionSchema),
   totalVotes: z.number().default(0),
   expiresText: z.string().optional(),
+  userVotedOptionId: z.string().optional(),
   userVotedId: z.string().optional(),
 });
 
-export type PollData = z.infer<typeof PollDataSchema>;
+export type PollData = {
+  id: string;
+  question: string;
+  options: Array<{ id: string; text: string; votes: number }>;
+  totalVotes: number;
+  expiresText?: string;
+  userVotedOptionId?: string;
+};
 
 export function parsePollData(raw: unknown, postId?: string): PollData | undefined {
   if (!raw) return undefined;
   const parsed = PollDataSchema.safeParse(raw);
-  if (parsed.success) return parsed.data;
+  if (parsed.success) {
+    const data = parsed.data;
+    const resolvedUserVote =
+      (postId ? getStoredPollVote(postId) : undefined) ||
+      data.userVotedOptionId ||
+      data.userVotedId;
+
+    return {
+      id: data.id,
+      question: data.question,
+      options: data.options,
+      totalVotes: data.totalVotes,
+      expiresText: data.expiresText,
+      userVotedOptionId: resolvedUserVote,
+    };
+  }
   if (postId) {
     console.warn('[RowMappers] Dropping malformed poll_data on post', postId, parsed.error);
   }
@@ -218,9 +244,9 @@ export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
     sharesCount: 0,
     viewsCount: Number(row.views_count ?? options.viewsCountFloor ?? 0),
     resharesCount: Number(row.reshares_count || 0),
-    isLiked: false,
+    isLiked: isPostLiked(row.id),
     isBookmarked: false,
-    departmentId: row.department_id || 'dept-ops',
+    departmentId: row.department_id || DEFAULT_DEPARTMENT_ID,
     departmentName: row.department || 'Operations',
     departmentColor: row.department_color || '#0055A4',
     officialNotice: Boolean(row.official_notice),
@@ -256,6 +282,7 @@ export function mergeUpdatedPostRow(post: Post, row: Partial<PostRow>): Post {
     commentsCount: Number(row.comments_count ?? post.commentsCount),
     viewsCount: Number(row.views_count ?? post.viewsCount),
     resharesCount: Number(row.reshares_count ?? post.resharesCount),
+    isLiked: isPostLiked(post.id) || post.isLiked,
     departmentName: row.department || post.departmentName,
     departmentId: row.department_id || post.departmentId,
     departmentColor: row.department_color || post.departmentColor,

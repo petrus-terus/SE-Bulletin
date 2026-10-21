@@ -1,8 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee } from '@/types/bulletin';
 import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
 import { APP_NAME } from '@/constants/brand';
+import { DEFAULT_LOGO_URL, DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleLogoError, handleAvatarError } from '@/utils/imageFallbacks';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './BrandSidebarDrawer.module.css';
 
 interface Props {
@@ -25,30 +29,8 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
   onLogout,
 }) => {
   // Close on ESC key
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Lock background scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useEscapeKey(onClose, isOpen);
+  useBodyScrollLock(isOpen);
 
   if (typeof document === 'undefined') return null;
 
@@ -73,12 +55,10 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
         <div className={styles.drawerHeader}>
           <div className={styles.brandGroup}>
             <img
-              src="/sabah_electricity_logo.png"
+              src={DEFAULT_LOGO_URL}
               alt="Sabah Electricity"
               className={styles.brandLogo}
-              onError={(e) => {
-                e.currentTarget.src = '/sesb_logo.png';
-              }}
+              onError={(e) => handleLogoError(e)}
             />
             <div className={styles.brandText}>
               <span className={styles.brandTitle}>{APP_NAME}</span>
@@ -102,12 +82,10 @@ export const BrandSidebarDrawer: React.FC<Props> = ({
         <div className={styles.userCard}>
           <div className={styles.avatarWrapper}>
             <img
-              src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
+              src={currentUser.avatarUrl || DEFAULT_AVATAR_URL}
               alt={currentUser.name}
               className={styles.avatarImg}
-              onError={(e) => {
-                e.currentTarget.src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleAvatarError(e)}
             />
           </div>
           <div className={styles.userInfo}>

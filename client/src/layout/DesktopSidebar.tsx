@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Employee } from '@/types/bulletin';
 import type { TabKey } from '@/layout/BottomNav';
+import { DEFAULT_LOGO_URL, DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleLogoError, handleAvatarError } from '@/utils/imageFallbacks';
 import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
 import styles from './DesktopSidebar.module.css';
 
@@ -34,12 +36,10 @@ export const DesktopSidebar: React.FC<Props> = ({
           aria-label="SE-Connect Home"
         >
           <img
-            src="/sabah_electricity_logo.png"
+            src={DEFAULT_LOGO_URL}
             alt="Sabah Electricity"
             className={styles.brandLogo}
-            onError={(e) => {
-              e.currentTarget.src = '/sesb_logo.png';
-            }}
+            onError={(e) => handleLogoError(e)}
           />
           <span className={styles.brandTitle}>SE-Connect</span>
         </div>
@@ -110,12 +110,10 @@ export const DesktopSidebar: React.FC<Props> = ({
         >
           <div className={styles.avatarWrapper}>
             <img
-              src={currentUser.avatarUrl}
+              src={currentUser.avatarUrl || DEFAULT_AVATAR_URL}
               alt={currentUser.name}
               className={styles.avatarImg}
-              onError={(e) => {
-                e.currentTarget.src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleAvatarError(e)}
             />
             {currentUser.isOnline && <span className={styles.onlineDot} />}
           </div>

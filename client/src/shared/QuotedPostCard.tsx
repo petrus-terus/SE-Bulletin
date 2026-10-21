@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Post } from '@/types/bulletin';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
 import styles from './QuotedPostCard.module.css';
 
 interface QuotedPostCardProps {
@@ -29,12 +31,10 @@ export const QuotedPostCard: React.FC<QuotedPostCardProps> = ({
     >
       <div className={styles.quotedCardHeader}>
         <img
-          src={post.author.avatarUrl || '/sabah_electricity_logo.png'}
+          src={post.author.avatarUrl || DEFAULT_AVATAR_URL}
           alt=""
           className={styles.quotedCardAvatar}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-          }}
+          onError={(e) => handleAvatarError(e)}
         />
         <span className={styles.quotedCardAuthor}>{post.author.name}</span>
         <span className={styles.quotedCardMeta}>• {post.author.department}</span>

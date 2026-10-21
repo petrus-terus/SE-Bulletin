@@ -38,7 +38,8 @@ export function useOverlayManager() {
       setOverlay((curr) => {
         const currentId = curr.kind === 'comment' ? curr.postId : null;
         const nextId = typeof action === 'function' ? action(currentId) : action;
-        return nextId ? { kind: 'comment', postId: nextId } : { kind: 'none' };
+        if (nextId) return { kind: 'comment', postId: nextId };
+        return curr.kind === 'comment' ? { kind: 'none' } : curr;
       });
     },
     []
@@ -49,7 +50,8 @@ export function useOverlayManager() {
       setOverlay((curr) => {
         const currentId = curr.kind === 'reshare' ? curr.postId : null;
         const nextId = typeof action === 'function' ? action(currentId) : action;
-        return nextId ? { kind: 'reshare', postId: nextId } : { kind: 'none' };
+        if (nextId) return { kind: 'reshare', postId: nextId };
+        return curr.kind === 'reshare' ? { kind: 'none' } : curr;
       });
     },
     []
@@ -60,7 +62,8 @@ export function useOverlayManager() {
       setOverlay((curr) => {
         const currentId = curr.kind === 'quote' ? curr.postId : null;
         const nextId = typeof action === 'function' ? action(currentId) : action;
-        return nextId ? { kind: 'quote', postId: nextId } : { kind: 'none' };
+        if (nextId) return { kind: 'quote', postId: nextId };
+        return curr.kind === 'quote' ? { kind: 'none' } : curr;
       });
     },
     []
@@ -71,7 +74,8 @@ export function useOverlayManager() {
       setOverlay((curr) => {
         const currentPost = curr.kind === 'edit' ? curr.post : null;
         const nextPost = typeof action === 'function' ? action(currentPost) : action;
-        return nextPost ? { kind: 'edit', post: nextPost } : { kind: 'none' };
+        if (nextPost) return { kind: 'edit', post: nextPost };
+        return curr.kind === 'edit' ? { kind: 'none' } : curr;
       });
     },
     []

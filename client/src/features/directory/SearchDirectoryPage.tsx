@@ -4,6 +4,8 @@ import { ALL_EMPLOYEES, getRegisteredEmployees } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
 import { FeedCard } from '@/shared/FeedCard';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
+import { DEFAULT_AVATAR_URL, DEFAULT_DEPARTMENT_ID } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
 import styles from './SearchDirectoryPage.module.css';
 
 interface EmployeeRecord {
@@ -122,7 +124,7 @@ export const SearchDirectoryPage: React.FC<Props> = ({
         name: emp.name,
         designation: emp.designation,
         department: emp.department,
-        departmentId: emp.adminDepartments?.[0] || 'dept-ops',
+        departmentId: emp.adminDepartments?.[0] || DEFAULT_DEPARTMENT_ID,
         staffId: emp.employeeId,
         extension: emp.phoneExtension || 'Ext. 4100',
         email: emp.email,
@@ -304,12 +306,10 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                     <div className={styles.empHeaderLeft}>
                       <div className={styles.avatarHolder}>
                         <img
-                          src={emp.avatarUrl}
+                          src={emp.avatarUrl || DEFAULT_AVATAR_URL}
                           alt={emp.name}
                           className={styles.empAvatar}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                          }}
+                          onError={(e) => handleAvatarError(e)}
                         />
                         {emp.isOnline && <span className={styles.onlineBadge} title="Available online"></span>}
                       </div>

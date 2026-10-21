@@ -1,5 +1,6 @@
 import React from 'react';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
+import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL, handleLogoError } from '@/utils/imageFallbacks';
 import styles from './AchievementsDeck.module.css';
 
 interface Props {
@@ -95,12 +96,10 @@ export const AchievementsDeck: React.FC<Props> = ({ bulletinCount }) => {
                 <div className={`${styles.medalHousing} ${medalClass}`}>
                   <div className={styles.innerEmblemPlate}>
                     <img
-                      src="/sabah_electricity_logo.png"
+                      src={DEFAULT_LOGO_URL}
                       alt="Sabah Electricity Emblem"
                       className={styles.sesbBadgeLogo}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/sesb_logo.png';
-                      }}
+                      onError={(e) => handleLogoError(e, SESB_LOGO_FALLBACK_URL)}
                     />
                   </div>
                 </div>

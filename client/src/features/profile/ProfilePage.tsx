@@ -6,9 +6,18 @@ import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { AchievementsDeck } from '@/features/profile/AchievementsDeck';
 import { AvatarCropSheet } from '@/features/profile/AvatarCropSheet';
 import { FeedCard } from '@/shared/FeedCard';
-import { Toast } from '@/ui/Toast';
+import { useFeed } from '@/context/FeedContext';
 import { bulletinService } from '@/services/bulletinService';
 import { AVATAR_OUTPUT_SIZE, ACCEPTED_AVATAR_TYPES, validateAvatarFile } from '@/utils/cropImage';
+import {
+  DEFAULT_COVER_URL,
+  DEFAULT_AVATAR_URL,
+  SESB_LOCATIONS,
+  FALLBACK_POST_IMAGE_URL,
+} from '@/constants/bulletin';
+import { handleAvatarError, handleCoverError, handlePostImageError } from '@/utils/imageFallbacks';
+import { isSuperAdminUser } from '@/utils/postPermissions';
+import { EditProfileModal } from '@/features/profile/EditProfileModal';
 import styles from './ProfilePage.module.css';
 
 interface Props {
@@ -33,10 +42,6 @@ interface Props {
   onSharePost?: (post: Post) => void;
 }
 
-// Curated authentic corporate defaults
-const DEFAULT_COVER_URL = '/grid_horizon_hero.jpg';
-const DEFAULT_AVATAR_URL = '/sabah_electricity_logo.png';
-
 const SESB_DIVISIONS = [
   'Information & Digital',
   'Operations & Grid',
@@ -46,28 +51,6 @@ const SESB_DIVISIONS = [
   'Human Resources',
   'Finance & Procurement',
   'Chief Executive Officer (CEO) Office',
-];
-
-const SESB_ROLES = [
-  'Chief Information & Digital Officer (CIDO)',
-  'Head of Department / Director',
-  'Senior Manager',
-  'Lead Engineer',
-  'Senior Executive',
-  'Staff Administrator',
-  'Technical Specialist',
-  'Field Technician',
-  'Corporate Staff',
-];
-
-const SESB_LOCATIONS = [
-  'Wisma SE HQ, Kota Kinabalu',
-  'Bangunan KWASA',
-  'Tenom Pangi Hydro Power Station',
-  'Sepanggar Bay Power Station',
-  'Sandakan Regional Station',
-  'Tawau Regional Station',
-  'Labuan Regional Office',
 ];
 
 export const ProfilePage: React.FC<Props> = ({
@@ -95,8 +78,9 @@ export const ProfilePage: React.FC<Props> = ({
   const isOwnProfile = activeEmployee.id === loggedInUser.id;
 
   const photosScrollRef = useHorizontalScroll<HTMLDivElement>();
+  const { setToast } = useFeed();
 
-  // Profile fields state (keyed by employee id in App.tsx for automatic resets)
+  // Profile fields state (keyed by employee id in TabRouter.tsx for automatic resets)
   const [profileData, setProfileData] = useState<Employee>(activeEmployee);
 
   // Active division & location with fallback to profileData
@@ -105,16 +89,6 @@ export const ProfilePage: React.FC<Props> = ({
 
   // Modal visibility states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  // Temporary edit form state
-  const [tempName, setTempName] = useState(profileData.name);
-  const [tempDesignation, setTempDesignation] = useState(profileData.designation);
-  const [tempDepartment, setTempDepartment] = useState(activeDivision);
-  const [tempLocation, setTempLocation] = useState(activeLocation);
-  const [tempBio, setTempBio] = useState(
-    profileData.bio ||
-      'Committed to Sabah Electricity Goal Zero, digital transformation, and reliable power statewide.'
-  );
   const [tempAvatarUrl, setTempAvatarUrl] = useState(
     profileData.avatarUrl || DEFAULT_AVATAR_URL
   );
@@ -130,7 +104,6 @@ export const ProfilePage: React.FC<Props> = ({
   // so nothing reaches Supabase Storage before they have seen the result.
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const closeAvatarSheet = () => {
@@ -168,7 +141,6 @@ export const ProfilePage: React.FC<Props> = ({
         setProfileData(updated);
         setTempCoverUrl(uploadedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
-        setToast({ message: 'Cover photo updated.', icon: 'check_circle' });
       }
     } catch (err) {
       console.error('[ProfilePage] Upload failed:', err);
@@ -199,7 +171,6 @@ export const ProfilePage: React.FC<Props> = ({
         setProfileData(updated);
         setTempAvatarUrl(uploadedUrl);
         if (onUpdateProfile) onUpdateProfile(updated);
-        setToast({ message: 'Profile photo updated.', icon: 'check_circle' });
       }
     } catch (err) {
       console.error('[ProfilePage] Avatar upload failed:', err);
@@ -213,21 +184,26 @@ export const ProfilePage: React.FC<Props> = ({
     }
   };
 
-  // Filter posts authored or reshared by active employee (like Twitter / X profile timeline)
+  // Filter posts authored or reshared by active employee
+  const isSuperAdmin = isSuperAdminUser({
+    currentUserId: activeEmployee.id,
+    currentUserName: activeEmployee.name,
+    currentUserRole: activeEmployee.role,
+  });
+
   const userPosts = posts.filter(
     (p) =>
       (p.author?.id && activeEmployee.id && p.author.id === activeEmployee.id) ||
       (p.author?.name || '').toLowerCase().trim() === activeEmployee.name.toLowerCase().trim() ||
-      ((activeEmployee.name === 'ADMIN_USER' || activeEmployee.name === 'TEST_USER') &&
+      (isSuperAdmin &&
         (p.author?.name === 'ADMIN_USER' ||
           p.author?.name === 'TEST_USER' ||
-          p.author?.id === 'user-test' ||
-          p.author?.id === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
+          p.author?.id === 'user-test')) ||
       (p.resharedBy?.id && activeEmployee.id && p.resharedBy.id === activeEmployee.id) ||
       (p.isReshared && isOwnProfile)
   );
 
-  // Total reactions on user's posts (strict data integrity without artificial inflation)
+  // Total reactions on user's posts
   const totalReactions = userPosts.reduce(
     (acc, p) => acc + (p.likesCount || 0),
     0
@@ -242,13 +218,19 @@ export const ProfilePage: React.FC<Props> = ({
     .filter((p) => p.imageUrl || (p.mediaUrls && p.mediaUrls.length > 0))
     .map((p, idx) => ({
       id: `post-img-${p.id}-${idx}`,
-      url: p.imageUrl || (p.mediaUrls && p.mediaUrls[0]) || '/mock-images/image1.png',
+      url: p.imageUrl || (p.mediaUrls && p.mediaUrls[0]) || FALLBACK_POST_IMAGE_URL,
       title: p.title || 'Field Site Log',
     }));
 
-  // Brand-new user onboarding completion rate calculation (Gate 15.4)
+  // Brand-new user onboarding completion rate calculation
   const hasBioFilled = Boolean(profileData.bio && profileData.bio.trim().length > 15);
   const hasPublishedBulletin = userPosts.length > 0;
+
+  const openEditProfileModal = () => {
+    setTempAvatarUrl(profileData.avatarUrl || DEFAULT_AVATAR_URL);
+    setTempCoverUrl(profileData.coverUrl || DEFAULT_COVER_URL);
+    setIsEditModalOpen(true);
+  };
 
   const completionChecks = [
     { label: `Division Registered (${profileData.department || 'INFORMATION & DIGITAL'})`, isCompleted: true },
@@ -256,9 +238,7 @@ export const ProfilePage: React.FC<Props> = ({
     {
       label: 'Complete Operational Bio',
       isCompleted: hasBioFilled,
-      action: () => {
-        openEditProfileModal();
-      },
+      action: openEditProfileModal,
       actionLabel: 'Edit Bio',
     },
     {
@@ -272,48 +252,10 @@ export const ProfilePage: React.FC<Props> = ({
   const completedSteps = completionChecks.filter((c) => c.isCompleted).length;
   const completionPercentage = Math.round((completedSteps / completionChecks.length) * 100);
 
-  // Open Edit Profile Modal and prepopulate temp values
-  const openEditProfileModal = () => {
-    setTempName(profileData.name);
-    setTempDesignation(profileData.designation);
-    setTempDepartment(activeDivision);
-    setTempLocation(activeLocation);
-    setTempBio(
-      profileData.bio ||
-        'Committed to Sabah Electricity Goal Zero, digital transformation, and reliable power statewide.'
-    );
-    setTempAvatarUrl(profileData.avatarUrl || DEFAULT_AVATAR_URL);
-    setTempCoverUrl(profileData.coverUrl || DEFAULT_COVER_URL);
-    setIsEditModalOpen(true);
-  };
-
-  // Handle saving full profile edits
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    const updatedEmployee: Employee = {
-      ...profileData,
-      name: tempName.trim() || profileData.name,
-      fullName: tempName.trim() || profileData.name,
-      designation: tempDesignation.trim() || profileData.designation,
-      department: tempDepartment,
-      officeLocation: tempLocation,
-      bio: tempBio.trim(),
-      avatarUrl: tempAvatarUrl || DEFAULT_AVATAR_URL,
-      coverUrl: tempCoverUrl || DEFAULT_COVER_URL,
-    };
-
-    setProfileData(updatedEmployee);
-    if (onUpdateProfile) {
-      onUpdateProfile(updatedEmployee);
-    }
-    setIsEditModalOpen(false);
-  };
-
   // Handle ESC key to dismiss open modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      // The crop sheet sits above the edit modal, so it wins the keystroke.
       if (pendingAvatarFile) {
         closeAvatarSheet();
         return;
@@ -346,10 +288,6 @@ export const ProfilePage: React.FC<Props> = ({
         aria-hidden="true"
       />
 
-      {toast && (
-        <Toast message={toast.message} icon={toast.icon} onDismiss={() => setToast(null)} />
-      )}
-
       {/* Avatar crop sheet — the photo is only uploaded once framing is confirmed */}
       {pendingAvatarFile &&
         createPortal(
@@ -370,9 +308,7 @@ export const ProfilePage: React.FC<Props> = ({
             src={profileData.coverUrl || DEFAULT_COVER_URL}
             alt="Corporate Cover Banner"
             className={styles.coverImg}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = DEFAULT_COVER_URL;
-            }}
+            onError={(e) => handleCoverError(e)}
           />
 
           {/* Subtle gradient vignette for text legibility */}
@@ -419,10 +355,9 @@ export const ProfilePage: React.FC<Props> = ({
                 src={profileData.avatarUrl || DEFAULT_AVATAR_URL}
                 alt={profileData.name}
                 className={styles.profileAvatar}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR_URL;
-                }}
+                onError={(e) => handleAvatarError(e)}
               />
+
               {profileData.isOnline && (
                 <span className={styles.onlineBadge} title="Available on Sabah corporate intranet" />
               )}
@@ -521,7 +456,7 @@ export const ProfilePage: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 4. Brand-New User Onboarding & Milestone Meter (Gate 15.4) */}
+      {/* 4. Brand-New User Onboarding & Milestone Meter */}
       {isOwnProfile && userPosts.length === 0 && (
         <section className={styles.onboardingCard}>
           <div className={styles.onboardingHeader}>
@@ -636,10 +571,9 @@ export const ProfilePage: React.FC<Props> = ({
                   src={photo.url}
                   alt={photo.title}
                   className={styles.photoImg}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/mock-images/image1.png';
-                  }}
+                  onError={(e) => handlePostImageError(e)}
                 />
+
                 <div className={styles.photoCaptionWrap}>
                   <span className={styles.photoCaption}>{photo.title}</span>
                 </div>
@@ -750,231 +684,26 @@ export const ProfilePage: React.FC<Props> = ({
         )}
       </section>
 
-      {/* 8. Comprehensive Edit Profile Modal Sheet (Portaled via createPortal) */}
-      {isEditModalOpen &&
-        createPortal(
-          <div
-            className={styles.modalBackdrop}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Edit Profile"
-            onClick={() => setIsEditModalOpen(false)}
-          >
-            <div
-              className={styles.modalSheet}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className={styles.modalHeader}>
-                <div className={styles.modalHeaderTitleGroup}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary-text)' }}>
-                    manage_accounts
-                  </span>
-                  <h3 className={styles.modalTitle}>Edit Employee Profile</h3>
-                </div>
-                <button
-                  type="button"
-                  className={styles.modalCloseBtn}
-                  onClick={() => setIsEditModalOpen(false)}
-                  title="Close modal"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                    close
-                  </span>
-                </button>
-              </div>
-
-              {/* Form Content */}
-              <form onSubmit={handleSaveProfile} className={styles.modalForm}>
-                {/* Media Quick Previews Deck with Direct Upload Triggers */}
-                <div className={styles.mediaPreviewsDeck}>
-                  {/* Panoramic Banner Preview */}
-                  <div className={styles.previewCoverWrap}>
-                    <img
-                      src={tempCoverUrl || DEFAULT_COVER_URL}
-                      alt="Banner Preview"
-                      className={styles.previewCoverImg}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = DEFAULT_COVER_URL;
-                      }}
-                    />
-                    <div className={styles.coverButtonsOverlay}>
-                      {tempCoverUrl !== DEFAULT_COVER_URL && (
-                        <button
-                          type="button"
-                          className={styles.quickCoverChangeBtn}
-                          onClick={() => setTempCoverUrl(DEFAULT_COVER_URL)}
-                          title="Reset to Sabah Grid Horizon Sunset"
-                          style={{ background: 'rgba(15, 23, 42, 0.65)' }}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                            restart_alt
-                          </span>
-                          <span>Reset</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.quickCoverChangeBtn}
-                        onClick={() => coverFileInputRef.current?.click()}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                          photo_camera
-                        </span>
-                        <span>Upload Banner</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Avatar & Controls Row below the banner */}
-                  <div className={styles.previewMediaControls}>
-                    <div className={styles.previewAvatarHolder}>
-                      <img
-                        src={tempAvatarUrl || DEFAULT_AVATAR_URL}
-                        alt="Avatar Preview"
-                        className={styles.previewAvatarImg}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = DEFAULT_AVATAR_URL;
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className={styles.quickAvatarChangeBtn}
-                        onClick={() => avatarFileInputRef.current?.click()}
-                        title="Upload profile picture"
-                        aria-label="Upload profile picture"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                          photo_camera
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className={styles.previewMetaNotice}>
-                      <div className={styles.previewNoticeHeader}>
-                        <span className={styles.previewMetaTitle}>Profile Photo</span>
-                        {tempAvatarUrl !== DEFAULT_AVATAR_URL && (
-                          <button
-                            type="button"
-                            onClick={() => setTempAvatarUrl(DEFAULT_AVATAR_URL)}
-                            className={styles.resetCrestBtn}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
-                              restart_alt
-                            </span>
-                            Reset to Crest
-                          </button>
-                        )}
-                      </div>
-                      <span className={styles.previewMetaSub}>
-                        Tap camera to select custom photo from device
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {/* Row 1: Full Name & Role Dropdown */}
-                <div className={styles.formRow}>
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Full Name</label>
-                    <input
-                      type="text"
-                      className={styles.textInput}
-                      value={tempName}
-                      onChange={(e) => setTempName(e.target.value)}
-                      placeholder="e.g. Mohd Irfan bin Razali"
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Role</label>
-                    <select
-                      className={styles.selectInput}
-                      value={tempDesignation}
-                      onChange={(e) => setTempDesignation(e.target.value)}
-                    >
-                      <option value="">Role</option>
-                      {SESB_ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 2: Division & Station Location */}
-                <div className={styles.formRow}>
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Division</label>
-                    <select
-                      className={styles.selectInput}
-                      value={tempDepartment}
-                      onChange={(e) => setTempDepartment(e.target.value)}
-                    >
-                      {SESB_DIVISIONS.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Location</label>
-                    <select
-                      className={styles.selectInput}
-                      value={tempLocation}
-                      onChange={(e) => setTempLocation(e.target.value)}
-                    >
-                      {SESB_LOCATIONS.map((station) => (
-                        <option key={station} value={station}>
-                          {station}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 4: Operational Bio */}
-                <div className={styles.fieldGroup}>
-                  <div className={styles.labelWithCounter}>
-                    <label className={styles.fieldLabel}>Bio & Operational Mission</label>
-                    <span className="font-mono tabular-nums text-xs text-slate-500">
-                      {tempBio.length} / 160
-                    </span>
-                  </div>
-                  <textarea
-                    className={styles.bioTextarea}
-                    rows={3}
-                    maxLength={160}
-                    value={tempBio}
-                    onChange={(e) => setTempBio(e.target.value)}
-                    placeholder="Describe your core operational responsibilities at Sabah Electricity..."
-                  />
-                </div>
-
-                {/* Modal Action Buttons */}
-                <div className={styles.modalActions}>
-                  <button
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={() => setIsEditModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className={styles.saveBtn}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      save
-                    </span>
-                    <span>Save Changes</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body
-        )}
+      {/* 8. Comprehensive Edit Profile Modal Sheet (Conditionally mounted so form state resets cleanly) */}
+      {isEditModalOpen && (
+        <EditProfileModal
+          isOpen={isEditModalOpen}
+          profileData={profileData}
+          divisions={SESB_DIVISIONS}
+          coverFileInputRef={coverFileInputRef}
+          avatarFileInputRef={avatarFileInputRef}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={(updated) => {
+            setProfileData(updated);
+            if (onUpdateProfile) onUpdateProfile(updated);
+            setIsEditModalOpen(false);
+          }}
+          tempAvatarUrl={tempAvatarUrl}
+          setTempAvatarUrl={setTempAvatarUrl}
+          tempCoverUrl={tempCoverUrl}
+          setTempCoverUrl={setTempCoverUrl}
+        />
+      )}
     </div>
   );
 };

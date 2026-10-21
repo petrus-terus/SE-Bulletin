@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL, handleLogoError } from '@/utils/imageFallbacks';
 import styles from './ErrorBoundary.module.css';
 
 interface Props {
@@ -51,12 +52,10 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className={styles.errorCard}>
             <div className={styles.logoBadge}>
               <img
-                src="/sabah_electricity_logo.png"
+                src={DEFAULT_LOGO_URL}
                 alt="Sabah Electricity"
                 className={styles.brandLogo}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/sesb_logo.png';
-                }}
+                onError={(e) => handleLogoError(e, SESB_LOGO_FALLBACK_URL)}
               />
             </div>
 

@@ -1,4 +1,5 @@
 import type { Employee, Post, Story } from '@/types/bulletin';
+import { SE_SUPERADMIN_UUID } from '@/constants/bulletin';
 
 export const CURRENT_USER: Employee = {
   id: 'user-test',
@@ -56,7 +57,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
     normalizedAuthorName === 'admin_user' ||
     normalizedAuthorName === 'test_user' ||
     author.id === 'user-test' ||
-    author.id === '270b3427-b4bc-4975-bdfb-3eea83a20229'
+    author.id === SE_SUPERADMIN_UUID
   ) {
     return CURRENT_USER;
   }

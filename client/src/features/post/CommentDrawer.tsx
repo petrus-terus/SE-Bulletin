@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Comment, Employee, Post } from '@/types/bulletin';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './CommentDrawer.module.css';
 
 interface Props {
@@ -25,16 +29,14 @@ export const CommentDrawer: React.FC<Props> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEscapeKey(onClose, isOpen);
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 250);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      const timer = setTimeout(() => inputRef.current?.focus(), 250);
+      return () => clearTimeout(timer);
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   // Auto scroll to bottom when new comment arrives
@@ -102,9 +104,7 @@ export const CommentDrawer: React.FC<Props> = ({
                       src={comment.avatarUrl}
                       alt=""
                       className={styles.avatar}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                      }}
+                      onError={(e) => handleAvatarError(e)}
                     />
                   ) : (
                     <div className={styles.avatarInitials}>{comment.avatarInitials}</div>
@@ -133,12 +133,10 @@ export const CommentDrawer: React.FC<Props> = ({
         {/* Sticky Input Bar at Bottom */}
         <form className={styles.inputBarContainer} onSubmit={handleSubmit}>
           <img
-            src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
+            src={currentUser.avatarUrl || DEFAULT_AVATAR_URL}
             alt=""
             className={styles.userMiniAvatar}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-            }}
+            onError={(e) => handleAvatarError(e)}
           />
           <div className={styles.inputFieldWrapper}>
             <input

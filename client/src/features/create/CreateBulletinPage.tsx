@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
-import { CURRENT_USER } from '@/services/mockData';
-import { bulletinService } from '@/services/bulletinService';
-import { compressImageFile } from '@/utils/imageCompressor';
 import { MediaCropModal } from '@/ui/MediaCropModal';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { SESB_LOCATIONS, DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
+import { useBulletinForm, MAX_BULLETIN_PHOTOS } from './hooks/useBulletinForm';
+import { AttachmentTray } from './components/AttachmentTray';
 import styles from './CreateBulletinPage.module.css';
 
 interface Props {
@@ -18,23 +20,6 @@ interface Props {
   initialPostType?: 'status' | 'announcement';
 }
 
-const MAX_BULLETIN_PHOTOS = 10;
-
-interface AttachedPhoto {
-  id: string;
-  url: string;
-  name: string;
-  file?: File;
-}
-
-const COMMON_LOCATIONS = [
-  'Wisma SE HQ',
-  'Tenom Pangi Hydro',
-  'Sepanggar Power Station',
-  'Sandakan Regional Station',
-  'Tawau Distribution Office',
-];
-
 export const CreateBulletinPage: React.FC<Props> = ({
   departments,
   currentUser,
@@ -44,346 +29,66 @@ export const CreateBulletinPage: React.FC<Props> = ({
   isEditMode = false,
   onUpdate,
 }) => {
-  const activeUser = currentUser || CURRENT_USER;
-
-  // Form State initialized with edit values if in edit mode
-  const [isOfficial] = useState(true);
-  const [title, setTitle] = useState(initialPost?.title || '');
-  const [content, setContent] = useState(initialPost?.content || '');
-  const [charCount, setCharCount] = useState(initialPost?.content ? initialPost.content.length : 0);
-  const [selectedDeptId, setSelectedDeptId] = useState(
-    initialPost?.departmentId || activeUser.adminDepartments?.[0] || 'dept-ops'
-  );
-  const [isDeptOpen, setIsDeptOpen] = useState(false);
-  const [audienceScope, setAudienceScope] = useState('All Sabah Staff');
-  const [isAudienceOpen, setIsAudienceOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState(
-    initialPost?.location || activeUser.officeLocation || 'Wisma SE HQ'
-  );
-  const [isPinned, setIsPinned] = useState(Boolean(initialPost?.isPinned));
-  const [allowComments, setAllowComments] = useState(initialPost ? initialPost.commentsEnabled : true);
-  const [validationError, setValidationError] = useState('');
-
-  // Attachments State initialized with any existing photos
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [photos, setPhotos] = useState<AttachedPhoto[]>(() => {
-    if (!initialPost) return [];
-    const media = initialPost.mediaUrls || (initialPost.imageUrl ? [initialPost.imageUrl] : []);
-    return media.map((url, idx) => ({
-      id: `existing-photo-${idx}`,
-      url,
-      name: `Photo ${idx + 1}`,
-    }));
+  const {
+    activeUser,
+    title,
+    setTitle,
+    content,
+    handleContentChange,
+    setSelectedDeptId,
+    isDeptOpen,
+    setIsDeptOpen,
+    audienceScope,
+    setAudienceScope,
+    isAudienceOpen,
+    setIsAudienceOpen,
+    selectedLocation,
+    setSelectedLocation,
+    isPinned,
+    setIsPinned,
+    allowComments,
+    setAllowComments,
+    validationError,
+    setValidationError,
+    photos,
+    fileInputRef,
+    triggerPhotoUpload,
+    handleFileUpload,
+    handleRemovePhoto,
+    isCompressing,
+    isCropProcessing,
+    editingPhoto,
+    setEditingPhoto,
+    handleCropComplete,
+    pdfFileInputRef,
+    triggerPdfUpload,
+    pdfFile,
+    setPdfFile,
+    handlePdfUpload,
+    hasPoll,
+    setHasPoll,
+    pollQuestion,
+    setPollQuestion,
+    pollOptions,
+    handleAddOption,
+    handleRemoveOption,
+    handleOptionChange,
+    currentDept,
+    handleSubmit,
+  } = useBulletinForm({
+    departments,
+    currentUser,
+    initialPost,
+    isEditMode,
+    onSubmit,
+    onUpdate,
+    onClose,
   });
-  const [isCompressing, setIsCompressing] = useState(false);
 
-  // PDF Document State
-  const pdfFileInputRef = useRef<HTMLInputElement>(null);
-  const [pdfFile, setPdfFile] = useState<{ name: string; size: string; url: string } | null>(() => {
-    if (initialPost?.pdfUrl) {
-      return {
-        name: initialPost.pdfName || 'Document.pdf',
-        size: initialPost.pdfSize || 'Verified PDF',
-        url: initialPost.pdfUrl,
-      };
-    }
-    return null;
-  });
-
-  // Poll Builder State
-  const [hasPoll, setHasPoll] = useState(Boolean(initialPost?.poll));
-  const [pollQuestion, setPollQuestion] = useState(initialPost?.poll?.question || '');
-  const [pollOptions, setPollOptions] = useState<string[]>(
-    initialPost?.poll?.options ? initialPost.poll.options.map((o) => o.text) : ['', '']
-  );
-
-  const currentDept = departments.find((d) => d.id === selectedDeptId) || departments[0];
-
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
-    setCharCount(val.length);
-    if (validationError) setValidationError('');
-  };
-
-  // Photo crop and edit state
-  const [isCropProcessing, setIsCropProcessing] = useState<boolean>(false);
-  const [editingPhoto, setEditingPhoto] = useState<AttachedPhoto | null>(null);
-
-  // Revoke any created local blob: URLs when unmounting
-  useEffect(() => {
-    return () => {
-      photos.forEach((p) => {
-        if (p.url.startsWith('blob:')) {
-          URL.revokeObjectURL(p.url);
-        }
-      });
-    };
-  }, [photos]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const incomingFiles = Array.from(e.target.files).filter((f) => f.type.startsWith('image/'));
-    if (fileInputRef.current) fileInputRef.current.value = '';
-
-    if (incomingFiles.length === 0) return;
-
-    // Enforce 10 photos ceiling
-    const remainingSlots = MAX_BULLETIN_PHOTOS - photos.length;
-    if (remainingSlots <= 0) {
-      alert(`You have reached the maximum limit of ${MAX_BULLETIN_PHOTOS} photos per bulletin.`);
-      return;
-    }
-
-    const filesToProcess = incomingFiles.slice(0, remainingSlots);
-    if (incomingFiles.length > remainingSlots) {
-      alert(`Only the first ${remainingSlots} photo(s) were added. Bulletins support up to ${MAX_BULLETIN_PHOTOS} photos.`);
-    }
-
-    setIsCompressing(true);
-    try {
-      const processedPhotos: AttachedPhoto[] = [];
-
-      for (const file of filesToProcess) {
-        try {
-          // Pre-compress locally to generate high-efficiency WebP/JPEG blob
-          const compression = await compressImageFile(file, {
-            maxWidth: 1600,
-            maxHeight: 1600,
-            quality: 0.85,
-          });
-
-          const localUrl = URL.createObjectURL(compression.file);
-          processedPhotos.push({
-            id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: localUrl,
-            name: file.name,
-            file: compression.file,
-          });
-        } catch (compErr) {
-          console.warn('[CreateBulletinPage] Compression failed, falling back to raw file:', compErr);
-          const rawUrl = URL.createObjectURL(file);
-          processedPhotos.push({
-            id: `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: rawUrl,
-            name: file.name,
-            file: file,
-          });
-        }
-      }
-
-      setPhotos((prev) => [...prev, ...processedPhotos]);
-    } catch (err) {
-      console.error('[CreateBulletinPage] Image processing failed:', err);
-      alert('Failed to process photos. Please try again.');
-    } finally {
-      setIsCompressing(false);
-    }
-  };
-
-  const handleStartEditPhotoCrop = (photo: AttachedPhoto) => {
-    setEditingPhoto(photo);
-  };
-
-  const handleEditPhotoCropConfirm = async (croppedFile: File) => {
-    if (!editingPhoto) return;
-    setIsCropProcessing(true);
-    try {
-      // Free old blob URL if it was local to prevent memory leak
-      if (editingPhoto.url.startsWith('blob:')) {
-        URL.revokeObjectURL(editingPhoto.url);
-      }
-
-      // Create new instant local blob URL for zero-latency preview
-      const localCroppedUrl = URL.createObjectURL(croppedFile);
-
-      setPhotos((prev) =>
-        prev.map((p) =>
-          p.id === editingPhoto.id
-            ? {
-                ...p,
-                url: localCroppedUrl,
-                file: croppedFile,
-                name: croppedFile.name || p.name,
-              }
-            : p
-        )
-      );
-      setEditingPhoto(null);
-    } catch (err) {
-      console.error('[CreateBulletinPage] Photo re-crop failed:', err);
-      alert('Failed to update cropped photo.');
-    } finally {
-      setIsCropProcessing(false);
-    }
-  };
-
-  const handleRemovePhoto = (id: string) => {
-    setPhotos((prev) => {
-      const target = prev.find((p) => p.id === id);
-      if (target?.url.startsWith('blob:')) {
-        URL.revokeObjectURL(target.url);
-      }
-      return prev.filter((p) => p.id !== id);
-    });
-  };
-
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const sizeStr =
-      file.size > 1024 * 1024
-        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-        : `${Math.round(file.size / 1024)} KB`;
-
-    let pdfUrl = '';
-    try {
-      pdfUrl = await bulletinService.uploadPhoto(file);
-    } catch (err) {
-      console.error('[CreateBulletinPage] PDF upload failed:', err);
-      alert('Failed to upload PDF. Please check your connection.');
-      return;
-    }
-
-    setPdfFile({
-      name: file.name,
-      size: `${sizeStr} • Verified`,
-      url: pdfUrl,
-    });
-    if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
-  };
-
-  const handleAddPollOption = () => {
-    if (pollOptions.length < 4) {
-      setPollOptions((prev) => [...prev, '']);
-    }
-  };
-
-  const handleRemovePollOption = (index: number) => {
-    if (pollOptions.length > 2) {
-      setPollOptions((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const handlePollOptionChange = (index: number, val: string) => {
-    setPollOptions((prev) => {
-      const next = [...prev];
-      next[index] = val;
-      return next;
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      setValidationError('Please enter a title for the bulletin.');
-      return;
-    }
-    if (!content.trim()) {
-      setValidationError('Please enter your bulletin content.');
-      return;
-    }
-
-    if (hasPoll) {
-      const filledOptions = pollOptions.filter((o) => o.trim().length > 0);
-      if (filledOptions.length < 2) {
-        setValidationError('Please provide at least 2 options for the poll.');
-        return;
-      }
-    }
-
-    const validPollOptions = pollOptions.filter((o) => o.trim().length > 0);
-    const pollData =
-      hasPoll && validPollOptions.length >= 2
-        ? {
-            id: initialPost?.poll?.id || `poll-${Date.now()}`,
-            question: pollQuestion.trim() || title.trim() || 'Staff Feedback Poll',
-            options: validPollOptions.map((opt, i) => ({
-              id: initialPost?.poll?.options?.[i]?.id || `opt-${i + 1}`,
-              text: opt.trim(),
-              votes: initialPost?.poll?.options?.[i]?.votes || 0,
-            })),
-            totalVotes: initialPost?.poll?.totalVotes || 0,
-          }
-        : undefined;
-
-    setIsCompressing(true);
-    try {
-      // Upload any local photos that have not been uploaded to Supabase Storage yet
-      const uploadedMediaUrls: string[] = [];
-      for (const photo of photos) {
-        if (photo.file && (!photo.url || photo.url.startsWith('blob:') || photo.url.startsWith('data:'))) {
-          const remoteUrl = await bulletinService.uploadPhoto(photo.file);
-          uploadedMediaUrls.push(remoteUrl);
-        } else if (photo.url && !photo.url.startsWith('blob:') && !photo.url.startsWith('data:')) {
-          uploadedMediaUrls.push(photo.url);
-        }
-      }
-
-      if (isEditMode && initialPost && onUpdate) {
-        onUpdate(initialPost.id, {
-          title: title.trim(),
-          content: content.trim(),
-          departmentName: currentDept.name,
-          departmentId: currentDept.id,
-          departmentColor: currentDept.color || '#0055A4',
-          location: selectedLocation,
-          isPinned: isPinned,
-          commentsEnabled: allowComments,
-          mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : [],
-          imageUrl: uploadedMediaUrls.length > 0 ? uploadedMediaUrls[0] : null,
-          pdfUrl: pdfFile?.url,
-          pdfName: pdfFile?.name,
-          pdfSize: pdfFile?.size,
-          poll: pollData,
-          isEdited: true,
-          editedAt: new Date().toISOString(),
-        });
-        onClose();
-        return;
-      }
-
-      const newPost: CreatePostPayload = {
-        title: title.trim() || 'SE-Connect',
-        content: content.trim(),
-        authorName: activeUser.name,
-        department: currentDept.name,
-        departmentId: currentDept.id,
-        departmentColor: currentDept.color || '#0055A4',
-        avatarUrl: activeUser.avatarUrl,
-        location: selectedLocation,
-        isPinned: isPinned,
-        mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
-        imageUrl: uploadedMediaUrls.length > 0 ? uploadedMediaUrls[0] : undefined,
-        officialNotice: isOfficial,
-        commentsEnabled: allowComments,
-        pdfUrl: pdfFile?.url,
-        pdfName: pdfFile?.name,
-        pdfSize: pdfFile?.size,
-        poll: pollData,
-      };
-
-      onSubmit(newPost);
-    } catch (publishErr) {
-      console.error('[CreateBulletinPage] Publish failed:', publishErr);
-      alert('Failed to upload photos or publish bulletin. Please check your connection.');
-    } finally {
-      setIsCompressing(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsDeptOpen(false);
-        setIsAudienceOpen(false);
-      }
-    };
-    if (isDeptOpen || isAudienceOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDeptOpen, isAudienceOpen]);
+  useEscapeKey(() => {
+    setIsDeptOpen(false);
+    setIsAudienceOpen(false);
+  }, isDeptOpen || isAudienceOpen);
 
   return (
     <div
@@ -407,7 +112,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
         </button>
 
         <div className={styles.headerTitleWrap}>
-          <span className={styles.statusDot}></span>
+          <span className={styles.statusDot} />
           <h1 className={styles.headerTitle}>
             {isEditMode ? 'Edit Bulletin' : 'Create Bulletin'}
           </h1>
@@ -435,12 +140,10 @@ export const CreateBulletinPage: React.FC<Props> = ({
             <div className={styles.authorProfile}>
               <div className={styles.avatarWrapper}>
                 <img
-                  src={activeUser.avatarUrl || '/sabah_electricity_logo.png'}
+                  src={activeUser.avatarUrl || DEFAULT_AVATAR_URL}
                   alt=""
                   className={styles.authorAvatar}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                  }}
+                  onError={(e) => handleAvatarError(e)}
                 />
                 <span className={styles.onlineDot} />
               </div>
@@ -480,8 +183,8 @@ export const CreateBulletinPage: React.FC<Props> = ({
                 className={styles.scopeBtn}
                 style={{
                   background: 'var(--color-surface-card)',
-                  borderColor: currentDept.color || '#0055A4',
-                  color: currentDept.color || '#0055A4',
+                  borderColor: currentDept?.color || '#0055A4',
+                  color: currentDept?.color || '#0055A4',
                 }}
                 onClick={() => {
                   setIsAudienceOpen(false);
@@ -496,11 +199,11 @@ export const CreateBulletinPage: React.FC<Props> = ({
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: currentDept.color || '#0055A4',
+                    backgroundColor: currentDept?.color || '#0055A4',
                     flexShrink: 0,
                   }}
                 />
-                <span className="truncate">{currentDept.name}</span>
+                <span className="truncate">{currentDept?.name || 'Operations'}</span>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                   arrow_drop_down
                 </span>
@@ -518,7 +221,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Headline Input */}
+          {/* Headline Input & Main Body Composer */}
           <div className={styles.formFields}>
             <input
               type="text"
@@ -532,20 +235,19 @@ export const CreateBulletinPage: React.FC<Props> = ({
               maxLength={120}
             />
 
-            {/* Main Body Composer */}
             <textarea
               className={styles.bodyTextarea}
               placeholder="Write your bulletin content or announcement here..."
               value={content}
-              onChange={handleContentChange}
+              onChange={(e) => handleContentChange(e.target.value)}
               maxLength={5000}
               rows={6}
             />
 
-            {/* Formatting Toolbar (Cleaned up, right-aligned counter) */}
+            {/* Formatting Toolbar */}
             <div className={styles.formattingToolbar}>
               <div className={styles.charCount}>
-                <span className="font-mono tabular-nums">{charCount}</span> / 5000
+                <span className="font-mono tabular-nums">{content.length}</span> / 5000
               </div>
             </div>
           </div>
@@ -556,7 +258,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
               <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>location_on</span>
               Location:
             </span>
-            {COMMON_LOCATIONS.map((loc) => (
+            {SESB_LOCATIONS.map((loc) => (
               <button
                 key={loc}
                 type="button"
@@ -579,232 +281,43 @@ export const CreateBulletinPage: React.FC<Props> = ({
             ))}
           </div>
 
-          {/* Multi-Photo & Document Attachment Deck */}
-          <div className={styles.attachmentDeck}>
-            <div className={styles.attachmentHeader}>
-              <span className={styles.attachmentTitle}>
-                Attachments ({photos.length}/{MAX_BULLETIN_PHOTOS} photos{pdfFile ? ', 1 PDF' : ''})
-              </span>
-              <div className={styles.attachmentControls}>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
+          {/* Hidden File Inputs */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            multiple
+            accept="image/*"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+          <input
+            type="file"
+            ref={pdfFileInputRef}
+            accept="application/pdf,.pdf"
+            onChange={handlePdfUpload}
+            style={{ display: 'none' }}
+          />
 
-                <input
-                  type="file"
-                  ref={pdfFileInputRef}
-                  accept="application/pdf"
-                  onChange={handlePdfUpload}
-                  style={{ display: 'none' }}
-                />
-
-                <button
-                  type="button"
-                  className={styles.addMediaBtn}
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Upload photos from phone or computer (max 10)"
-                  disabled={isCompressing || photos.length >= MAX_BULLETIN_PHOTOS}
-                >
-                  <span
-                    className={`material-symbols-outlined ${isCompressing ? styles.spinning : ''}`}
-                    style={{ fontSize: '16px' }}
-                  >
-                    {isCompressing ? 'sync' : 'add_photo_alternate'}
-                  </span>
-                  <span>{isCompressing ? 'Optimizing...' : 'Photos'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.addMediaBtn}
-                  onClick={() => {
-                    if (pdfFile) {
-                      setPdfFile(null);
-                    } else {
-                      pdfFileInputRef.current?.click();
-                    }
-                  }}
-                  title="Upload PDF document"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    picture_as_pdf
-                  </span>
-                  <span>{pdfFile ? 'Remove PDF' : 'Attach PDF'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.addMediaBtn} ${hasPoll ? styles.activePollBtn : ''}`}
-                  onClick={() => setHasPoll(!hasPoll)}
-                  title="Add staff poll"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    how_to_vote
-                  </span>
-                  <span>{hasPoll ? 'Close Poll' : 'Poll'}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.attachmentsGrid}>
-              {/* Photo Preview Tiles */}
-              {photos.map((photo, index) => (
-                <div key={photo.id} className={styles.photoTile}>
-                  <img
-                    src={photo.url}
-                    alt={`Preview ${index + 1}`}
-                    className={styles.photoPreviewImg}
-                  />
-                  <div className={styles.photoOverlay}>
-                    <span className={styles.photoLabel}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        image
-                      </span>
-                      <span className="truncate">{photo.name}</span>
-                    </span>
-                    <div className={styles.photoTileActions}>
-                      <button
-                        type="button"
-                        className={styles.editCropTileBtn}
-                        onClick={() => handleStartEditPhotoCrop(photo)}
-                        title="Crop & adjust this photo"
-                        aria-label="Crop and adjust photo"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                          crop
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.removeTileBtn}
-                        onClick={() => handleRemovePhoto(photo.id)}
-                        title="Remove this photo"
-                        aria-label="Remove photo"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                          close
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Real PDF Document Card Tile */}
-              {pdfFile && (
-                <div className={styles.pdfTile}>
-                  <div className={styles.pdfTileTop}>
-                    <div className={styles.pdfIconWrap}>
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: '20px', color: '#DC2626' }}
-                      >
-                        picture_as_pdf
-                      </span>
-                    </div>
-                    <div className={styles.pdfInfo}>
-                      <span className={styles.pdfFileName}>{pdfFile.name}</span>
-                      <span className="font-mono tabular-nums text-xs text-slate-500">
-                        {pdfFile.size}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.pdfTileBottom}>
-                    <span className={styles.verifiedBadge}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
-                        attach_file
-                      </span>
-                      <span>Official PDF Document</span>
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.deleteDocBtn}
-                      onClick={() => setPdfFile(null)}
-                      title="Remove PDF file"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                        delete
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Dynamic Poll Creator Section (2 to 4 options) */}
-            {hasPoll && (
-              <div className={styles.pollBuilderSection}>
-                <div className={styles.pollBuilderHeader}>
-                  <div className={styles.pollBuilderTitle}>
-                    <span className="material-symbols-outlined" style={{ color: '#0055A4' }}>
-                      how_to_vote
-                    </span>
-                    <span>SE Staff Poll Creator</span>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.removePollBtn}
-                    onClick={() => setHasPoll(false)}
-                  >
-                    Cancel Poll
-                  </button>
-                </div>
-
-                <input
-                  type="text"
-                  className={styles.pollInput}
-                  placeholder="Poll question (e.g. Feedback on new operational schedule?)"
-                  value={pollQuestion}
-                  onChange={(e) => setPollQuestion(e.target.value)}
-                />
-
-                <div className={styles.pollOptionsList}>
-                  {pollOptions.map((opt, idx) => (
-                    <div key={idx} className={styles.pollOptionRow}>
-                      <input
-                        type="text"
-                        className={styles.pollOptionInput}
-                        placeholder={`Option ${idx + 1}`}
-                        value={opt}
-                        onChange={(e) => handlePollOptionChange(idx, e.target.value)}
-                      />
-                      {pollOptions.length > 2 && (
-                        <button
-                          type="button"
-                          className={styles.removeOptionBtn}
-                          onClick={() => handleRemovePollOption(idx)}
-                          title="Remove option"
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                            close
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {pollOptions.length < 4 && (
-                  <button
-                    type="button"
-                    className={styles.addOptionBtn}
-                    onClick={handleAddPollOption}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      add
-                    </span>
-                    <span>Add Option ({pollOptions.length}/4)</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Multi-Photo, PDF & Poll Attachment Deck */}
+          <AttachmentTray
+            photos={photos}
+            maxPhotos={MAX_BULLETIN_PHOTOS}
+            isCompressing={isCompressing}
+            onRemovePhoto={handleRemovePhoto}
+            onEditCrop={(photo) => setEditingPhoto(photo)}
+            onTriggerPhotoUpload={triggerPhotoUpload}
+            pdfFile={pdfFile}
+            onRemovePdf={() => setPdfFile(null)}
+            onTriggerPdfUpload={triggerPdfUpload}
+            hasPoll={hasPoll}
+            onTogglePoll={() => setHasPoll(!hasPoll)}
+            pollQuestion={pollQuestion}
+            onPollQuestionChange={setPollQuestion}
+            pollOptions={pollOptions}
+            onPollOptionChange={handleOptionChange}
+            onAddPollOption={handleAddOption}
+            onRemovePollOption={handleRemoveOption}
+          />
 
           {/* Options & Pinning */}
           <div className={styles.optionsSection}>
@@ -841,7 +354,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Department Selector Modal Sheet (Mounted to Body to bypass container overflow clipping) */}
+      {/* Department Selector Modal Sheet (Mounted to Body) */}
       {isDeptOpen &&
         createPortal(
           <div
@@ -859,7 +372,9 @@ export const CreateBulletinPage: React.FC<Props> = ({
               <div className={styles.modalSheetHeader}>
                 <div className={styles.modalSheetTitleWrap}>
                   <span className={styles.modalSheetTitle}>Select Department</span>
-                  <span className={styles.modalSheetSub}>Choose which SE department this bulletin originates from</span>
+                  <span className={styles.modalSheetSub}>
+                    Choose which SE department this bulletin originates from
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -873,7 +388,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
 
               <div className={styles.modalSheetBody}>
                 {departments.map((dept) => {
-                  const isSelected = currentDept.id === dept.id;
+                  const isSelected = currentDept?.id === dept.id;
                   return (
                     <button
                       key={dept.id}
@@ -890,9 +405,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
                       />
                       <span className={styles.deptSheetName}>{dept.name}</span>
                       {isSelected && (
-                        <span
-                          className={`material-symbols-outlined ${styles.deptSheetCheck}`}
-                        >
+                        <span className={`material-symbols-outlined ${styles.deptSheetCheck}`}>
                           check_circle
                         </span>
                       )}
@@ -923,7 +436,9 @@ export const CreateBulletinPage: React.FC<Props> = ({
               <div className={styles.modalSheetHeader}>
                 <div className={styles.modalSheetTitleWrap}>
                   <span className={styles.modalSheetTitle}>Audience Scope</span>
-                  <span className={styles.modalSheetSub}>Define who will receive and see this bulletin notification</span>
+                  <span className={styles.modalSheetSub}>
+                    Define who will receive and see this bulletin notification
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -948,14 +463,22 @@ export const CreateBulletinPage: React.FC<Props> = ({
                         setIsAudienceOpen(false);
                       }}
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px', color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
-                        {scope === 'All Sabah Staff' ? 'public' : scope === 'HQ Only' ? 'corporate_fare' : 'engineering'}
+                      <span
+                        className="material-symbols-outlined"
+                        style={{
+                          fontSize: '20px',
+                          color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        }}
+                      >
+                        {scope === 'All Sabah Staff'
+                          ? 'public'
+                          : scope === 'HQ Only'
+                          ? 'corporate_fare'
+                          : 'engineering'}
                       </span>
                       <span className={styles.deptSheetName}>{scope}</span>
                       {isSelected && (
-                        <span
-                          className={`material-symbols-outlined ${styles.deptSheetCheck}`}
-                        >
+                        <span className={`material-symbols-outlined ${styles.deptSheetCheck}`}>
                           check_circle
                         </span>
                       )}
@@ -968,7 +491,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
           document.body
         )}
 
-      {/* On-Demand Photo Crop & Adjust Studio (Matching 24h Story Mechanics) */}
+      {/* On-Demand Photo Crop & Adjust Studio */}
       {editingPhoto && (
         <MediaCropModal
           imageSrc={editingPhoto.url}
@@ -977,7 +500,7 @@ export const CreateBulletinPage: React.FC<Props> = ({
           isFreeform={true}
           initialAspect="freeform"
           confirmLabel="Apply Crop"
-          onConfirm={handleEditPhotoCropConfirm}
+          onConfirm={handleCropComplete}
           onCancel={() => setEditingPhoto(null)}
           isProcessing={isCropProcessing}
         />

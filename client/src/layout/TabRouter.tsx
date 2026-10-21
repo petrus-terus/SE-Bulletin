@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import type { AppNotification, Employee, EmojiReactionType, Post, Story } from '@/types/bulletin';
+import type { AppNotification, Employee, Post } from '@/types/bulletin';
 import { DEPARTMENTS } from '@/data/departments';
 import type { TabKey } from '@/layout/BottomNav';
 import { KinabaluSkylineHero } from '@/features/feed/KinabaluSkylineHero';
@@ -10,6 +10,8 @@ import { StoriesBar } from '@/features/stories/StoriesBar';
 import { DepartmentFilters } from '@/features/feed/DepartmentFilters';
 import { FeedCard } from '@/shared/FeedCard';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
+import { useFeed } from '@/context/FeedContext';
+import { useOverlay } from '@/context/OverlayContext';
 
 // Lazy-loaded tab sub-pages
 const SearchDirectoryPage = lazy(() =>
@@ -31,38 +33,13 @@ const ViewFallback = () => (
 export interface TabRouterProps {
   activeTab: TabKey;
   currentUser: Employee;
-  posts: Post[];
-  feedPosts: Post[];
-  latestCeoPost?: Post;
-  stories: Story[];
-  selectedDeptId: string;
-  onSelectDepartment: (id: string) => void;
-  postCounts: Record<string, number>;
   notifications: AppNotification[];
   viewedProfileEmployee: Employee | null;
-  previousTab: TabKey;
   onBackFromProfile?: () => void;
-  // Handlers
-  onOpenCreate: () => void;
   onNavigateExplore: () => void;
-  onSelectPost: (post: Post) => void;
-  onOpenComments: (postId: string) => void;
-  onVotePoll: (postId: string, optionId: string) => void;
-  onLikeToggle: (postId: string) => void;
-  onBookmarkToggle: (postId: string) => void;
   onViewAuthorProfile: (author: { id?: string; name: string; avatarUrl?: string; designation?: string; department?: string }) => void;
-  onAddStoryClick: () => void;
-  onDeleteStory?: (storyId: string) => Promise<void> | void;
-  onDeletePost: (postId: string) => void;
-  onEditPost: (post: Post) => void;
-  onReactionSelect: (postId: string, reaction: EmojiReactionType) => void;
-  onReshareToggle: (postId: string) => void;
-  onQuotePost: (quotedPost: Post, commentText: string) => void;
-  onSharePost: (post: Post) => void;
-  onReshareClick: (postId: string) => void;
   onNotificationClick: (notif: AppNotification) => void;
   onMarkAllNotificationsAsRead: () => void;
-  onImageClick: (url: string, title?: string) => void;
   onLogout: () => void;
   onUpdateProfile: (updatedUser: Employee) => void;
 }
@@ -70,219 +47,153 @@ export interface TabRouterProps {
 export const TabRouter: React.FC<TabRouterProps> = ({
   activeTab,
   currentUser,
-  posts,
-  feedPosts,
-  latestCeoPost,
-  stories,
-  selectedDeptId,
-  onSelectDepartment,
-  postCounts,
   notifications,
   viewedProfileEmployee,
-  previousTab: _previousTab,
   onBackFromProfile,
-  onOpenCreate,
   onNavigateExplore,
-  onSelectPost,
-  onOpenComments,
-  onVotePoll,
-  onLikeToggle,
-  onBookmarkToggle,
   onViewAuthorProfile,
-  onAddStoryClick,
-  onDeleteStory,
-  onDeletePost,
-  onEditPost,
-  onReactionSelect,
-  onReshareToggle,
-  onQuotePost,
-  onSharePost,
-  onReshareClick,
   onNotificationClick,
   onMarkAllNotificationsAsRead,
-  onImageClick,
   onLogout,
   onUpdateProfile,
 }) => {
+  const feed = useFeed();
+  const overlay = useOverlay();
+
   return (
     <>
-      {/* 1. Home Tab Stream */}
+      {/* Tab: Home (Main Bulletin Feed) */}
       {activeTab === 'home' && (
         <>
-          {/* Corporate Executive Morning Hero Card */}
           <KinabaluSkylineHero
             userName={currentUser.name}
             department={currentUser.department}
             employeeId={currentUser.employeeId}
-            onOpenCreate={onOpenCreate}
             onNavigateDirectory={onNavigateExplore}
-            onFilterCategory={onSelectDepartment}
           />
 
-          {/* SESI Knowledge Hub Cross-Promo Banner */}
           <SesiKnowledgeHubBanner />
 
-          {/* Trending Across SE Section */}
-          <TrendingSection
-            posts={posts}
-            onSelectPost={onSelectPost}
-            onOpenComments={(post) => onOpenComments(post.id)}
-          />
-
-          {/* CEO Wisdom Section */}
           <CeoWisdomSection
-            ceoPost={latestCeoPost}
-            onVotePoll={onVotePoll}
-            onLikeToggle={onLikeToggle}
-            onCommentClick={(post) => onOpenComments(post.id)}
-            onBookmarkToggle={onBookmarkToggle}
-            onPostClick={onSelectPost}
-            onViewCeoProfile={() =>
-              onViewAuthorProfile({
-                id: 'user-ceo',
-                name: 'Datuk Ir. Ts. Mohd Yaakob Hj. Jaafar',
-                designation: 'Chief Executive Officer (CEO)',
-                department: 'Chief Executive Officer (CEO) Office',
-                avatarUrl: '/ceo_portrait.png',
-              })
-            }
+            ceoPost={feed.latestCeoPost}
+            onPostClick={feed.handleOpenPostDetail}
+            onViewCeoProfile={() => {
+              if (feed.latestCeoPost) {
+                onViewAuthorProfile(feed.latestCeoPost.author);
+              }
+            }}
+            onLikeToggle={feed.handleLikeToggle}
+            onCommentClick={(post) => overlay.openComment(post.id)}
+            onBookmarkToggle={feed.handleBookmarkToggle}
+            onVotePoll={feed.handleVotePoll}
           />
 
-          {/* 24-Hour Department Stories Carousel */}
+          <TrendingSection
+            posts={feed.posts}
+            onSelectPost={feed.handleOpenPostDetail}
+            onOpenComments={(post) => overlay.openComment(post.id)}
+          />
+
           <StoriesBar
+            stories={feed.stories}
             currentUser={currentUser}
-            stories={stories}
-            onAddStoryClick={onAddStoryClick}
-            onDeleteStory={onDeleteStory}
+            onAddStoryClick={overlay.openStory}
+            onDeleteStory={feed.handleDeleteStory}
           />
 
-          {/* Department Filter Chips */}
           <DepartmentFilters
             departments={DEPARTMENTS}
-            selectedDepartmentId={selectedDeptId}
-            onSelectDepartment={onSelectDepartment}
-            postCounts={postCounts}
+            selectedDepartmentId={feed.selectedDeptId}
+            onSelectDepartment={feed.setSelectedDeptId}
+            postCounts={feed.postCounts}
           />
 
-          {/* Bulletin Feed Stream */}
-          <section aria-label="Bulletin Stream">
-            {feedPosts.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '48px 16px',
-                  background: 'var(--color-surface-card)',
-                  borderRadius: 'var(--radius-card)',
-                  border: '1px solid var(--color-border-subtle)',
-                  color: 'var(--color-text-muted)',
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '36px', opacity: 0.4 }}>
-                  inbox
-                </span>
-                <p style={{ marginTop: '8px', fontSize: 'var(--font-size-sm)' }}>
-                  No bulletin updates found in this department yet.
-                </p>
-              </div>
-            ) : (
-              feedPosts.map((post) => (
-                <ErrorBoundary key={post.id}>
-                  <FeedCard
-                    post={post}
-                    currentUserId={currentUser.id}
-                    currentUserName={currentUser.name}
-                    currentUserRole={currentUser.role}
-                    currentUserAvatar={currentUser.avatarUrl}
-                    onLikeToggle={onLikeToggle}
-                    onCommentClick={(p) => onOpenComments(p.id)}
-                    onBookmarkToggle={onBookmarkToggle}
-                    onDeletePost={onDeletePost}
-                    onEditPost={onEditPost}
-                    onPostClick={onSelectPost}
-                    onAuthorClick={onViewAuthorProfile}
-                    onVotePoll={onVotePoll}
-                    onReactionSelect={onReactionSelect}
-                    onReshareToggle={onReshareToggle}
-                    onQuotePost={onQuotePost}
-                    onSharePost={onSharePost}
-                    onReshareClick={(p) => onReshareClick(p.id)}
-                  />
-                </ErrorBoundary>
-              ))
-            )}
-          </section>
+          <div className="posts-stream">
+            {feed.feedPosts.map((post) => (
+              <FeedCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUser.id}
+                currentUserName={currentUser.name}
+                currentUserRole={currentUser.role}
+                onLikeToggle={feed.handleLikeToggle}
+                onBookmarkToggle={feed.handleBookmarkToggle}
+                onVotePoll={feed.handleVotePoll}
+                onCommentClick={() => overlay.openComment(post.id)}
+                onReshareClick={() => overlay.openReshare(post.id)}
+                onPostClick={feed.handleOpenPostDetail}
+                onAuthorClick={onViewAuthorProfile}
+                onDeletePost={feed.handleDeletePost}
+                onEditPost={overlay.openEdit}
+                onSharePost={feed.handleSharePost}
+              />
+            ))}
+          </div>
         </>
       )}
 
-      {/* 2. Explore & Directory Tab View */}
+      {/* Tab: Explore (Staff Directory & Search) */}
       {activeTab === 'explore' && (
-        <Suspense fallback={<ViewFallback />}>
-          <SearchDirectoryPage
-            posts={posts}
-            departments={DEPARTMENTS}
-            currentUserId={currentUser.id}
-            currentUserName={currentUser.name}
-            currentUserRole={currentUser.role}
-            currentUserAvatar={currentUser.avatarUrl}
-            onLikeToggle={onLikeToggle}
-            onOpenComments={(post) => onOpenComments(post.id)}
-            onDeletePost={onDeletePost}
-            onEditPost={onEditPost}
-            onPostClick={onSelectPost}
-            onViewProfile={onViewAuthorProfile}
-            onBookmarkToggle={onBookmarkToggle}
-            onVotePoll={onVotePoll}
-            onReactionSelect={onReactionSelect}
-            onReshareToggle={onReshareToggle}
-            onQuotePost={onQuotePost}
-            onSharePost={onSharePost}
-            onReshareClick={(p) => onReshareClick(p.id)}
-          />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<ViewFallback />}>
+            <SearchDirectoryPage
+              posts={feed.posts}
+              departments={DEPARTMENTS}
+              currentUserId={currentUser.id}
+              currentUserName={currentUser.name}
+              currentUserRole={currentUser.role}
+              currentUserAvatar={currentUser.avatarUrl}
+              onLikeToggle={feed.handleLikeToggle}
+              onOpenComments={(post) => overlay.openComment(post.id)}
+              onDeletePost={feed.handleDeletePost}
+              onEditPost={overlay.openEdit}
+              onPostClick={feed.handleOpenPostDetail}
+              onViewProfile={(employee) => onViewAuthorProfile(employee)}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
-      {/* 3. Notifications Tab View */}
+      {/* Tab: Notifications (Alerts & Mentions) */}
       {activeTab === 'notifications' && (
-        <Suspense fallback={<ViewFallback />}>
-          <NotificationsView
-            notifications={notifications}
-            onNotificationClick={onNotificationClick}
-            onMarkAllAsRead={onMarkAllNotificationsAsRead}
-          />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<ViewFallback />}>
+            <NotificationsView
+              notifications={notifications}
+              onNotificationClick={onNotificationClick}
+              onMarkAllAsRead={onMarkAllNotificationsAsRead}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
-      {/* 4. Profile Tab View */}
+      {/* Tab: Profile (Self or Colleague Profile) */}
       {activeTab === 'profile' && (
-        <Suspense fallback={<ViewFallback />}>
-          <ProfilePage
-            key={viewedProfileEmployee?.id || currentUser.id}
-            posts={posts}
-            currentUser={currentUser}
-            viewedEmployee={viewedProfileEmployee}
-            onBack={
-              onBackFromProfile ||
-              (viewedProfileEmployee && viewedProfileEmployee.id !== currentUser.id
-                ? onBackFromProfile
-                : undefined)
-            }
-            onLikeToggle={onLikeToggle}
-            onOpenComments={(post) => onOpenComments(post.id)}
-            onDeletePost={onDeletePost}
-            onEditPost={onEditPost}
-            onOpenCreate={onOpenCreate}
-            onPostClick={onSelectPost}
-            onImageClick={onImageClick}
-            onLogout={onLogout}
-            onUpdateProfile={onUpdateProfile}
-            onBookmarkToggle={onBookmarkToggle}
-            onVotePoll={onVotePoll}
-            onReactionSelect={onReactionSelect}
-            onReshareToggle={onReshareToggle}
-            onQuotePost={onQuotePost}
-            onSharePost={onSharePost}
-          />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<ViewFallback />}>
+            <ProfilePage
+              key={viewedProfileEmployee?.id || currentUser.id}
+              posts={feed.posts}
+              currentUser={currentUser}
+              viewedEmployee={viewedProfileEmployee}
+              onBack={onBackFromProfile}
+              onOpenCreate={overlay.openCreate}
+              onPostClick={feed.handleOpenPostDetail}
+              onLikeToggle={feed.handleLikeToggle}
+              onBookmarkToggle={feed.handleBookmarkToggle}
+              onVotePoll={feed.handleVotePoll}
+              onOpenComments={(post: Post) => overlay.openComment(post.id)}
+              onReshareToggle={feed.handleReshareToggle}
+              onQuotePost={feed.handleQuotePost}
+              onSharePost={feed.handleSharePost}
+              onDeletePost={feed.handleDeletePost}
+              onEditPost={overlay.openEdit}
+              onImageClick={(url, title) => overlay.openLightbox({ url, title })}
+              onLogout={onLogout}
+              onUpdateProfile={onUpdateProfile}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </>
   );

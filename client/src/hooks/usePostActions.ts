@@ -1,7 +1,10 @@
 import type { Comment, CreatePostPayload, Employee, EmojiReactionType, Post } from '@/types/bulletin';
 import { bulletinService } from '@/services/bulletinService';
 import { saveBookmarkedPostId } from '@/services/bookmarkStorage';
+import { setPostLiked } from '@/services/likeStorage';
+import { saveStoredPollVote } from '@/services/pollStorage';
 import { getAvatarInitials } from '@/services/rowMappers';
+import { DEFAULT_DEPARTMENT_ID } from '@/constants/bulletin';
 
 interface UsePostActionsParams {
   currentUser: Employee | null;
@@ -39,11 +42,13 @@ export function usePostActions({
   // Optimistic Like Handler with Supabase Cloud Sync
   const handleLikeToggle = (postId: string) => {
     let nextIsLiked = false;
+    let nextCount = 0;
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
           nextIsLiked = !post.isLiked;
-          const nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
+          nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
+          setPostLiked(postId, nextIsLiked);
           return {
             ...post,
             isLiked: nextIsLiked,
@@ -55,6 +60,7 @@ export function usePostActions({
     );
 
     bulletinService.toggleLike(postId, nextIsLiked);
+    bulletinService.updatePost(postId, { likesCount: nextCount });
   };
 
   // Bookmark Toggle with local persistence
@@ -92,6 +98,7 @@ export function usePostActions({
             });
             const totalVotes = Math.max(0, post.poll.totalVotes - 1);
 
+            saveStoredPollVote(postId, undefined);
             setToast({
               message: 'Vote removed from poll',
               icon: 'undo',
@@ -126,6 +133,7 @@ export function usePostActions({
             ? post.poll.totalVotes
             : post.poll.totalVotes + 1;
 
+          saveStoredPollVote(postId, optionId);
           setToast({
             message: currentVoted ? 'Vote changed' : 'Vote submitted to SE poll',
             icon: 'how_to_vote',
@@ -242,7 +250,7 @@ export function usePostActions({
       title: '',
       content: commentText,
       department: currentUser.department,
-      departmentId: currentUser.adminDepartments?.[0] || 'dept-ops',
+      departmentId: currentUser.adminDepartments?.[0] || DEFAULT_DEPARTMENT_ID,
       quotedPost: quotedPost,
     };
 

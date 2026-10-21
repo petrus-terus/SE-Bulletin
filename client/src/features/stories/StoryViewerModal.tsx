@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { StoryGroup } from '@/types/bulletin';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError, handleCoverError } from '@/utils/imageFallbacks';
 import styles from './StoryViewerModal.module.css';
 
 interface Props {
@@ -32,10 +34,6 @@ export const StoryViewerModal: React.FC<Props> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
-
-  useEffect(() => {
-    setIsBuffering(false);
-  }, [groupIndex, storyIndex]);
 
   // Touch gesture state for swipe-down to dismiss
   const [dragY, setDragY] = useState(0);
@@ -403,12 +401,10 @@ export const StoryViewerModal: React.FC<Props> = ({
         >
           <div className={styles.authorMeta}>
             <img
-              src={currentStory.authorAvatar || currentGroup.authorAvatar || '/sabah_electricity_logo.png'}
+              src={currentStory.authorAvatar || currentGroup.authorAvatar || DEFAULT_AVATAR_URL}
               alt=""
               className={styles.authorAvatar}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleAvatarError(e)}
             />
             <div className={styles.authorInfo}>
               <span className={styles.authorDept}>
@@ -553,9 +549,7 @@ export const StoryViewerModal: React.FC<Props> = ({
               src={currentStory.imageUrl}
               alt=""
               className={styles.storyImg}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/grid_horizon_hero.jpg';
-              }}
+              onError={(e) => handleCoverError(e)}
             />
           )}
 

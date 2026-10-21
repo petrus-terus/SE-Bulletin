@@ -45,13 +45,18 @@ export const AvatarCropSheet: React.FC<Props> = ({
 
   const [imageSrc, setImageSrc] = useState<string>('');
   const [isLoadingMedia, setIsLoadingMedia] = useState(true);
+  const [prevImageFile, setPrevImageFile] = useState(imageFile);
+  if (imageFile !== prevImageFile) {
+    setPrevImageFile(imageFile);
+    setIsLoadingMedia(true);
+    setImageSrc('');
+  }
 
   // Read the photo into memory as a Data URL via FileReader.
   // Using an in-memory Data URL prevents object-URL revocation bugs in
   // React 18/19 StrictMode and ensures reliable rendering across renders.
   useEffect(() => {
     let isCancelled = false;
-    setIsLoadingMedia(true);
 
     const reader = new FileReader();
     reader.onload = () => {

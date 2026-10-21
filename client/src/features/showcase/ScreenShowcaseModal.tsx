@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { APP_NAME } from '@/constants/brand';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './ScreenShowcaseModal.module.css';
 
 export type ShowcaseTarget = 'home' | 'create' | 'explore' | 'notifications' | 'profile';
@@ -206,24 +208,30 @@ const Preview: React.FC<{ screen: ShowcaseTarget }> = ({ screen }) => {
 
 export const ScreenShowcaseModal: React.FC<Props> = ({ isOpen, onClose, onOpenScreen }) => {
   const [index, setIndex] = useState(0);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setIndex(0);
+    }
+  }
+
   const screen = SCREENS[index];
+
+  useEscapeKey(onClose, isOpen);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
-    setIndex(0);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowRight') setIndex((i) => Math.min(i + 1, SCREENS.length - 1));
       if (e.key === 'ArrowLeft') setIndex((i) => Math.max(i - 1, 0));
     };
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (typeof document === 'undefined') return null;
 

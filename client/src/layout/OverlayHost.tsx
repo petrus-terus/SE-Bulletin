@@ -1,5 +1,4 @@
-import React, { lazy, Suspense } from 'react';
-import type { Comment, Employee, Post, Story } from '@/types/bulletin';
+﻿import React, { lazy, Suspense } from 'react';
 import { DEPARTMENTS } from '@/data/departments';
 import { bulletinService } from '@/services/bulletinService';
 import { CommentDrawer } from '@/features/post/CommentDrawer';
@@ -9,6 +8,9 @@ import { BrandSidebarDrawer } from '@/layout/BrandSidebarDrawer';
 import { ScreenShowcaseModal, type ShowcaseTarget } from '@/features/showcase/ScreenShowcaseModal';
 import { PwaInstallPrompt } from '@/ui/PwaInstallPrompt';
 import { Toast } from '@/ui/Toast';
+import { useOverlay } from '@/context/OverlayContext';
+import { useFeed } from '@/context/FeedContext';
+import type { Employee } from '@/types/bulletin';
 
 // Lazy-loaded heavy overlay modals & sheets
 const CreateBulletinPage = lazy(() =>
@@ -32,171 +34,108 @@ const ViewFallback = () => (
 
 export interface OverlayHostProps {
   currentUser: Employee;
-  // Comment drawer
-  activeCommentPost: Post | null;
-  commentsByPost: Record<string, Comment[]>;
-  onCloseCommentDrawer: () => void;
-  onAddComment: (postId: string, text: string) => void;
-  onAuthorProfileClick: (author: { name: string; department?: string }) => void;
-  // Reshare sheet
-  activeResharePost: Post | null;
-  onCloseReshareSheet: () => void;
-  onReshareToggle: (postId: string) => void;
-  onOpenQuoteModal: (postId: string) => void;
-  // Quote modal
-  activeQuotePost: Post | null;
-  onCloseQuoteModal: () => void;
-  onQuoteSubmit: (quotedPost: Post, commentText: string) => void;
-  // Create story
-  isCreateStoryOpen: boolean;
-  onCloseCreateStory: () => void;
-  onStoryCreated: (newStory: Story) => void;
-  // Create bulletin
-  isCreateOpen: boolean;
-  onCloseCreateBulletin: () => void;
-  onPublishPost: (newPost: Post) => void;
-  // Edit bulletin
-  editingPost: Post | null;
-  onCloseEditBulletin: () => void;
-  onUpdatePost: (postId: string, updatedData: Partial<Post>) => void;
-  // Lightbox
-  lightboxImage: { url: string; title?: string; location?: string | null } | null;
-  onCloseLightbox: () => void;
-  // Brand sidebar
-  isBrandSidebarOpen: boolean;
-  onCloseBrandSidebar: () => void;
-  onOpenSavedPosts: () => void;
-  onOpenShowcase: () => void;
   onLogout: () => void;
-  // Screen tour
-  isShowcaseOpen: boolean;
-  onCloseShowcase: () => void;
   onOpenScreen: (target: ShowcaseTarget) => void;
-  savedCount: number;
-  // Saved posts
-  isSavedPostsOpen: boolean;
-  onCloseSavedPosts: () => void;
-  savedPosts: Post[];
-  onSavedPostClick: (postId: string) => void;
-  onRemoveBookmark: (postId: string) => void;
-  // Toast
-  toast: { message: string; icon?: string } | null;
-  onDismissToast: () => void;
+  onAuthorProfileClick: (author: { name: string; department?: string }) => void;
 }
 
 export const OverlayHost: React.FC<OverlayHostProps> = ({
   currentUser,
-  activeCommentPost,
-  commentsByPost,
-  onCloseCommentDrawer,
-  onAddComment,
-  onAuthorProfileClick,
-  activeResharePost,
-  onCloseReshareSheet,
-  onReshareToggle,
-  onOpenQuoteModal,
-  activeQuotePost,
-  onCloseQuoteModal,
-  onQuoteSubmit,
-  isCreateStoryOpen,
-  onCloseCreateStory,
-  onStoryCreated,
-  isCreateOpen,
-  onCloseCreateBulletin,
-  onPublishPost,
-  editingPost,
-  onCloseEditBulletin,
-  onUpdatePost,
-  lightboxImage,
-  onCloseLightbox,
-  isBrandSidebarOpen,
-  onCloseBrandSidebar,
-  onOpenSavedPosts,
-  onOpenShowcase,
   onLogout,
-  isShowcaseOpen,
-  onCloseShowcase,
   onOpenScreen,
-  savedCount,
-  isSavedPostsOpen,
-  onCloseSavedPosts,
-  savedPosts,
-  onSavedPostClick,
-  onRemoveBookmark,
-  toast,
-  onDismissToast,
+  onAuthorProfileClick,
 }) => {
+  const overlay = useOverlay();
+  const feed = useFeed();
+
+  const savedPosts = feed.posts.filter((p) => p.isBookmarked);
+
   return (
     <>
       {/* Interactive Bottom Drawer for Threaded Comments */}
-      {activeCommentPost && (
+      {feed.activeCommentPost && (
         <CommentDrawer
-          post={activeCommentPost}
+          post={feed.activeCommentPost}
           currentUser={currentUser}
-          isOpen={activeCommentPost !== null}
-          onClose={onCloseCommentDrawer}
-          onAddComment={onAddComment}
-          comments={commentsByPost[activeCommentPost.id] || []}
+          isOpen={feed.activeCommentPost !== null}
+          onClose={overlay.closeOverlay}
+          onAddComment={feed.handleAddComment}
+          comments={feed.commentsByPost[feed.activeCommentPost.id] || []}
           onAuthorClick={(name, dept) => onAuthorProfileClick({ name, department: dept })}
         />
       )}
 
       {/* Reshare Bottom Sheet Modal */}
-      {activeResharePost && (
+      {feed.activeResharePost && (
         <ReshareBottomSheet
-          isOpen={Boolean(activeResharePost)}
-          isReshared={activeResharePost.isReshared}
-          onClose={onCloseReshareSheet}
+          isOpen={Boolean(feed.activeResharePost)}
+          isReshared={feed.activeResharePost.isReshared}
+          onClose={overlay.closeOverlay}
           onRepost={() => {
-            onReshareToggle(activeResharePost.id);
-            onCloseReshareSheet();
+            if (feed.activeResharePost) {
+              feed.handleReshareToggle(feed.activeResharePost.id);
+            }
+            overlay.closeOverlay();
           }}
           onQuote={() => {
-            const targetId = activeResharePost.id;
-            onCloseReshareSheet();
-            onOpenQuoteModal(targetId);
+            if (feed.activeResharePost) {
+              const targetId = feed.activeResharePost.id;
+              overlay.closeOverlay();
+              overlay.openQuote(targetId);
+            }
           }}
         />
       )}
 
       {/* Quote Bulletin Composer Modal */}
-      {activeQuotePost && (
+      {feed.activeQuotePost && (
         <QuoteBulletinModal
-          isOpen={Boolean(activeQuotePost)}
-          quotedPost={activeQuotePost}
+          isOpen={Boolean(feed.activeQuotePost)}
+          quotedPost={feed.activeQuotePost}
           currentUserAvatar={currentUser.avatarUrl}
           currentUserName={currentUser.name}
-          onClose={onCloseQuoteModal}
+          onClose={overlay.closeOverlay}
           onSubmit={(commentText) => {
-            onQuoteSubmit(activeQuotePost, commentText);
-            onCloseQuoteModal();
+            if (feed.activeQuotePost) {
+              feed.handleQuotePost(feed.activeQuotePost, commentText);
+            }
+            overlay.closeOverlay();
           }}
         />
       )}
 
       {/* 24h Story Creator */}
-      {isCreateStoryOpen && (
+      {overlay.isCreateStoryOpen && (
         <Suspense fallback={null}>
           <CreateStoryModal
             currentUser={currentUser}
-            onClose={onCloseCreateStory}
-            onSubmit={onStoryCreated}
+            onClose={overlay.closeOverlay}
+            onSubmit={async (newStory) => {
+              feed.setStories((prev) => [newStory, ...prev.filter((s) => s.id !== newStory.id)]);
+              try {
+                await bulletinService.createStory(newStory);
+                feed.setToast({ message: '24h Story shared successfully!', icon: 'schedule' });
+              } catch (err) {
+                console.error('[OverlayHost] Failed to sync story:', err);
+                feed.setToast({ message: 'Story posted locally; syncing in background.', icon: 'cloud_off' });
+              }
+            }}
           />
         </Suspense>
       )}
 
       {/* Dedicated Full Page for Creating Bulletins */}
-      {isCreateOpen && (
+      {overlay.isCreateOpen && (
         <Suspense fallback={<ViewFallback />}>
           <CreateBulletinPage
             departments={DEPARTMENTS}
             currentUser={currentUser}
-            onClose={onCloseCreateBulletin}
+            onClose={overlay.closeOverlay}
             onSubmit={async (newPostData) => {
               try {
                 const newPost = await bulletinService.createPost(newPostData, currentUser);
-                onPublishPost(newPost);
-                onCloseCreateBulletin();
+                feed.handlePublishPost(newPost);
+                overlay.closeOverlay();
               } catch (err) {
                 console.error('[OverlayHost] Failed to publish bulletin:', err);
               }
@@ -206,28 +145,28 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
       )}
 
       {/* Dedicated Full Page for Editing Bulletins */}
-      {editingPost && (
+      {overlay.editingPost && (
         <Suspense fallback={<ViewFallback />}>
           <CreateBulletinPage
             departments={DEPARTMENTS}
             currentUser={currentUser}
-            initialPost={editingPost}
+            initialPost={overlay.editingPost}
             isEditMode={true}
-            onClose={onCloseEditBulletin}
+            onClose={overlay.closeOverlay}
             onSubmit={() => {}}
-            onUpdate={onUpdatePost}
+            onUpdate={feed.handleUpdatePost}
           />
         </Suspense>
       )}
 
       {/* Fullscreen Gesture-Only Lightbox Image Viewer */}
-      {lightboxImage && (
+      {overlay.lightboxImage && (
         <Suspense fallback={null}>
           <ImageViewerModal
-            imageUrl={lightboxImage.url}
-            title={lightboxImage.title}
-            location={lightboxImage.location}
-            onClose={onCloseLightbox}
+            imageUrl={overlay.lightboxImage.url}
+            title={overlay.lightboxImage.title}
+            location={overlay.lightboxImage.location}
+            onClose={overlay.closeOverlay}
           />
         </Suspense>
       )}
@@ -237,39 +176,42 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
 
       {/* Slide-out Navigation Drawer */}
       <BrandSidebarDrawer
-        isOpen={isBrandSidebarOpen}
-        onClose={onCloseBrandSidebar}
+        isOpen={overlay.isBrandSidebarOpen}
+        onClose={overlay.closeOverlay}
         currentUser={currentUser}
-        savedCount={savedCount}
-        onOpenSavedPosts={onOpenSavedPosts}
-        onOpenShowcase={onOpenShowcase}
+        savedCount={savedPosts.length}
+        onOpenSavedPosts={overlay.openSaved}
+        onOpenShowcase={overlay.openShowcase}
         onLogout={onLogout}
       />
 
       {/* Interactive screen tour */}
       <ScreenShowcaseModal
-        isOpen={isShowcaseOpen}
-        onClose={onCloseShowcase}
+        isOpen={overlay.isShowcaseOpen}
+        onClose={overlay.closeOverlay}
         onOpenScreen={onOpenScreen}
       />
 
       {/* Dedicated Saved Posts Slide-over Drawer */}
       <Suspense fallback={null}>
         <SavedPostsDrawer
-          isOpen={isSavedPostsOpen}
-          onClose={onCloseSavedPosts}
+          isOpen={overlay.isSavedPostsOpen}
+          onClose={overlay.closeOverlay}
           savedPosts={savedPosts}
-          onPostClick={(post) => onSavedPostClick(post.id)}
-          onRemoveBookmark={onRemoveBookmark}
+          onPostClick={(post) => {
+            overlay.closeOverlay();
+            feed.setSelectedPostId(post.id);
+          }}
+          onRemoveBookmark={feed.handleBookmarkToggle}
         />
       </Suspense>
 
       {/* Apple HIG Spring Toast Feedback */}
-      {toast && (
+      {feed.toast && (
         <Toast
-          message={toast.message}
-          icon={toast.icon}
-          onDismiss={onDismissToast}
+          message={feed.toast.message}
+          icon={feed.toast.icon}
+          onDismiss={() => feed.setToast(null)}
         />
       )}
     </>

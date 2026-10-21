@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { DEFAULT_APP_ICON_URL, handleAppIconError } from '@/utils/imageFallbacks';
 import styles from './PwaInstallPrompt.module.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -83,12 +84,10 @@ export const PwaInstallPrompt: React.FC = () => {
         <div className={styles.bannerContent}>
           <div className={styles.appIconWrapper}>
             <img
-              src="/sesb_app_icon.png"
+              src={DEFAULT_APP_ICON_URL}
               alt="SE-Connect Icon"
               className={styles.appIcon}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/favicon.svg';
-              }}
+              onError={(e) => handleAppIconError(e)}
             />
           </div>
 
@@ -136,12 +135,10 @@ export const PwaInstallPrompt: React.FC = () => {
               <div className={styles.instructionsHeader}>
                 <div className={styles.instructionsHeaderLeft}>
                   <img
-                    src="/sesb_app_icon.png"
+                    src={DEFAULT_APP_ICON_URL}
                     alt=""
                     className={styles.modalAppIcon}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/favicon.svg';
-                    }}
+                    onError={(e) => handleAppIconError(e)}
                   />
                   <div>
                     <h3 className={styles.instructionsTitle}>

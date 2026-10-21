@@ -1,4 +1,5 @@
 import type { Post } from '@/types/bulletin';
+import { SE_SUPERADMIN_UUID } from '@/constants/bulletin';
 
 export interface PostPermissions {
   isSuperAdmin: boolean;
@@ -21,7 +22,7 @@ export function isSuperAdminUser(user: UserContext): boolean {
         currentUserName.trim().toUpperCase() === 'TEST_USER')) ||
       (currentUserId &&
         (currentUserId === 'user-test' ||
-          currentUserId === '270b3427-b4bc-4975-bdfb-3eea83a20229')) ||
+          currentUserId === SE_SUPERADMIN_UUID)) ||
       ((currentUserRole || '').toLowerCase() === 'superadmin')
   );
 }

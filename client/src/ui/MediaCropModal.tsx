@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper, { type Area, type MediaSize } from 'react-easy-crop';
 import { cropImageToBlob } from '@/utils/cropImage';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './MediaCropModal.module.css';
 
 export type AspectRatioOption = 'freeform' | 'original' | '1:1' | '4:3' | '16:9' | '4:5' | '9:16';
@@ -326,8 +328,22 @@ export const MediaCropModal: React.FC<MediaCropModalProps> = ({
   onError,
   isProcessing = false,
 }) => {
-  const [resolvedSrc, setResolvedSrc] = useState<string>('');
-  const [isLoadingMedia, setIsLoadingMedia] = useState(true);
+  const isDirectSrc = Boolean(
+    initialImageSrc &&
+      (initialImageSrc.startsWith('data:') || initialImageSrc.startsWith('blob:'))
+  );
+  const [resolvedSrc, setResolvedSrc] = useState<string>(() => (isDirectSrc ? initialImageSrc! : ''));
+  const [isLoadingMedia, setIsLoadingMedia] = useState<boolean>(() => !isDirectSrc);
+  const [prevInitialSrc, setPrevInitialSrc] = useState(initialImageSrc);
+  if (initialImageSrc !== prevInitialSrc) {
+    setPrevInitialSrc(initialImageSrc);
+    if (isDirectSrc) {
+      setResolvedSrc(initialImageSrc!);
+      setIsLoadingMedia(false);
+    } else {
+      setIsLoadingMedia(true);
+    }
+  }
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const minZoom = 1;
@@ -366,8 +382,6 @@ export const MediaCropModal: React.FC<MediaCropModalProps> = ({
 
     if (initialImageSrc) {
       if (initialImageSrc.startsWith('data:') || initialImageSrc.startsWith('blob:')) {
-        setResolvedSrc(initialImageSrc);
-        setIsLoadingMedia(false);
         return;
       }
 
@@ -404,16 +418,8 @@ export const MediaCropModal: React.FC<MediaCropModalProps> = ({
     containerRef.current?.focus();
   }, []);
 
-  // Escape key closes modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isProcessing) {
-        onCancel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isProcessing, onCancel]);
+  useEscapeKey(onCancel, !isProcessing);
+  useBodyScrollLock(true);
 
   const handleMediaLoaded = useCallback((mediaSize: MediaSize) => {
     setMediaDimensions({ width: mediaSize.naturalWidth, height: mediaSize.naturalHeight });

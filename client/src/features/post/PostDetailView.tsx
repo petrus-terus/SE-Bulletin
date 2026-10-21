@@ -8,6 +8,8 @@ import { QuotedPostCard } from '@/shared/QuotedPostCard';
 import { DeletePostDialog } from '@/shared/DeletePostDialog';
 import { getPostPermissions } from '@/utils/postPermissions';
 import { formatCompactNumber } from '@/utils/format';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
 import styles from './PostDetailView.module.css';
 
 interface Props {
@@ -240,12 +242,10 @@ export const PostDetailView: React.FC<Props> = ({
           >
             <div className={styles.avatarWrap}>
               <img
-                src={post.author.avatarUrl || '/sabah_electricity_logo.png'}
+                src={post.author.avatarUrl || DEFAULT_AVATAR_URL}
                 alt=""
                 className={styles.authorAvatar}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                }}
+                onError={(e) => handleAvatarError(e)}
               />
               {post.author.isVerified && (
                 <span className={styles.verifiedCheck} title="Verified Sabah Electricity Officer">
@@ -448,9 +448,7 @@ export const PostDetailView: React.FC<Props> = ({
                       src={comment.avatarUrl}
                       alt=""
                       className={styles.commentAvatar}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                      }}
+                      onError={(e) => handleAvatarError(e)}
                     />
                   ) : (
                     <div className={styles.avatarFallback}>

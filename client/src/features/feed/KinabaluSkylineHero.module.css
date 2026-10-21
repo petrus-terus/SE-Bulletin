@@ -77,13 +77,6 @@
   background: #0055A4;
 }
 
-/* Dusk Mode (Transitional Twilight) */
-.themeDusk {
-  background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
-}
-
 /* Night Mode: Kinabalu Starlit Midnight & Energy Grid */
 .themeNight {
   background: linear-gradient(145deg, #070B14 0%, #0F172A 55%, #131E38 100%);
@@ -272,21 +265,6 @@
   flex-shrink: 0;
   min-width: 0;
   transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
-}
-
-.weatherTextWrap {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.weatherCondition {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Greeting Section */
@@ -640,6 +618,16 @@
 
 .telemetryToggleBtn:active {
   transform: scale(0.96);
+}
+
+.telemetryToggleBtnActive {
+  border-color: rgba(0, 85, 164, 0.35);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.themeNight .telemetryToggleBtnActive {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(15, 23, 42, 0.92);
 }
 
 @media (hover: hover) and (pointer: fine) {

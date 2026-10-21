@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Post } from '@/types/bulletin';
+import { CEO_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
 import styles from './CeoWisdomSection.module.css';
 
@@ -22,7 +24,7 @@ export const CeoWisdomSection: React.FC<Props> = ({
   onViewCeoProfile,
   onPostClick,
 }) => {
-  const authorAvatar = '/ceo_portrait.png';
+  const authorAvatar = ceoPost?.author?.avatarUrl || CEO_AVATAR_URL;
   const authorName = ceoPost?.author?.name || 'Datuk Ir. Ts. Mohd Yaakob Hj. Jaafar';
 
   return (
@@ -62,9 +64,7 @@ export const CeoWisdomSection: React.FC<Props> = ({
               src={authorAvatar}
               alt=""
               className={styles.avatarImg}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/ceo_portrait.png';
-              }}
+              onError={(e) => handleAvatarError(e, CEO_AVATAR_URL)}
             />
             <div className={styles.verifiedPill}>
               <span className={`material-symbols-outlined ${styles.verifiedPillIcon}`}>

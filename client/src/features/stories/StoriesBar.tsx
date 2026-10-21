@@ -2,6 +2,9 @@ import React, { useState, useMemo, useCallback } from 'react';
 import type { Employee, Story, StoryGroup } from '@/types/bulletin';
 import { StoryViewerModal } from '@/features/stories/StoryViewerModal';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
+import { loadStoredSet, saveStoredSet } from '@/utils/storageHelpers';
+import { DEFAULT_AVATAR_URL, DEFAULT_DEPARTMENT_ID } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
 import styles from './StoriesBar.module.css';
 
 interface Props {
@@ -13,26 +16,17 @@ interface Props {
 
 const VIEWED_STORIES_STORAGE_KEY = 'sesb_viewed_stories';
 
-export function getViewedStoryIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(VIEWED_STORIES_STORAGE_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch {
-    return new Set();
-  }
+
+function getViewedStoryIds(): Set<string> {
+  return loadStoredSet(VIEWED_STORIES_STORAGE_KEY);
 }
 
-export function saveViewedStoryId(storyId: string): void {
-  try {
-    const set = getViewedStoryIds();
-    set.add(storyId);
-    localStorage.setItem(VIEWED_STORIES_STORAGE_KEY, JSON.stringify(Array.from(set)));
-  } catch {
-    // Ignore storage quota errors
-  }
+function saveViewedStoryId(storyId: string): void {
+  const set = getViewedStoryIds();
+  set.add(storyId);
+  saveStoredSet(VIEWED_STORIES_STORAGE_KEY, set);
 }
+
 
 export const StoriesBar: React.FC<Props> = ({
   currentUser,
@@ -64,7 +58,7 @@ export const StoriesBar: React.FC<Props> = ({
       if (isSelf(story)) {
         myStoriesList.push(story);
       } else {
-        const groupKey = story.departmentId || story.departmentName || story.authorName || 'dept-ops';
+        const groupKey = story.departmentId || story.departmentName || story.authorName || DEFAULT_DEPARTMENT_ID;
         if (!groupMap.has(groupKey)) {
           groupMap.set(groupKey, []);
         }
@@ -162,12 +156,10 @@ export const StoriesBar: React.FC<Props> = ({
             >
               <div className={styles.avatarInner}>
                 <img
-                  src={currentUser.avatarUrl}
+                  src={currentUser.avatarUrl || DEFAULT_AVATAR_URL}
                   alt={currentUser.name}
                   className={styles.avatarImg}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                  }}
+                  onError={(e) => handleAvatarError(e)}
                 />
               </div>
             </div>
@@ -205,11 +197,9 @@ export const StoriesBar: React.FC<Props> = ({
               <div className={group.hasUnread ? styles.avatarRingUnread : styles.avatarRingRead}>
                 <div className={styles.avatarInner}>
                   <img
-                    src={group.authorAvatar}
+                    src={group.authorAvatar || DEFAULT_AVATAR_URL}
                     alt={group.title}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                    }}
+                    onError={(e) => handleAvatarError(e)}
                     className={styles.avatarImg}
                   />
                 </div>

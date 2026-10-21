@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { Post } from '@/types/bulletin';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './QuoteBulletinModal.module.css';
 
 interface Props {
@@ -27,31 +31,8 @@ export const QuoteBulletinModal: React.FC<Props> = ({
     onClose();
   }, [onClose]);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        handleClose();
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, handleClose]);
+  useEscapeKey(handleClose, isOpen);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -111,12 +92,10 @@ export const QuoteBulletinModal: React.FC<Props> = ({
         <div className={styles.bodyArea}>
           <div className={styles.authorRow}>
             <img
-              src={currentUserAvatar || '/sabah_electricity_logo.png'}
+              src={currentUserAvatar || DEFAULT_AVATAR_URL}
               alt=""
               className={styles.userAvatar}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleAvatarError(e)}
             />
             <div className={styles.authorMetaText}>
               <span className={styles.authorPostingLabel}>
@@ -145,12 +124,10 @@ export const QuoteBulletinModal: React.FC<Props> = ({
             <div className={styles.quotedCardPreview}>
               <div className={styles.quotedHeader}>
                 <img
-                  src={quotedPost.author.avatarUrl || '/sabah_electricity_logo.png'}
+                  src={quotedPost.author.avatarUrl || DEFAULT_AVATAR_URL}
                   alt=""
                   className={styles.quotedAvatar}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/sabah_electricity_logo.png';
-                  }}
+                  onError={(e) => handleAvatarError(e)}
                 />
                 <span className={styles.quotedAuthorName}>{quotedPost.author.name}</span>
                 <span className={styles.quotedAuthorMeta}>

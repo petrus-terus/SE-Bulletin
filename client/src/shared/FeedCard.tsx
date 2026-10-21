@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import type { EmojiReactionType, Post } from '@/types/bulletin';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
 import { FormattedContent } from '@/shared/FormattedContent';
 import { PostPdfCard } from '@/shared/PostPdfCard';
 import { QuotedPostCard } from '@/shared/QuotedPostCard';
 import { DeletePostDialog } from '@/shared/DeletePostDialog';
-import { getPostPermissions } from '@/utils/postPermissions';
-import { formatCompactNumber } from '@/utils/format';
+import { PostCardHeader } from '@/shared/PostCardHeader';
+import { PostCardActionBar } from '@/shared/PostCardActionBar';
+import { handleAvatarError, handlePostImageError } from '@/utils/imageFallbacks';
 import styles from './FeedCard.module.css';
 
 interface Props {
@@ -14,10 +15,10 @@ interface Props {
   currentUserId?: string;
   currentUserName?: string;
   currentUserRole?: string;
+  onLikeToggle?: (postId: string) => void;
+  onCommentClick?: (post: Post) => void;
   currentUserAvatar?: string;
-  onLikeToggle: (postId: string) => void;
-  onCommentClick: (post: Post) => void;
-  onBookmarkToggle: (postId: string) => void;
+  onBookmarkToggle?: (postId: string) => void;
   onDeletePost?: (postId: string) => void;
   onEditPost?: (post: Post) => void;
   onPostClick?: (post: Post) => void;
@@ -35,7 +36,7 @@ export const FeedCard: React.FC<Props> = ({
   currentUserId,
   currentUserName,
   currentUserRole,
-  currentUserAvatar: _currentUserAvatar,
+  currentUserAvatar: _unusedAvatar,
   onLikeToggle,
   onCommentClick,
   onBookmarkToggle,
@@ -44,268 +45,41 @@ export const FeedCard: React.FC<Props> = ({
   onPostClick,
   onAuthorClick,
   onVotePoll,
-  onReactionSelect: _onReactionSelect,
-  onReshareToggle: _onReshareToggle,
-  onQuotePost: _onQuotePost,
   onSharePost,
   onReshareClick,
 }) => {
-  const [justLiked, setJustLiked] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-
-  const optionsWrapperRef = useRef<HTMLDivElement>(null);
-
-  const { canEdit, canDelete } = getPostPermissions(post, {
-    currentUserId,
-    currentUserName,
-    currentUserRole,
-  });
-
-  // Dismiss options menu on outside click or escape
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (optionsWrapperRef.current && !optionsWrapperRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isMenuOpen]);
-
-  const handleCopyLink = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const link = `${window.location.origin}/#post-${post.id}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(link).catch(() => {});
-    }
-    setLinkCopied(true);
-    setTimeout(() => {
-      setLinkCopied(false);
-      setIsMenuOpen(false);
-    }, 1200);
-  };
-
-  // Like Handler
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setJustLiked(true);
-    onLikeToggle(post.id);
-    setTimeout(() => setJustLiked(false), 400);
-  };
-
-
 
   return (
     <article
       className={`${styles.card} ${post.isPinned ? styles.cardPinned : ''}`}
       onClick={() => onPostClick?.(post)}
     >
-      {/* Header Row: Author details, Department tag & options */}
-      <header className={styles.headerRow}>
-        <div
-          className={styles.authorBlock}
-          onClick={(e) => {
-            if (onAuthorClick) {
-              e.stopPropagation();
-              onAuthorClick(post.author);
-            }
-          }}
-          style={onAuthorClick ? { cursor: 'pointer' } : undefined}
-          title={onAuthorClick ? `View profile of ${post.author.name}` : undefined}
-        >
-          <div className={styles.avatarContainer}>
-            <img
-              src={post.author.avatarUrl}
-              alt=""
-              className={styles.authorAvatar}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
-            />
-            {post.author.isVerified && (
-              <span className={styles.verifiedBadge} title="Verified Sabah Electricity Officer">
-                <span className={`material-symbols-outlined ${styles.verifiedIcon}`}>
-                  verified
-                </span>
-              </span>
-            )}
-          </div>
-
-          <div className={styles.authorDetails}>
-            <div className={styles.authorNameRow}>
-              <span className={styles.authorName}>{post.author.name}</span>
-              {post.departmentName && (
-                <span
-                  className={styles.deptPill}
-                  style={{ '--dept-color': post.departmentColor || '#0055A4' } as React.CSSProperties}
-                >
-                  {post.departmentName}
-                </span>
-              )}
-              {post.isPinned && (
-                <span className={styles.pinnedPill}>
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '13px', color: 'var(--color-safety-orange)', fontVariationSettings: "'FILL' 1" }}
-                  >
-                    push_pin
-                  </span>
-                  <span>Official Alert • Pinned</span>
-                </span>
-              )}
-            </div>
-            <div className={styles.authorMetaSub}>
-              <span>{post.author.designation}</span>
-              <span>•</span>
-              <span className="tabular-nums font-mono">{post.timestamp}</span>
-              {post.isEdited && <span className={styles.editedTag}>• Edited</span>}
-            </div>
-          </div>
+      {/* Repost / Reshared Banner if applicable */}
+      {post.resharedBy && (
+        <div className={styles.resharedHeader}>
+          <span className={`material-symbols-outlined ${styles.resharedIcon}`}>
+            repeat
+          </span>
+          <span>{post.resharedBy.name} reposted</span>
         </div>
+      )}
 
-        <div ref={optionsWrapperRef} className={styles.optionsWrapper}>
-          <button
-            type="button"
-            className={`${styles.optionsButton} ${post.isBookmarked ? styles.optionsButtonBookmarked : ''}`}
-            aria-label="Post options"
-            aria-expanded={isMenuOpen}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMenuOpen(!isMenuOpen);
-            }}
-            title={post.isBookmarked ? 'Bookmarked • Click for options' : 'Post options'}
-          >
-            <span className="material-symbols-outlined">more_horiz</span>
-            {post.isBookmarked && <span className={styles.bookmarkedDot} aria-hidden="true" />}
-          </button>
+      {/* 1. Standardized Post Card Header */}
+      <PostCardHeader
+        post={post}
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        currentUserRole={currentUserRole}
+        onAuthorClick={onAuthorClick}
+        onBookmarkToggle={onBookmarkToggle}
+        onSharePost={onSharePost}
+        onEditPost={onEditPost}
+        onDeleteClick={() => setShowDeleteConfirm(true)}
+      />
 
-          {isMenuOpen && (
-            <div
-              className={styles.optionsMenu}
-              role="menu"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* 1. Bookmark / Save Post */}
-              <button
-                type="button"
-                className={`${styles.optionsMenuItem} ${post.isBookmarked ? styles.optionsMenuItemActive : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onBookmarkToggle(post.id);
-                  setIsMenuOpen(false);
-                }}
-                role="menuitem"
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontSize: '18px',
-                    fontVariationSettings: post.isBookmarked ? "'FILL' 1" : "'FILL' 0",
-                  }}
-                >
-                  bookmark
-                </span>
-                <span>{post.isBookmarked ? 'Remove from Saved' : 'Save to Bookmarks'}</span>
-              </button>
-
-              {/* 2. Share Bulletin */}
-              <button
-                type="button"
-                className={styles.optionsMenuItem}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMenuOpen(false);
-                  if (onSharePost) {
-                    onSharePost(post);
-                  } else {
-                    handleCopyLink(e);
-                  }
-                }}
-                role="menuitem"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                  share
-                </span>
-                <span>Share Bulletin</span>
-              </button>
-
-              {/* 3. Copy Link */}
-              <button
-                type="button"
-                className={styles.optionsMenuItem}
-                onClick={handleCopyLink}
-                role="menuitem"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                  {linkCopied ? 'done' : 'link'}
-                </span>
-                <span>{linkCopied ? 'Link Copied!' : 'Copy Link'}</span>
-              </button>
-
-              {(canEdit || canDelete) && <div className={styles.optionsMenuDivider} />}
-
-              {canEdit && onEditPost && (
-                <button
-                  type="button"
-                  className={styles.optionsMenuItem}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMenuOpen(false);
-                    onEditPost(post);
-                  }}
-                  role="menuitem"
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '18px', color: 'var(--color-primary-text)' }}
-                  >
-                    edit
-                  </span>
-                  <span>Edit Bulletin</span>
-                </button>
-              )}
-
-              {canDelete && (
-                <button
-                  type="button"
-                  className={`${styles.optionsMenuItem} ${styles.optionsMenuItemDelete}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMenuOpen(false);
-                    setShowDeleteConfirm(true);
-                  }}
-                  role="menuitem"
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '18px', color: 'var(--color-alert-red)' }}
-                  >
-                    delete_outline
-                  </span>
-                  <span>Delete Bulletin</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* 3. Main Post Content */}
+      {/* 2. Main Post Content */}
       <div className={styles.postContent}>
         {post.title && <h2 className={styles.postTitle}>{post.title}</h2>}
         <p className={styles.postBody}>
@@ -313,7 +87,7 @@ export const FeedCard: React.FC<Props> = ({
         </p>
       </div>
 
-      {/* 4. Interactive Poll Card (if present) */}
+      {/* 3. Interactive Poll Card */}
       {post.poll && (
         <div onClick={(e) => e.stopPropagation()}>
           <InteractivePollCard
@@ -323,7 +97,7 @@ export const FeedCard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 4.5 Attached Interactive PDF Document Card */}
+      {/* 4. Verified Corporate PDF Circular Attachment */}
       {post.pdfUrl && (
         <PostPdfCard
           pdfUrl={post.pdfUrl}
@@ -332,7 +106,7 @@ export const FeedCard: React.FC<Props> = ({
         />
       )}
 
-      {/* 5. Quoted Post Card (if this is a Quote post) */}
+      {/* 5. Quoted Bulletin Card */}
       {post.quotedPost && (
         <QuotedPostCard
           post={post.quotedPost}
@@ -350,11 +124,9 @@ export const FeedCard: React.FC<Props> = ({
                 alt=""
                 loading="lazy"
                 decoding="async"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/mock-images/image1.png';
-                }}
+                onError={(e) => handlePostImageError(e)}
               />
-              <span className={styles.multiImageBadge}>
+              <span className={`tabular-nums font-mono ${styles.multiImageBadge}`}>
                 {idx + 1} / {post.mediaUrls!.length}
               </span>
             </div>
@@ -367,8 +139,11 @@ export const FeedCard: React.FC<Props> = ({
             alt=""
             loading="lazy"
             decoding="async"
-            onError={() => setImageError(true)}
             className={styles.postImage}
+            onError={(e) => {
+              setImageError(true);
+              handlePostImageError(e);
+            }}
           />
           {post.location && (
             <div className={styles.locationChip}>
@@ -382,7 +157,7 @@ export const FeedCard: React.FC<Props> = ({
       ) : null}
 
       {/* Fallback Location Tag when no image or image load error */}
-      {post.location && (!post.imageUrl || imageError) && (
+      {post.location && (!post.imageUrl || imageError) && (!post.mediaUrls || post.mediaUrls.length <= 1) && (
         <div
           style={{
             display: 'flex',
@@ -405,75 +180,13 @@ export const FeedCard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 5. Clean Engagement Bar */}
-      <div className={styles.engagementBar} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.leftActions}>
-          {/* Like Button */}
-          <button
-            type="button"
-            className={`${styles.actionButton} ${post.isLiked ? styles.likeActive : ''}`}
-            onClick={handleLikeClick}
-            aria-label={`${post.isLiked ? 'Unlike' : 'Like'} post`}
-          >
-            <span
-              className={`material-symbols-outlined ${
-                justLiked || post.isLiked ? styles.likeHeartPop : ''
-              }`}
-              style={{
-                fontVariationSettings: post.isLiked ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              favorite
-            </span>
-            <span className="tabular-nums font-mono">{post.likesCount}</span>
-          </button>
-
-          {/* Comment Button */}
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              onCommentClick(post);
-            }}
-            aria-label="View comments"
-          >
-            <span className="material-symbols-outlined">chat_bubble</span>
-            <span className="tabular-nums font-mono">{post.commentsCount}</span>
-          </button>
-
-          {/* Reshare / Repost Button */}
-          <button
-            type="button"
-            className={`${styles.actionButton} ${post.isReshared ? styles.reshareActive : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onReshareClick?.(post);
-            }}
-            aria-label={post.isReshared ? 'Undo reshare' : 'Reshare post'}
-          >
-            <span className="material-symbols-outlined">repeat</span>
-            <span className="tabular-nums font-mono">{post.resharesCount || 0}</span>
-          </button>
-
-        </div>
-
-        <div className={styles.rightActions}>
-          {/* View Count floated cleanly to the right */}
-          <span
-            className={styles.viewMetric}
-            title={`${(post.viewsCount || 0).toLocaleString()} Views`}
-            aria-label={`${post.viewsCount || 0} views`}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-              visibility
-            </span>
-            <span className="tabular-nums font-mono">
-              {formatCompactNumber(post.viewsCount || 0)}
-            </span>
-          </span>
-        </div>
-      </div>
+      {/* 7. Standardized Engagement Action Bar */}
+      <PostCardActionBar
+        post={post}
+        onLikeToggle={onLikeToggle}
+        onCommentClick={onCommentClick}
+        onReshareClick={onReshareClick}
+      />
 
       {/* 8. Nested Preview Comment */}
       {post.previewComment && (
@@ -484,7 +197,7 @@ export const FeedCard: React.FC<Props> = ({
             if (onPostClick) {
               onPostClick(post);
             } else {
-              onCommentClick(post);
+              onCommentClick?.(post);
             }
           }}
           style={{ cursor: 'pointer' }}
@@ -496,6 +209,7 @@ export const FeedCard: React.FC<Props> = ({
                 src={post.previewComment.avatarUrl}
                 alt=""
                 className={styles.commentAvatarImg}
+                onError={(e) => handleAvatarError(e)}
               />
             ) : (
               post.previewComment.avatarInitials
@@ -516,15 +230,17 @@ export const FeedCard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Two-Step Post Deletion Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <DeletePostDialog
           postId={post.id}
-          onConfirm={() => {
-            setShowDeleteConfirm(false);
-            onDeletePost?.(post.id);
-          }}
           onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={async () => {
+            if (onDeletePost) {
+              await onDeletePost(post.id);
+            }
+            setShowDeleteConfirm(false);
+          }}
         />
       )}
     </article>

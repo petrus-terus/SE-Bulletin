@@ -22,3 +22,14 @@ export function formatFileSize(bytes: number): string {
   }
   return `${Math.round(bytes / 1024)} KB`;
 }
+
+/**
+ * MM:SS video duration formatting (e.g., 0:14, 1:05)
+ */
+export function formatVideoTime(secs: number): string {
+  const s = Math.max(0, Math.floor(secs));
+  const mins = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
+}
+

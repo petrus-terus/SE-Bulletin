@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Employee } from '@/types/bulletin';
+import { DEFAULT_LOGO_URL, DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleLogoError, handleAvatarError } from '@/utils/imageFallbacks';
 import styles from './TopAppBar.module.css';
 
 interface Props {
@@ -27,12 +29,10 @@ export const TopAppBar: React.FC<Props> = ({
           aria-label="Sabah Electricity Navigation Menu"
         >
           <img
-            src="/sabah_electricity_logo.png"
+            src={DEFAULT_LOGO_URL}
             alt="Sabah Electricity"
             className={styles.brandLogoImg}
-            onError={(e) => {
-              e.currentTarget.src = '/sesb_logo.png';
-            }}
+            onError={(e) => handleLogoError(e)}
           />
           <span className={styles.brandTitle}>SE-Connect</span>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary-text)', marginLeft: '2px' }}>
@@ -51,12 +51,10 @@ export const TopAppBar: React.FC<Props> = ({
             aria-label="View user profile"
           >
             <img
-              src={currentUser.avatarUrl || '/sabah_electricity_logo.png'}
+              src={currentUser.avatarUrl || DEFAULT_AVATAR_URL}
               alt=""
               className={styles.avatarImg}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleAvatarError(e)}
             />
             {currentUser.isOnline && <span className={styles.onlineDot} />}
           </div>

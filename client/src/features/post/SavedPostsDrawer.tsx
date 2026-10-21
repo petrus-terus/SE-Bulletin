@@ -1,6 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 import type { Post } from '@/types/bulletin';
+import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
+import { handleAvatarError } from '@/utils/imageFallbacks';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './SavedPostsDrawer.module.css';
 
 interface Props {
@@ -18,31 +22,8 @@ export const SavedPostsDrawer: React.FC<Props> = ({
   onPostClick,
   onRemoveBookmark,
 }) => {
-  // Close on ESC key
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Lock background scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useEscapeKey(onClose, isOpen);
+  useBodyScrollLock(isOpen);
 
   if (typeof document === 'undefined') return null;
 
@@ -115,12 +96,10 @@ export const SavedPostsDrawer: React.FC<Props> = ({
                 <div className={styles.cardHeader}>
                   <div className={styles.authorRow}>
                     <img
-                      src={post.author.avatarUrl || '/sabah_electricity_logo.png'}
+                      src={post.author.avatarUrl || DEFAULT_AVATAR_URL}
                       alt=""
                       className={styles.authorAvatar}
-                      onError={(e) => {
-                        e.currentTarget.src = '/sabah_electricity_logo.png';
-                      }}
+                      onError={(e) => handleAvatarError(e)}
                     />
                     <span className={styles.authorName}>{post.author.name}</span>
                   </div>

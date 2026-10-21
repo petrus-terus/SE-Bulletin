@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './ImageViewerModal.module.css';
 
 interface Props {
@@ -25,16 +27,8 @@ export const ImageViewerModal: React.FC<Props> = ({
   const touchStartScaleRef = useRef<number>(1);
   const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  useEscapeKey(onClose);
+  useBodyScrollLock(true);
 
   // Reset position if scale returns to 1
   const resetZoom = useCallback(() => {
