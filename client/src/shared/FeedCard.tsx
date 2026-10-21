@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { EmojiReactionType, Post } from '@/types/bulletin';
+import type { Post } from '@/types/bulletin';
 import { InteractivePollCard } from '@/shared/InteractivePollCard';
 import { FormattedContent } from '@/shared/FormattedContent';
 import { PostPdfCard } from '@/shared/PostPdfCard';
@@ -17,16 +17,12 @@ interface Props {
   currentUserRole?: string;
   onLikeToggle?: (postId: string) => void;
   onCommentClick?: (post: Post) => void;
-  currentUserAvatar?: string;
   onBookmarkToggle?: (postId: string) => void;
   onDeletePost?: (postId: string) => void;
   onEditPost?: (post: Post) => void;
   onPostClick?: (post: Post) => void;
   onAuthorClick?: (author: Post['author']) => void;
   onVotePoll?: (postId: string, optionId: string) => void;
-  onReactionSelect?: (postId: string, reaction: EmojiReactionType) => void;
-  onReshareToggle?: (postId: string) => void;
-  onQuotePost?: (quotedPost: Post, commentText: string) => void;
   onSharePost?: (post: Post) => void;
   onReshareClick?: (post: Post) => void;
 }
@@ -36,7 +32,6 @@ export const FeedCard: React.FC<Props> = ({
   currentUserId,
   currentUserName,
   currentUserRole,
-  currentUserAvatar: _unusedAvatar,
   onLikeToggle,
   onCommentClick,
   onBookmarkToggle,

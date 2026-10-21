@@ -22,7 +22,7 @@ export class PostService {
   /**
    * Fetch all bulletins/posts
    */
-  async getPosts(cursor?: string, limit: number = 20): Promise<Post[]> {
+  async getPosts(cursor?: string, limit: number = 20, userId?: string): Promise<Post[]> {
     if (!isSupabaseConfigured || !supabase) {
       return import.meta.env.DEV ? INITIAL_POSTS : [];
     }
@@ -43,7 +43,7 @@ export class PostService {
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
-      const cloudPosts: Post[] = data.map((row) => mapRowToPost(row));
+      const cloudPosts: Post[] = data.map((row) => mapRowToPost(row, { userId }));
 
       const postLookup = new Map<string, Post>();
       if (import.meta.env.DEV) {
@@ -106,6 +106,7 @@ export class PostService {
       departmentName: payload.department || currentUser.department,
       departmentColor: payload.departmentColor || '#0055A4',
       officialNotice: Boolean(payload.officialNotice),
+      audienceScope: payload.audienceScope,
       poll: payload.poll,
       pdfUrl: payload.pdfUrl,
       pdfName: payload.pdfName,
@@ -150,6 +151,7 @@ export class PostService {
 
         if (data) {
           newPost.id = data.id;
+          newPost.createdAt = data.created_at;
           newPost.timestamp = new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
       } catch (err) {
@@ -267,6 +269,42 @@ export class PostService {
   }
 
   /**
+   * Atomically adjust a counter column on a post in Supabase
+   */
+  async adjustPostCounter(
+    postId: string,
+    column: 'likes_count' | 'comments_count' | 'reshares_count',
+    delta: 1 | -1
+  ): Promise<void> {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { error: rpcErr } = await supabase.rpc('increment_post_counter', {
+        target_post_id: postId,
+        counter_column: column,
+        delta_val: delta,
+      });
+
+      if (rpcErr) {
+        const { data: currentRow } = await supabase
+          .from('posts')
+          .select(column)
+          .eq('id', postId)
+          .maybeSingle();
+
+        if (currentRow) {
+          const currentVal = Number((currentRow as Record<string, unknown>)[column] || 0);
+          await supabase
+            .from('posts')
+            .update({ [column]: Math.max(0, currentVal + delta) })
+            .eq('id', postId);
+        }
+      }
+    } catch (err) {
+      console.warn(`[PostService] adjustPostCounter(${column}) error:`, err);
+    }
+  }
+
+  /**
    * Check if a bulletin has already been viewed during current session
    */
   isPostViewedInSession(postId: string): boolean {
@@ -285,7 +323,7 @@ export class PostService {
     if (isSupabaseConfigured && supabase) {
       try {
         const { error: rpcErr } = await supabase.rpc('increment_post_views', {
-          post_id_input: postId,
+          target_post_id: postId,
         });
 
         if (rpcErr) {

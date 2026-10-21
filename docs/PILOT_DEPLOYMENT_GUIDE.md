@@ -274,7 +274,7 @@ BEGIN
     END IF;
 END $$;
 
--- 8. Stored Procedure for Atomic Post View Tracking
+-- 8. Stored Procedures for Atomic Post Counter & View Tracking
 CREATE OR REPLACE FUNCTION public.increment_post_views(target_post_id TEXT)
 RETURNS void
 LANGUAGE plpgsql
@@ -284,6 +284,34 @@ BEGIN
     UPDATE public.posts
     SET views_count = COALESCE(views_count, 0) + 1
     WHERE id = target_post_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.increment_post_counter(
+    target_post_id TEXT,
+    counter_column TEXT,
+    delta_val INT
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF counter_column = 'likes_count' THEN
+        UPDATE public.posts
+        SET likes_count = GREATEST(0, COALESCE(likes_count, 0) + delta_val)
+        WHERE id = target_post_id;
+    ELSIF counter_column = 'comments_count' THEN
+        UPDATE public.posts
+        SET comments_count = GREATEST(0, COALESCE(comments_count, 0) + delta_val)
+        WHERE id = target_post_id;
+    ELSIF counter_column = 'reshares_count' THEN
+        UPDATE public.posts
+        SET reshares_count = GREATEST(0, COALESCE(reshares_count, 0) + delta_val)
+        WHERE id = target_post_id;
+    ELSE
+        RAISE EXCEPTION 'Invalid counter_column: %', counter_column;
+    END IF;
 END;
 $$;
 
@@ -374,7 +402,7 @@ Deploying the client repository to Cloudflare:
    - **Preview command**: `npx wrangler preview` (default)
 6. **Set Environment Variables**:
    Under **Advanced settings** (or Environment variables), add:
-   - `VITE_SUPABASE_URL`: `https://xxqrrqyncsxmhplcomns.supabase.co`
+   - `VITE_SUPABASE_URL`: `https://<your-project-ref>.supabase.co`
    - `VITE_SUPABASE_ANON_KEY`: `sb_publishable_...` (your public anon key)
 7. Click **Deploy**.
 
@@ -383,14 +411,16 @@ Deploying the client repository to Cloudflare:
   ```jsonc
   {
     "name": "se-bulletin",
+    "main": "./worker.ts",
     "compatibility_date": "2024-11-01",
     "assets": {
       "directory": "./client/dist",
+      "binding": "ASSETS",
       "not_found_handling": "single-page-application"
     }
   }
   ```
-  This natively routes direct page reloads and deep links to `index.html` without infinite redirect loops.
+  This natively routes direct page reloads and deep links to `index.html` without infinite redirect loops, while proxying `/api/market/tnb` on the edge.
 - Automatic HTTPS activates the Service Worker and the **"Install SE Bulletin"** mobile install prompt.
 
 ---

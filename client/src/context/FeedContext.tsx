@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import type { AppNotification, Comment, Employee, EmojiReactionType, Post, Story } from '@/types/bulletin';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import type {
+  AppNotification,
+  Comment,
+  Employee,
+  EmojiReactionType,
+  Post,
+  Story,
+  ToastMessage,
+} from '@/types/bulletin';
 import { INITIAL_POSTS, INITIAL_STORIES } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
 import { getBookmarkedPostIds } from '@/services/bookmarkStorage';
@@ -9,6 +17,8 @@ import { getStoredNotifications, saveStoredNotifications } from '@/services/noti
 import { usePostActions } from '@/hooks/usePostActions';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { useOverlay } from './OverlayContext';
+
+const PAGE_LIMIT = 20;
 
 export interface FeedContextType {
   posts: Post[];
@@ -25,8 +35,11 @@ export interface FeedContextType {
   activeResharePost: Post | null;
   activeQuotePost: Post | null;
   commentsByPost: Record<string, Comment[]>;
-  toast: { message: string; icon?: string } | null;
-  setToast: (toast: { message: string; icon?: string } | null) => void;
+  toast: ToastMessage | null;
+  hasMorePosts: boolean;
+  isLoadingMore: boolean;
+  loadMorePosts: () => Promise<void>;
+  setToast: React.Dispatch<React.SetStateAction<ToastMessage | null>>;
   setNotifications: React.Dispatch<React.SetStateAction<AppNotification[]>>;
   markAllNotificationsAsRead: () => void;
   setSelectedDeptId: (deptId: string) => void;
@@ -65,36 +78,68 @@ export const FeedProvider: React.FC<{
     setEditingPost,
   } = useOverlay();
 
+  const userId = currentUser?.id;
+
   const [posts, setPosts] = useState<Post[]>(() => {
     if (!import.meta.env.DEV) return [];
-    const savedBookmarks = getBookmarkedPostIds();
+    const savedBookmarks = getBookmarkedPostIds(userId);
+    const savedLikes = getLikedPostIds(userId);
+    const savedVotes = getStoredPollVotes(userId);
     return INITIAL_POSTS.map((p) => ({
       ...p,
       isBookmarked: savedBookmarks.has(p.id),
+      isLiked: savedLikes.has(p.id) || p.isLiked,
+      poll: p.poll
+        ? {
+            ...p.poll,
+            userVotedOptionId: savedVotes[p.id] || p.poll.userVotedOptionId,
+          }
+        : p.poll,
     }));
   });
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({});
   const [stories, setStories] = useState<Story[]>(import.meta.env.DEV ? INITIAL_STORIES : []);
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => getStoredNotifications());
+  const [prevUserId, setPrevUserId] = useState(userId);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() =>
+    getStoredNotifications(userId)
+  );
+  if (prevUserId !== userId) {
+    setPrevUserId(userId);
+    setNotifications(getStoredNotifications(userId));
+  }
   const unreadCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
   const [selectedDeptId, setSelectedDeptId] = useState('dept-all');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const markAllNotificationsAsRead = () => {
+  const markAllNotificationsAsRead = useCallback(() => {
     setNotifications((prev) => {
       const updated = prev.map((n) => ({ ...n, isRead: true }));
-      saveStoredNotifications(updated);
+      saveStoredNotifications(updated, userId);
       return updated;
     });
     setToast({ message: 'All notifications marked as read', icon: 'done_all' });
-  };
+  }, [userId]);
 
   // Derived Reactive Entities
-  const selectedPostForDetail = selectedPostId ? posts.find((p) => p.id === selectedPostId) || null : null;
-  const activeCommentPost = activeCommentPostId ? posts.find((p) => p.id === activeCommentPostId) || null : null;
-  const activeResharePost = activeResharePostId ? posts.find((p) => p.id === activeResharePostId) || null : null;
-  const activeQuotePost = activeQuotePostId ? posts.find((p) => p.id === activeQuotePostId) || null : null;
+  const selectedPostForDetail = useMemo(
+    () => (selectedPostId ? posts.find((p) => p.id === selectedPostId) || null : null),
+    [posts, selectedPostId]
+  );
+  const activeCommentPost = useMemo(
+    () => (activeCommentPostId ? posts.find((p) => p.id === activeCommentPostId) || null : null),
+    [posts, activeCommentPostId]
+  );
+  const activeResharePost = useMemo(
+    () => (activeResharePostId ? posts.find((p) => p.id === activeResharePostId) || null : null),
+    [posts, activeResharePostId]
+  );
+  const activeQuotePost = useMemo(
+    () => (activeQuotePostId ? posts.find((p) => p.id === activeQuotePostId) || null : null),
+    [posts, activeQuotePostId]
+  );
 
   // Post Actions Hook
   const {
@@ -112,7 +157,6 @@ export const FeedProvider: React.FC<{
     handleOpenPostDetail,
   } = usePostActions({
     currentUser,
-    posts,
     setPosts,
     setCommentsByPost,
     setSelectedPostId,
@@ -121,14 +165,10 @@ export const FeedProvider: React.FC<{
     setActiveQuotePostId,
     setEditingPost,
     setToast,
-    selectedPostId,
-    activeCommentPostId,
-    activeResharePostId,
-    activeQuotePostId,
   });
 
   // Story Deletion Handler
-  const handleDeleteStory = async (storyId: string) => {
+  const handleDeleteStory = useCallback(async (storyId: string) => {
     try {
       setStories((prev) => prev.filter((s) => s.id !== storyId));
       await bulletinService.deleteStory(storyId);
@@ -143,28 +183,35 @@ export const FeedProvider: React.FC<{
         icon: 'error',
       });
     }
-  };
+  }, []);
+
+  // Enrich posts with user-scoped local bookmarks, likes, and poll votes
+  const enrichPostsWithUserState = useCallback(
+    (rawPosts: Post[]): Post[] => {
+      const savedBookmarks = getBookmarkedPostIds(userId);
+      const savedLikes = getLikedPostIds(userId);
+      const savedVotes = getStoredPollVotes(userId);
+      return rawPosts.map((p) => ({
+        ...p,
+        isBookmarked: savedBookmarks.has(p.id),
+        isLiked: savedLikes.has(p.id) || p.isLiked,
+        poll: p.poll
+          ? {
+              ...p.poll,
+              userVotedOptionId: savedVotes[p.id] || p.poll.userVotedOptionId,
+            }
+          : p.poll,
+      }));
+    },
+    [userId]
+  );
 
   // Initial Load from Supabase (Posts & Stories)
   useEffect(() => {
-    bulletinService.getPosts().then((fetched) => {
+    bulletinService.getPosts(undefined, PAGE_LIMIT, userId).then((fetched) => {
       if (fetched && fetched.length > 0) {
-        const savedBookmarks = getBookmarkedPostIds();
-        const savedLikes = getLikedPostIds();
-        const savedVotes = getStoredPollVotes();
-        setPosts(
-          fetched.map((p) => ({
-            ...p,
-            isBookmarked: savedBookmarks.has(p.id),
-            isLiked: savedLikes.has(p.id) || p.isLiked,
-            poll: p.poll
-              ? {
-                  ...p.poll,
-                  userVotedOptionId: savedVotes[p.id] || p.poll.userVotedOptionId,
-                }
-              : p.poll,
-          }))
-        );
+        setPosts(enrichPostsWithUserState(fetched));
+        setHasMorePosts(fetched.length >= PAGE_LIMIT);
       }
     });
 
@@ -173,7 +220,41 @@ export const FeedProvider: React.FC<{
         setStories(cloudStories);
       }
     });
-  }, []);
+  }, [userId, enrichPostsWithUserState]);
+
+  // Cursor-based Load More Pagination
+  const loadMorePosts = useCallback(async () => {
+    if (isLoadingMore || !hasMorePosts) return;
+    const oldestCursor = [...posts]
+      .reverse()
+      .find((p) => Boolean(p.createdAt))?.createdAt;
+
+    if (!oldestCursor) {
+      setHasMorePosts(false);
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const nextBatch = await bulletinService.getPosts(oldestCursor, PAGE_LIMIT, userId);
+      if (!nextBatch || nextBatch.length === 0) {
+        setHasMorePosts(false);
+        return;
+      }
+
+      const enriched = enrichPostsWithUserState(nextBatch);
+      setPosts((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const uniqueNext = enriched.filter((p) => !existingIds.has(p.id));
+        return [...prev, ...uniqueNext];
+      });
+      setHasMorePosts(nextBatch.length >= PAGE_LIMIT);
+    } catch (err) {
+      console.error('[FeedContext] Failed to load more posts:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMorePosts, posts, userId, enrichPostsWithUserState]);
 
   // Real-time Cloud Synchronization
   useRealtimeSync({
@@ -237,44 +318,83 @@ export const FeedProvider: React.FC<{
     [filteredPosts]
   );
 
-  const value: FeedContextType = {
-    posts,
-    feedPosts,
-    latestCeoPost,
-    stories,
-    notifications,
-    unreadCount,
-    selectedDeptId,
-    postCounts,
-    selectedPostId,
-    selectedPostForDetail,
-    activeCommentPost,
-    activeResharePost,
-    activeQuotePost,
-    commentsByPost,
-    toast,
-    setToast,
-    setNotifications,
-    markAllNotificationsAsRead,
-    setSelectedDeptId,
-    setSelectedPostId,
-    setPosts,
-    setStories,
-    setCommentsByPost,
-    handleLikeToggle,
-    handleBookmarkToggle,
-    handleVotePoll,
-    handleReactionSelect,
-    handleReshareToggle,
-    handleQuotePost,
-    handleSharePost,
-    handleAddComment,
-    handleDeletePost,
-    handleUpdatePost,
-    handlePublishPost,
-    handleDeleteStory,
-    handleOpenPostDetail,
-  };
+  const value = useMemo<FeedContextType>(
+    () => ({
+      posts,
+      feedPosts,
+      latestCeoPost,
+      stories,
+      notifications,
+      unreadCount,
+      selectedDeptId,
+      postCounts,
+      selectedPostId,
+      selectedPostForDetail,
+      activeCommentPost,
+      activeResharePost,
+      activeQuotePost,
+      commentsByPost,
+      toast,
+      hasMorePosts,
+      isLoadingMore,
+      loadMorePosts,
+      setToast,
+      setNotifications,
+      markAllNotificationsAsRead,
+      setSelectedDeptId,
+      setSelectedPostId,
+      setPosts,
+      setStories,
+      setCommentsByPost,
+      handleLikeToggle,
+      handleBookmarkToggle,
+      handleVotePoll,
+      handleReactionSelect,
+      handleReshareToggle,
+      handleQuotePost,
+      handleSharePost,
+      handleAddComment,
+      handleDeletePost,
+      handleUpdatePost,
+      handlePublishPost,
+      handleDeleteStory,
+      handleOpenPostDetail,
+    }),
+    [
+      posts,
+      feedPosts,
+      latestCeoPost,
+      stories,
+      notifications,
+      unreadCount,
+      selectedDeptId,
+      postCounts,
+      selectedPostId,
+      selectedPostForDetail,
+      activeCommentPost,
+      activeResharePost,
+      activeQuotePost,
+      commentsByPost,
+      toast,
+      hasMorePosts,
+      isLoadingMore,
+      loadMorePosts,
+      markAllNotificationsAsRead,
+      handleLikeToggle,
+      handleBookmarkToggle,
+      handleVotePoll,
+      handleReactionSelect,
+      handleReshareToggle,
+      handleQuotePost,
+      handleSharePost,
+      handleAddComment,
+      handleDeletePost,
+      handleUpdatePost,
+      handlePublishPost,
+      handleDeleteStory,
+      handleOpenPostDetail,
+    ]
+  );
 
   return <FeedContext.Provider value={value}>{children}</FeedContext.Provider>;
 };

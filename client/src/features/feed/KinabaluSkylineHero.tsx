@@ -7,10 +7,6 @@ import styles from './KinabaluSkylineHero.module.css';
 interface Props {
   userName: string;
   department: string;
-  employeeId?: string;
-  onOpenCreate?: () => void;
-  onNavigateDirectory?: () => void;
-  onFilterCategory?: (category: string) => void;
 }
 
 /**
@@ -40,10 +36,6 @@ function getSmoothSvgPath(pts: { x: number; y: number }[]): string {
 export const KinabaluSkylineHero: React.FC<Props> = ({
   userName,
   department,
-  employeeId: _employeeId,
-  onOpenCreate: _onOpenCreate,
-  onNavigateDirectory: _onNavigateDirectory,
-  onFilterCategory: _onFilterCategory,
 }) => {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'dark';
@@ -395,10 +387,10 @@ export const KinabaluSkylineHero: React.FC<Props> = ({
                 <div className={styles.liveStatusPill}>
                   <span className="font-mono tabular-nums">
                     {activePoint
-                      ? 'Live 11:30 MYT'
-                      : marketData?.lastUpdated
+                      ? `Intraday • ${activePoint.timeStr}`
+                      : marketData?.isLive
                       ? `Live ${marketData.lastUpdated}`
-                      : 'Live 11:30 MYT'}
+                      : `Prev Close • ${marketData?.lastUpdated || '17:00 MYT'}`}
                   </span>
                 </div>
               </div>

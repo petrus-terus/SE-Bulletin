@@ -1,5 +1,6 @@
 import type { Employee, Post, Story } from '@/types/bulletin';
-import { SE_SUPERADMIN_UUID } from '@/constants/bulletin';
+import { SE_SUPERADMIN_UUID, DEFAULT_AVATAR_URL, CEO_AVATAR_URL } from '@/constants/bulletin';
+import { loadStoredJson } from '@/utils/storageHelpers';
 
 export const CURRENT_USER: Employee = {
   id: 'user-test',
@@ -9,7 +10,7 @@ export const CURRENT_USER: Employee = {
   designation: 'Staff Administrator & Lead Engineer',
   department: 'INFORMATION & DIGITAL',
   email: 'test@sesb.com.my',
-  avatarUrl: '/sabah_electricity_logo.png',
+  avatarUrl: DEFAULT_AVATAR_URL,
   coverUrl: '/grid_horizon_hero.jpg',
   officeLocation: 'Bangunan KWASA',
   phoneExtension: 'Ext. 4412',
@@ -30,7 +31,7 @@ export const ALL_EMPLOYEES: Employee[] = [
     designation: 'Chief Executive Officer (CEO)',
     department: 'Chief Executive Officer (CEO) Office',
     email: 'ceo.office@sesb.com.my',
-    avatarUrl: '/ceo_portrait.png',
+    avatarUrl: CEO_AVATAR_URL,
     officeLocation: 'Wisma SE, Executive Suite Level 9, Kota Kinabalu',
     phoneExtension: 'Ext. 1001',
     role: 'SuperAdmin',
@@ -41,14 +42,8 @@ export const ALL_EMPLOYEES: Employee[] = [
 ];
 
 export function getRegisteredEmployees(): Employee[] {
-  try {
-    const raw = localStorage.getItem('sesb_registered_users');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  const parsed = loadStoredJson<Employee[]>('sesb_registered_users', []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 export function getEmployeeByAuthor(author: { id?: string; name: string; avatarUrl?: string; designation?: string; department?: string }): Employee {
   // Legacy / alias check: TEST_USER and ADMIN_USER refer to the same Administrator identity
@@ -80,7 +75,7 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
     designation: author.designation || 'Sabah Electricity Staff',
     department: author.department || 'Operating',
     email: `${author.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@sesb.com.my`,
-    avatarUrl: author.avatarUrl || '/sabah_electricity_logo.png',
+    avatarUrl: author.avatarUrl || DEFAULT_AVATAR_URL,
     officeLocation: 'Wisma SE HQ, Kota Kinabalu',
     phoneExtension: `Ext. ${Math.floor(2000 + Math.random() * 5000)}`,
     role: 'GeneralStaff',
@@ -90,15 +85,13 @@ export function getEmployeeByAuthor(author: { id?: string; name: string; avatarU
   };
 }
 
-export { DEPARTMENTS } from '@/data/departments';
-
 export const INITIAL_STORIES: Story[] = [
   {
     id: 'story-1',
     departmentId: 'dept-ops',
     departmentName: 'Operations & Maintenance',
     authorName: 'Ir. Tan Chee Keong',
-    authorAvatar: '/sabah_electricity_logo.png',
+    authorAvatar: DEFAULT_AVATAR_URL,
     hasUnread: true,
     imageUrl: '/mock-images/image1.png',
     caption: 'Tenom Pangi Hydro 132kV live turbine commissioning test underway ahead of monsoon season.',
@@ -112,7 +105,7 @@ export const INITIAL_STORIES: Story[] = [
     departmentId: 'dept-cs',
     departmentName: 'Corporate Services & HSE',
     authorName: 'Dk. Siti Aminah',
-    authorAvatar: '/sabah_electricity_logo.png',
+    authorAvatar: DEFAULT_AVATAR_URL,
     hasUnread: true,
     imageUrl: '/mock-images/image2.png',
     caption: 'Safety First: Annual PPE & High-Voltage Arc Flash Drill successfully executed with zero incidents.',
@@ -126,7 +119,7 @@ export const INITIAL_STORIES: Story[] = [
     departmentId: 'dept-hr',
     departmentName: 'Human Resources',
     authorName: 'Hazwan Bin Razali',
-    authorAvatar: '/sabah_electricity_logo.png',
+    authorAvatar: DEFAULT_AVATAR_URL,
     hasUnread: true,
     imageUrl: '/mock-images/image5.png',
     caption: 'Proudly welcoming our 2026 Cohort of Graduate Electrical Engineers to the Sabah Electricity family!',
@@ -140,7 +133,7 @@ export const INITIAL_STORIES: Story[] = [
     departmentId: 'dept-id',
     departmentName: 'Information & Digital',
     authorName: 'Datuk Ir. Ts. Mohd Yaakob Hj. Jaafar',
-    authorAvatar: '/ceo_portrait.png',
+    authorAvatar: CEO_AVATAR_URL,
     hasUnread: false,
     imageUrl: '/mock-images/image6.png',
     caption: 'SESB Smart Grid SCADA telemetry upgrade live across West Coast & Sandakan distribution grids.',
@@ -159,7 +152,7 @@ export const INITIAL_POSTS: Post[] = [
       name: 'Datuk Ir. Ts. Mohd Yaakob Hj. Jaafar',
       designation: 'Chief Executive Officer (CEO)',
       department: 'Chief Executive Officer (CEO) Office',
-      avatarUrl: '/ceo_portrait.png',
+      avatarUrl: CEO_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '1h ago',
@@ -209,7 +202,7 @@ Should we install a smart bean-to-cup coffee vending machine at IDD Level 4? Cas
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '30m ago',
@@ -256,7 +249,7 @@ Terima kasih atas kerjasama semua.`,
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '2h ago',
@@ -308,7 +301,7 @@ MyPortal > Corporate Communication > Rebranding Documents
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '4h ago',
@@ -322,7 +315,7 @@ MyPortal > Corporate Communication > Rebranding Documents
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
       timestamp: '5h ago',
@@ -358,7 +351,7 @@ MyPortal > Corporate Communication > Rebranding Documents
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '5h ago',
@@ -397,7 +390,7 @@ Ikuti sorotan video dan laporan tapak di media sosial rasmi SE!`,
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '8h ago',
@@ -436,7 +429,7 @@ Jangan lupa, blok kalendar ya... bersama kita mencabar dan menambah pengetahuan 
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '1d ago',
@@ -472,7 +465,7 @@ Lindungi diri. Lindungi keluarga. Lindungi komuniti.`,
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '2d ago',
@@ -519,7 +512,7 @@ Jika terdapat sebarang pertanyaan sila berhubung dengan En. Brondon Ceristoper d
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '2d ago',
@@ -558,7 +551,7 @@ CFO / Strategic Management & Governance (SMG)`,
       name: 'ADMIN_USER',
       designation: 'Staff Administrator',
       department: 'INFORMATION & DIGITAL',
-      avatarUrl: '/sabah_electricity_logo.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       isVerified: true,
     },
     timestamp: '3d ago',

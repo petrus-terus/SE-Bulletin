@@ -46,3 +46,8 @@ output/
 scratch/
 brag-output/
 brag-output-mobile/
+
+# Draw.io temporary lock & backup files
+.$*
+*.bkp
+*.dtmp

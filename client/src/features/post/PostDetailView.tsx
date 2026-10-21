@@ -9,7 +9,8 @@ import { DeletePostDialog } from '@/shared/DeletePostDialog';
 import { getPostPermissions } from '@/utils/postPermissions';
 import { formatCompactNumber } from '@/utils/format';
 import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
-import { handleAvatarError } from '@/utils/imageFallbacks';
+import { handleAvatarError, handleHideImageOnError } from '@/utils/imageFallbacks';
+import { useEdgeSwipeDismiss } from '@/hooks/useEdgeSwipeDismiss';
 import styles from './PostDetailView.module.css';
 
 interface Props {
@@ -90,63 +91,8 @@ export const PostDetailView: React.FC<Props> = ({
     setCommentInput('');
   };
 
-  // Edge Swipe-to-Dismiss Touch Gesture Handler
-  const touchStartXRef = React.useRef(0);
-  const touchStartYRef = React.useRef(0);
-  const isSwipingRef = React.useRef(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      // Only allow swipe if initiated within 40px of the left edge
-      if (touch.clientX < 40) {
-        touchStartXRef.current = touch.clientX;
-        touchStartYRef.current = touch.clientY;
-        isSwipingRef.current = true;
-      }
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isSwipingRef.current || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartXRef.current;
-    const deltaY = touch.clientY - touchStartYRef.current;
-
-    // Cancel if primary motion is vertical scroll
-    if (Math.abs(deltaY) > Math.abs(deltaX) && deltaX < 20) {
-      isSwipingRef.current = false;
-      if (containerRef.current) {
-        containerRef.current.style.transform = '';
-      }
-      return;
-    }
-
-    if (deltaX > 0 && containerRef.current) {
-      containerRef.current.style.transform = `translate3d(${deltaX}px, 0, 0)`;
-      containerRef.current.style.transition = 'none';
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!isSwipingRef.current) return;
-    isSwipingRef.current = false;
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - touchStartXRef.current;
-
-    if (deltaX > 80 && containerRef.current) {
-      containerRef.current.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease';
-      containerRef.current.style.transform = 'translate3d(100%, 0, 0)';
-      containerRef.current.style.opacity = '0';
-      setTimeout(() => {
-        onBack();
-      }, 180);
-    } else if (containerRef.current) {
-      containerRef.current.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
-      containerRef.current.style.transform = 'translate3d(0, 0, 0)';
-    }
-  };
+  const { containerRef, handleTouchStart, handleTouchMove, handleTouchEnd } =
+    useEdgeSwipeDismiss<HTMLDivElement>(onBack);
 
   return (
     <div
@@ -340,9 +286,7 @@ export const PostDetailView: React.FC<Props> = ({
               src={post.imageUrl}
               alt=""
               className={styles.fullImage}
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
+              onError={handleHideImageOnError}
             />
 
             <div className={styles.zoomBadge}>

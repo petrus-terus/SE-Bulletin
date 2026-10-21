@@ -93,6 +93,13 @@ export interface PollData {
   userVotedOptionId?: string;
 }
 
+export type AudienceScope = 'All Sabah Staff' | 'HQ Only' | 'Operations Only';
+
+export interface ToastMessage {
+  message: string;
+  icon?: string;
+}
+
 export interface Post {
   id: string;
   author: {
@@ -104,6 +111,7 @@ export interface Post {
     isVerified: boolean;
   };
   timestamp: string;
+  createdAt?: string;
   title: string;
   content: string;
   location?: string | null;
@@ -135,6 +143,7 @@ export interface Post {
   departmentId?: string;
   departmentName?: string;
   departmentColor?: string;
+  audienceScope?: AudienceScope;
   previewComment?: Comment | null;
   officialNotice?: boolean;
   isEdited?: boolean;
@@ -148,6 +157,7 @@ export interface CreatePostPayload {
   department?: string;
   departmentId?: string;
   departmentColor?: string;
+  audienceScope?: AudienceScope;
   avatarUrl?: string;
   location?: string;
   isPinned?: boolean;
@@ -161,10 +171,6 @@ export interface CreatePostPayload {
   pdfName?: string;
   pdfSize?: string;
 }
-
-export type TimeAmbiance = 'day' | 'dusk' | 'night';
-
-export type PostArchetype = 'status' | 'photo' | 'announcement';
 
 export type NotificationCategory = 'all' | 'urgent' | 'reaction' | 'comment' | 'mention' | 'general';
 

@@ -124,19 +124,6 @@ export interface CropImageOptions {
   fileName?: string;
 }
 
-export const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
-
-/** Validates arbitrary bulletin and story media files before processing. */
-export function validateMediaFile(file: File): string | null {
-  const type = (file.type || '').toLowerCase();
-  if (!(ACCEPTED_AVATAR_TYPES as readonly string[]).includes(type)) {
-    return 'We only support JPG, PNG, WebP, or GIF photos.';
-  }
-  if (file.size === 0) return 'This file is empty.';
-  if (file.size > MEDIA_MAX_BYTES) return 'Please choose a photo smaller than 25 MB.';
-  return null;
-}
-
 function getRadianAngle(degreeValue: number) {
   return (degreeValue * Math.PI) / 180;
 }

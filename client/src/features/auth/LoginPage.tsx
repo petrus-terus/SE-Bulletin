@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-
 import { supabase } from '@/services/supabaseClient';
+import { DEFAULT_LOGO_URL, DEFAULT_COVER_URL } from '@/constants/bulletin';
+import { handleLogoError, handleCoverError } from '@/utils/imageFallbacks';
 import styles from './LoginPage.module.css';
 
 interface Props {
@@ -65,12 +66,10 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
     <div className={styles.pageContainer}>
       <header className={styles.heroHeader}>
         <img
-          src="/grid_horizon_hero.jpg"
+          src={DEFAULT_COVER_URL}
           alt="Sabah Electricity High-Voltage Transmission Tower at Sunset with Mount Kinabalu"
           className={styles.heroImage}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = '/mock-images/image1.png';
-          }}
+          onError={(e) => handleCoverError(e)}
         />
         <div className={styles.heroGradientOverlay} />
 
@@ -93,12 +92,10 @@ export const LoginPage: React.FC<Props> = ({ onShowNotice }) => {
         <div className={styles.brandHeader}>
           <div className={styles.logoDoubleBezel}>
             <img
-              src="/sesb_logo.png"
+              src={DEFAULT_LOGO_URL}
               alt="Sabah Electricity Sdn. Bhd."
               className={styles.brandLogo}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-              }}
+              onError={(e) => handleLogoError(e)}
             />
           </div>
           <div className={styles.brandMeta}>

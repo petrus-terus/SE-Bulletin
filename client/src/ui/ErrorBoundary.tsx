@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL, handleLogoError } from '@/utils/imageFallbacks';
+import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL } from '@/constants/bulletin';
+import { handleLogoError } from '@/utils/imageFallbacks';
 import styles from './ErrorBoundary.module.css';
 
 interface Props {

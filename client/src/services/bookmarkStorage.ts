@@ -1,18 +1,23 @@
 import { loadStoredSet, saveStoredSet } from '@/utils/storageHelpers';
 
-const BOOKMARKED_STORAGE_KEY = 'sesb_bookmarked_ids';
+const BOOKMARKED_STORAGE_PREFIX = 'sesb_bookmarked_ids';
 
-export function getBookmarkedPostIds(): Set<string> {
-  return loadStoredSet(BOOKMARKED_STORAGE_KEY);
+function getStorageKey(userId?: string): string {
+  return userId ? `${BOOKMARKED_STORAGE_PREFIX}_${userId}` : BOOKMARKED_STORAGE_PREFIX;
 }
 
-export function saveBookmarkedPostId(postId: string, isSaved: boolean): void {
-  const ids = getBookmarkedPostIds();
+export function getBookmarkedPostIds(userId?: string): Set<string> {
+  return loadStoredSet(getStorageKey(userId));
+}
+
+export function saveBookmarkedPostId(postId: string, isSaved: boolean, userId?: string): void {
+  const ids = getBookmarkedPostIds(userId);
   if (isSaved) {
     ids.add(postId);
   } else {
     ids.delete(postId);
   }
-  saveStoredSet(BOOKMARKED_STORAGE_KEY, ids);
+  saveStoredSet(getStorageKey(userId), ids);
 }
+
 

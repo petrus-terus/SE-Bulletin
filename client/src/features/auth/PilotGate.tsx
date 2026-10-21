@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { DEFAULT_LOGO_URL, DEFAULT_COVER_URL } from '@/constants/bulletin';
+import { handleLogoError, handleCoverError } from '@/utils/imageFallbacks';
 import styles from './PilotGate.module.css';
 
 interface Props {
@@ -45,12 +47,10 @@ export const PilotGate: React.FC<Props> = ({ onUnlock }) => {
     <div className={styles.gateContainer}>
       {/* Background with Mount Kinabalu & Grid Horizon */}
       <img
-        src="/grid_horizon_hero.jpg"
+        src={DEFAULT_COVER_URL}
         alt="Sabah Electricity High-Voltage Transmission Line"
         className={styles.heroBackdrop}
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src = '/mock-images/image1.png';
-        }}
+        onError={(e) => handleCoverError(e)}
       />
       <div className={styles.gradientOverlay} />
 
@@ -58,12 +58,10 @@ export const PilotGate: React.FC<Props> = ({ onUnlock }) => {
       <div className={styles.cardSurface}>
         <div className={styles.logoWrapper}>
           <img
-            src="/sesb_logo.png"
+            src={DEFAULT_LOGO_URL}
             alt="Sabah Electricity Sdn. Bhd."
             className={styles.logoImage}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/sabah_electricity_logo.png';
-            }}
+            onError={(e) => handleLogoError(e)}
           />
         </div>
 

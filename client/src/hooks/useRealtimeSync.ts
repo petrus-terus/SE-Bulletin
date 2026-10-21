@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { AppNotification, Comment, Employee, Post, Story } from '@/types/bulletin';
+import type { AppNotification, Comment, Employee, Post, Story, ToastMessage } from '@/types/bulletin';
 import { isSupabaseConfigured, supabase } from '@/services/supabaseClient';
 import { saveStoredNotifications } from '@/services/notificationService';
 import {
@@ -21,7 +21,7 @@ interface UseRealtimeSyncParams {
   setNotifications: React.Dispatch<React.SetStateAction<AppNotification[]>>;
   setSelectedPostId: React.Dispatch<React.SetStateAction<string | null>>;
   setActiveCommentPostId: React.Dispatch<React.SetStateAction<string | null>>;
-  setToast: (toast: { message: string; icon?: string } | null) => void;
+  setToast: React.Dispatch<React.SetStateAction<ToastMessage | null>>;
   currentUser?: Employee | null;
 }
 
@@ -59,8 +59,7 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'stories' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const deletedId = (payload.old as any)?.id;
+          const deletedId = (payload.old as { id?: string } | null)?.id;
           if (deletedId) {
             setStories((prev) => prev.filter((s) => s.id !== deletedId));
           }
@@ -92,12 +91,15 @@ export function useRealtimeSync({
           const row = payload.new as PostRow;
           if (!row || !row.id) return;
 
+          const activeUserId = currentUserRef.current?.id;
+
           setPosts((prev) => {
             const existingMap = new Map(prev.map((p) => [p.id, p]));
             const livePost = mapRowToPost(row, {
               timestamp: 'Just now',
               viewsCountFloor: 1,
               existingPostsMap: existingMap,
+              userId: activeUserId,
             });
             return [livePost, ...prev.filter((p) => p.id !== livePost.id)];
           });
@@ -110,7 +112,6 @@ export function useRealtimeSync({
               icon: 'campaign',
             });
 
-            // Append to dynamic notifications
             const newNotif: AppNotification = {
               id: `notif-${Date.now()}`,
               category: row.official_notice ? 'urgent' : 'general',
@@ -130,7 +131,7 @@ export function useRealtimeSync({
             setNotifications((prev) => {
               const updated = [newNotif, ...prev];
               try {
-                saveStoredNotifications(updated);
+                saveStoredNotifications(updated, activeUserId);
               } catch (e) {
                 console.warn('[useRealtimeSync] Failed to save notifications:', e);
               }
@@ -146,8 +147,12 @@ export function useRealtimeSync({
           const row = payload.new as Partial<PostRow>;
           if (!row || !row.id) return;
 
+          const activeUserId = currentUserRef.current?.id;
+
           setPosts((prev) =>
-            prev.map((post) => (post.id === row.id ? mergeUpdatedPostRow(post, row) : post))
+            prev.map((post) =>
+              post.id === row.id ? mergeUpdatedPostRow(post, row, activeUserId) : post
+            )
           );
 
           const isSelf = isAuthorSelf(row.author_id, row.author_name, currentUserRef.current);
@@ -178,6 +183,7 @@ export function useRealtimeSync({
           });
 
           const isCommentSelf = isAuthorSelf(row.author_id, row.author_name, currentUserRef.current);
+          const activeUserId = currentUserRef.current?.id;
 
           setPosts((prev) =>
             prev.map((p) =>
@@ -197,7 +203,6 @@ export function useRealtimeSync({
               icon: 'chat',
             });
 
-            // Append to dynamic notifications
             const commentNotif: AppNotification = {
               id: `notif-c-${Date.now()}`,
               category: 'comment',
@@ -215,7 +220,7 @@ export function useRealtimeSync({
             setNotifications((prev) => {
               const updated = [commentNotif, ...prev];
               try {
-                saveStoredNotifications(updated);
+                saveStoredNotifications(updated, activeUserId);
               } catch (e) {
                 console.warn('[useRealtimeSync] Failed to save notifications:', e);
               }
@@ -228,38 +233,11 @@ export function useRealtimeSync({
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'posts' },
         (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const oldRow = payload.old as any;
+          const oldRow = payload.old as { id?: string } | null;
           if (oldRow?.id) {
             setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
             setSelectedPostId((curr) => (curr === oldRow.id ? null : curr));
             setActiveCommentPostId((curr) => (curr === oldRow.id ? null : curr));
-          }
-        }
-      )
-      .on(
-        'broadcast',
-        { event: 'post_deleted' },
-        (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const deletedId = (payload?.payload as any)?.id;
-          if (deletedId) {
-            setPosts((prev) => prev.filter((p) => p.id !== deletedId));
-            setSelectedPostId((curr) => (curr === deletedId ? null : curr));
-            setActiveCommentPostId((curr) => (curr === deletedId ? null : curr));
-          }
-        }
-      )
-      .on(
-        'broadcast',
-        { event: 'post_updated' },
-        (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const updated = payload?.payload as any;
-          if (updated?.id) {
-            setPosts((prev) =>
-              prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
-            );
           }
         }
       )

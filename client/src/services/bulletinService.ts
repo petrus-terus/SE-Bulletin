@@ -22,6 +22,8 @@ export const bulletinService = {
   updatePost: (...args: Parameters<typeof postService.updatePost>) => postService.updatePost(...args),
   deletePost: (...args: Parameters<typeof postService.deletePost>) => postService.deletePost(...args),
   toggleLike: (...args: Parameters<typeof postService.toggleLike>) => postService.toggleLike(...args),
+  adjustPostCounter: (...args: Parameters<typeof postService.adjustPostCounter>) =>
+    postService.adjustPostCounter(...args),
   recordPostView: (...args: Parameters<typeof postService.recordPostView>) => postService.recordPostView(...args),
   isPostViewedInSession: (...args: Parameters<typeof postService.isPostViewedInSession>) =>
     postService.isPostViewedInSession(...args),
@@ -49,12 +51,4 @@ export const bulletinService = {
     mediaService.deleteStorageFiles(...args),
   extractStoragePath: (...args: Parameters<typeof mediaService.extractStoragePath>) =>
     mediaService.extractStoragePath(...args),
-};
-
-export {
-  postService,
-  storyService,
-  commentService,
-  profileService,
-  mediaService,
 };

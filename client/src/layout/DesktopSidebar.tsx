@@ -19,7 +19,7 @@ export const DesktopSidebar: React.FC<Props> = ({
   onTabChange,
   onCreateClick,
   currentUser,
-  unreadCount = 3,
+  unreadCount = 0,
 }) => {
   return (
     <nav className={styles.sidebar} aria-label="Desktop Main Navigation">

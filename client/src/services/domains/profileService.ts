@@ -2,6 +2,7 @@ import type { Employee } from '@/types/bulletin';
 import { ALL_EMPLOYEES, getRegisteredEmployees } from '../mockData';
 import { isSupabaseConfigured, supabase } from '../supabaseClient';
 import { DEFAULT_AVATAR_URL, DEFAULT_COVER_URL } from '@/constants/bulletin';
+import { saveStoredJson } from '@/utils/storageHelpers';
 
 export class ProfileService {
   /**
@@ -86,11 +87,7 @@ export class ProfileService {
       }));
 
       // Cache cloud profiles locally for offline resilience
-      try {
-        localStorage.setItem('sesb_registered_users', JSON.stringify(cloudProfiles));
-      } catch {
-        // quota fallback
-      }
+      saveStoredJson('sesb_registered_users', cloudProfiles);
 
       // Merge ensuring cloud profiles take precedence and de-duplicate by email
       const mergedMap = new Map<string, Employee>();

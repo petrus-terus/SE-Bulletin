@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Cropper, { type Area, type MediaSize } from 'react-easy-crop';
 import { cropImageToBlob, validateAvatarDimensions } from '@/utils/cropImage';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './AvatarCropSheet.module.css';
 
 interface Props {
@@ -95,6 +97,9 @@ export const AvatarCropSheet: React.FC<Props> = ({
   useEffect(() => {
     sheetRef.current?.focus();
   }, []);
+
+  useEscapeKey(onCancel, !isUploading);
+  useBodyScrollLock(true);
 
   const handleMediaLoaded = useCallback(
     (mediaSize: MediaSize) => {

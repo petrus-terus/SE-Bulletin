@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { Employee, EmojiReactionType, Post } from '@/types/bulletin';
-import { CURRENT_USER } from '@/services/mockData';
+import type { Employee } from '@/types/bulletin';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { AchievementsDeck } from '@/features/profile/AchievementsDeck';
 import { AvatarCropSheet } from '@/features/profile/AvatarCropSheet';
 import { FeedCard } from '@/shared/FeedCard';
 import { useFeed } from '@/context/FeedContext';
-import { bulletinService } from '@/services/bulletinService';
-import { AVATAR_OUTPUT_SIZE, ACCEPTED_AVATAR_TYPES, validateAvatarFile } from '@/utils/cropImage';
+import { useOverlay } from '@/context/OverlayContext';
+import { ACCEPTED_AVATAR_TYPES } from '@/utils/cropImage';
 import {
   DEFAULT_COVER_URL,
   DEFAULT_AVATAR_URL,
@@ -16,30 +15,17 @@ import {
   FALLBACK_POST_IMAGE_URL,
 } from '@/constants/bulletin';
 import { handleAvatarError, handleCoverError, handlePostImageError } from '@/utils/imageFallbacks';
-import { isSuperAdminUser } from '@/utils/postPermissions';
+import { getPostPermissions } from '@/utils/postPermissions';
 import { EditProfileModal } from '@/features/profile/EditProfileModal';
+import { useProfileMediaUpload } from './useProfileMediaUpload';
 import styles from './ProfilePage.module.css';
 
 interface Props {
-  posts: Post[];
-  currentUser?: Employee;
+  currentUser: Employee;
   viewedEmployee?: Employee | null;
   onBack?: () => void;
-  onLikeToggle: (id: string) => void;
-  onOpenComments: (post: Post) => void;
-  onDeletePost?: (postId: string) => void;
-  onEditPost?: (post: Post) => void;
-  onOpenCreate: () => void;
-  onPostClick?: (post: Post) => void;
-  onImageClick?: (url: string, title?: string) => void;
   onLogout?: () => void;
   onUpdateProfile?: (updated: Employee) => void;
-  onBookmarkToggle?: (postId: string) => void;
-  onVotePoll?: (postId: string, optionId: string) => void;
-  onReactionSelect?: (postId: string, reaction: EmojiReactionType) => void;
-  onReshareToggle?: (postId: string) => void;
-  onQuotePost?: (quotedPost: Post, commentText: string) => void;
-  onSharePost?: (post: Post) => void;
 }
 
 const SESB_DIVISIONS = [
@@ -54,31 +40,18 @@ const SESB_DIVISIONS = [
 ];
 
 export const ProfilePage: React.FC<Props> = ({
-  posts,
   currentUser,
   viewedEmployee,
   onBack,
-  onLikeToggle,
-  onOpenComments,
-  onDeletePost,
-  onEditPost,
-  onOpenCreate,
-  onPostClick,
-  onImageClick,
   onUpdateProfile,
-  onBookmarkToggle,
-  onVotePoll,
-  onReactionSelect,
-  onReshareToggle,
-  onQuotePost,
-  onSharePost,
 }) => {
-  const loggedInUser = currentUser || CURRENT_USER;
+  const loggedInUser = currentUser;
   const activeEmployee = viewedEmployee || loggedInUser;
   const isOwnProfile = activeEmployee.id === loggedInUser.id;
 
   const photosScrollRef = useHorizontalScroll<HTMLDivElement>();
-  const { setToast } = useFeed();
+  const feed = useFeed();
+  const overlay = useOverlay();
 
   // Profile fields state (keyed by employee id in TabRouter.tsx for automatic resets)
   const [profileData, setProfileData] = useState<Employee>(activeEmployee);
@@ -96,118 +69,39 @@ export const ProfilePage: React.FC<Props> = ({
     profileData.coverUrl || DEFAULT_COVER_URL
   );
 
-  // Hidden file inputs for direct device photo upload
-  const avatarFileInputRef = useRef<HTMLInputElement>(null);
-  const coverFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Avatar crop flow: the file is held here until the user confirms a framing,
-  // so nothing reaches Supabase Storage before they have seen the result.
-  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
-  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-
-  const closeAvatarSheet = () => {
-    setPendingAvatarFile(null);
-    previouslyFocusedRef.current?.focus?.();
-  };
-
-  // Handle direct device file upload (with automatic Supabase Storage upload and client-side compression)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'avatar' | 'cover') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset before awaiting so choosing the same photo again still fires change.
-    e.target.value = '';
-
-    // Avatars go through the cropper first; covers upload directly as before.
-    if (mode === 'avatar') {
-      const problem = validateAvatarFile(file);
-      if (problem) {
-        setToast({ message: problem, icon: 'error' });
-        return;
-      }
-      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
-      setPendingAvatarFile(file);
-      return;
-    }
-
-    try {
-      const uploadedUrl = await bulletinService.uploadPhoto(file);
-      if (isEditModalOpen) {
-        setTempCoverUrl(uploadedUrl);
-        setToast({ message: 'Banner uploaded. Save changes to apply.', icon: 'check_circle' });
-      } else {
-        const updated = { ...profileData, coverUrl: uploadedUrl };
-        setProfileData(updated);
-        setTempCoverUrl(uploadedUrl);
-        if (onUpdateProfile) onUpdateProfile(updated);
-      }
-    } catch (err) {
-      console.error('[ProfilePage] Upload failed:', err);
-      setToast({
-        message: 'Failed to upload image. Please check your connection and try again.',
-        icon: 'error',
-      });
-    }
-  };
-
-  // Commit the cropped square, then push it through the normal upload path.
-  const handleAvatarConfirm = async (croppedFile: File) => {
-    setIsAvatarUploading(true);
-    try {
-      const uploadedUrl = await bulletinService.uploadPhoto(croppedFile, {
-        maxWidth: AVATAR_OUTPUT_SIZE,
-        maxHeight: AVATAR_OUTPUT_SIZE,
-        quality: 0.86,
-      });
-
-      if (isEditModalOpen) {
-        // Option B: Inside Edit Profile modal — stage the change so clicking Cancel cleanly discards it
-        setTempAvatarUrl(uploadedUrl);
-        setToast({ message: 'Photo cropped. Save changes to apply.', icon: 'check_circle' });
-      } else {
-        // Direct Hero Camera trigger — apply and persist immediately
-        const updated = { ...profileData, avatarUrl: uploadedUrl };
-        setProfileData(updated);
-        setTempAvatarUrl(uploadedUrl);
-        if (onUpdateProfile) onUpdateProfile(updated);
-      }
-    } catch (err) {
-      console.error('[ProfilePage] Avatar upload failed:', err);
-      setToast({
-        message: 'Could not save your photo. Please try again.',
-        icon: 'error',
-      });
-    } finally {
-      setIsAvatarUploading(false);
-      closeAvatarSheet();
-    }
-  };
-
-  // Filter posts authored or reshared by active employee
-  const isSuperAdmin = isSuperAdminUser({
-    currentUserId: activeEmployee.id,
-    currentUserName: activeEmployee.name,
-    currentUserRole: activeEmployee.role,
+  const {
+    avatarFileInputRef,
+    coverFileInputRef,
+    pendingAvatarFile,
+    isAvatarUploading,
+    closeAvatarSheet,
+    handleFileUpload,
+    handleAvatarConfirm,
+  } = useProfileMediaUpload({
+    profileData,
+    setProfileData,
+    isEditModalOpen,
+    setTempAvatarUrl,
+    setTempCoverUrl,
+    setToast: feed.setToast,
+    onUpdateProfile,
   });
 
-  const userPosts = posts.filter(
-    (p) =>
-      (p.author?.id && activeEmployee.id && p.author.id === activeEmployee.id) ||
-      (p.author?.name || '').toLowerCase().trim() === activeEmployee.name.toLowerCase().trim() ||
-      (isSuperAdmin &&
-        (p.author?.name === 'ADMIN_USER' ||
-          p.author?.name === 'TEST_USER' ||
-          p.author?.id === 'user-test')) ||
+  // Filter posts authored or reshared by active employee using centralized permission helper
+  const userPosts = feed.posts.filter((p) => {
+    const { isOwnPost } = getPostPermissions(p, {
+      currentUserId: activeEmployee.id,
+      currentUserName: activeEmployee.name,
+      currentUserRole: activeEmployee.role,
+    });
+    const isResharedByUser =
       (p.resharedBy?.id && activeEmployee.id && p.resharedBy.id === activeEmployee.id) ||
-      (p.isReshared && isOwnProfile)
-  );
+      (p.isReshared && isOwnProfile);
+    return isOwnPost || isResharedByUser;
+  });
 
   // Total reactions on user's posts
-  const totalReactions = userPosts.reduce(
-    (acc, p) => acc + (p.likesCount || 0),
-    0
-  );
+  const totalReactions = userPosts.reduce((acc, p) => acc + (p.likesCount || 0), 0);
 
   // Unlocked achievements count (Bronze: 1, Silver: 5, Gold: 10)
   const unlockedBadgesCount =
@@ -244,29 +138,13 @@ export const ProfilePage: React.FC<Props> = ({
     {
       label: 'Publish Your First Public Bulletin',
       isCompleted: hasPublishedBulletin,
-      action: onOpenCreate,
+      action: overlay.openCreate,
       actionLabel: 'New Post',
     },
   ];
 
   const completedSteps = completionChecks.filter((c) => c.isCompleted).length;
   const completionPercentage = Math.round((completedSteps / completionChecks.length) * 100);
-
-  // Handle ESC key to dismiss open modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (pendingAvatarFile) {
-        closeAvatarSheet();
-        return;
-      }
-      if (isEditModalOpen) {
-        setIsEditModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditModalOpen, pendingAvatarFile]);
 
   return (
     <div className={styles.profileContainer}>
@@ -296,7 +174,7 @@ export const ProfilePage: React.FC<Props> = ({
             isUploading={isAvatarUploading}
             onCancel={closeAvatarSheet}
             onConfirm={handleAvatarConfirm}
-            onError={(message) => setToast({ message, icon: 'error' })}
+            onError={(message) => feed.setToast({ message, icon: 'error' })}
           />,
           document.body
         )}
@@ -529,7 +407,7 @@ export const ProfilePage: React.FC<Props> = ({
             <button
               type="button"
               className={styles.primaryCreateBtn}
-              onClick={onOpenCreate}
+              onClick={overlay.openCreate}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                 campaign
@@ -563,7 +441,7 @@ export const ProfilePage: React.FC<Props> = ({
               <div
                 key={photo.id}
                 className={styles.photoCard}
-                onClick={() => onImageClick?.(photo.url, photo.title)}
+                onClick={() => overlay.openLightbox({ url: photo.url, title: photo.title })}
                 style={{ cursor: 'pointer' }}
                 title="Click to view photo in full"
               >
@@ -601,7 +479,7 @@ export const ProfilePage: React.FC<Props> = ({
               <button
                 type="button"
                 className={styles.uploadPhotoCtaBtn}
-                onClick={onOpenCreate}
+                onClick={overlay.openCreate}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                   add_a_photo
@@ -641,18 +519,15 @@ export const ProfilePage: React.FC<Props> = ({
                 currentUserId={loggedInUser.id}
                 currentUserName={loggedInUser.name}
                 currentUserRole={loggedInUser.role}
-                currentUserAvatar={loggedInUser.avatarUrl}
-                onLikeToggle={onLikeToggle}
-                onCommentClick={onOpenComments}
-                onBookmarkToggle={onBookmarkToggle || (() => {})}
-                onDeletePost={onDeletePost}
-                onEditPost={onEditPost}
-                onPostClick={onPostClick}
-                onVotePoll={onVotePoll}
-                onReactionSelect={onReactionSelect}
-                onReshareToggle={onReshareToggle}
-                onQuotePost={onQuotePost}
-                onSharePost={onSharePost}
+                onLikeToggle={feed.handleLikeToggle}
+                onCommentClick={(targetPost) => overlay.openComment(targetPost.id)}
+                onBookmarkToggle={feed.handleBookmarkToggle}
+                onDeletePost={feed.handleDeletePost}
+                onEditPost={overlay.openEdit}
+                onPostClick={feed.handleOpenPostDetail}
+                onVotePoll={feed.handleVotePoll}
+                onReshareClick={(targetPost) => overlay.openReshare(targetPost.id)}
+                onSharePost={feed.handleSharePost}
               />
             ))}
           </div>
@@ -673,7 +548,7 @@ export const ProfilePage: React.FC<Props> = ({
                 : 'This staff member has not published any public bulletins yet.'}
             </p>
             {isOwnProfile && (
-              <button type="button" className={styles.startPostBtn} onClick={onOpenCreate}>
+              <button type="button" className={styles.startPostBtn} onClick={overlay.openCreate}>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                   add
                 </span>
@@ -684,7 +559,7 @@ export const ProfilePage: React.FC<Props> = ({
         )}
       </section>
 
-      {/* 8. Comprehensive Edit Profile Modal Sheet (Conditionally mounted so form state resets cleanly) */}
+      {/* 8. Comprehensive Edit Profile Modal Sheet */}
       {isEditModalOpen && (
         <EditProfileModal
           isOpen={isEditModalOpen}
@@ -695,7 +570,7 @@ export const ProfilePage: React.FC<Props> = ({
           onClose={() => setIsEditModalOpen(false)}
           onSave={(updated) => {
             setProfileData(updated);
-            if (onUpdateProfile) onUpdateProfile(updated);
+            onUpdateProfile?.(updated);
             setIsEditModalOpen(false);
           }}
           tempAvatarUrl={tempAvatarUrl}

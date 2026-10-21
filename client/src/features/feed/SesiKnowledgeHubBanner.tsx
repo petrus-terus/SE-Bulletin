@@ -1,4 +1,5 @@
 import React from 'react';
+import { handleHideImageOnError } from '@/utils/imageFallbacks';
 import styles from './SesiKnowledgeHubBanner.module.css';
 
 const SESI_URL = 'https://www.sesb.com.my/';
@@ -19,10 +20,7 @@ export const SesiKnowledgeHubBanner: React.FC = () => {
             src="/sesi_logo.png"
             alt=""
             className={styles.logoImg}
-            onError={(e) => {
-              // Fallback: hide image on error, badge remains visible
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
+            onError={handleHideImageOnError}
           />
         </div>
 

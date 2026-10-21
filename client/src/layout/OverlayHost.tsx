@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { DEPARTMENTS } from '@/data/departments';
 import { bulletinService } from '@/services/bulletinService';
 import { CommentDrawer } from '@/features/post/CommentDrawer';
@@ -8,6 +8,7 @@ import { BrandSidebarDrawer } from '@/layout/BrandSidebarDrawer';
 import { ScreenShowcaseModal, type ShowcaseTarget } from '@/features/showcase/ScreenShowcaseModal';
 import { PwaInstallPrompt } from '@/ui/PwaInstallPrompt';
 import { Toast } from '@/ui/Toast';
+import { ViewFallback } from '@/ui/ViewFallback';
 import { useOverlay } from '@/context/OverlayContext';
 import { useFeed } from '@/context/FeedContext';
 import type { Employee } from '@/types/bulletin';
@@ -24,12 +25,6 @@ const ImageViewerModal = lazy(() =>
 );
 const SavedPostsDrawer = lazy(() =>
   import('@/features/post/SavedPostsDrawer').then((m) => ({ default: m.SavedPostsDrawer }))
-);
-
-const ViewFallback = () => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px' }}>
-    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid var(--color-border-subtle)', borderTopColor: 'var(--color-primary-text)', animation: 'spin 0.8s linear infinite' }} />
-  </div>
 );
 
 export interface OverlayHostProps {
@@ -126,7 +121,7 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
 
       {/* Dedicated Full Page for Creating Bulletins */}
       {overlay.isCreateOpen && (
-        <Suspense fallback={<ViewFallback />}>
+        <Suspense fallback={<ViewFallback size={24} minHeight="100px" />}>
           <CreateBulletinPage
             departments={DEPARTMENTS}
             currentUser={currentUser}
@@ -138,6 +133,11 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
                 overlay.closeOverlay();
               } catch (err) {
                 console.error('[OverlayHost] Failed to publish bulletin:', err);
+                feed.setToast({
+                  message: 'Failed to publish bulletin. Please check your connection.',
+                  icon: 'error',
+                });
+                throw err;
               }
             }}
           />
@@ -146,7 +146,7 @@ export const OverlayHost: React.FC<OverlayHostProps> = ({
 
       {/* Dedicated Full Page for Editing Bulletins */}
       {overlay.editingPost && (
-        <Suspense fallback={<ViewFallback />}>
+        <Suspense fallback={<ViewFallback size={24} minHeight="100px" />}>
           <CreateBulletinPage
             departments={DEPARTMENTS}
             currentUser={currentUser}

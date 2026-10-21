@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
-import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL, handleLogoError } from '@/utils/imageFallbacks';
+import { DEFAULT_LOGO_URL, SESB_LOGO_FALLBACK_URL } from '@/constants/bulletin';
+import { handleLogoError } from '@/utils/imageFallbacks';
 import styles from './AchievementsDeck.module.css';
 
 interface Props {

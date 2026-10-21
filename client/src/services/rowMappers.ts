@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Comment, Post, Story } from '@/types/bulletin';
-import { DEFAULT_DEPARTMENT_ID } from '@/constants/bulletin';
+import type { AudienceScope, Comment, Post, Story } from '@/types/bulletin';
+import { DEFAULT_DEPARTMENT_ID, DEFAULT_AVATAR_URL, CEO_AVATAR_URL } from '@/constants/bulletin';
 import { isPostLiked } from './likeStorage';
 import { getStoredPollVote } from './pollStorage';
 
@@ -33,13 +33,13 @@ export type PollData = {
   userVotedOptionId?: string;
 };
 
-export function parsePollData(raw: unknown, postId?: string): PollData | undefined {
+export function parsePollData(raw: unknown, postId?: string, userId?: string): PollData | undefined {
   if (!raw) return undefined;
   const parsed = PollDataSchema.safeParse(raw);
   if (parsed.success) {
     const data = parsed.data;
     const resolvedUserVote =
-      (postId ? getStoredPollVote(postId) : undefined) ||
+      (postId ? getStoredPollVote(postId, userId) : undefined) ||
       data.userVotedOptionId ||
       data.userVotedId;
 
@@ -160,6 +160,7 @@ export interface PostRow {
   is_edited?: boolean | null;
   edited_at?: string | null;
   reactions_breakdown?: Record<string, number> | null;
+  audience_scope?: AudienceScope | null;
 }
 
 export interface StoryRow {
@@ -193,6 +194,7 @@ export interface MapPostOptions {
   timestamp?: string;
   viewsCountFloor?: number;
   existingPostsMap?: Map<string, Post>;
+  userId?: string;
 }
 
 export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
@@ -201,8 +203,8 @@ export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
     (row.author_name || '').toLowerCase().includes('yaakob');
 
   const avatarUrl = isCeo
-    ? '/ceo_portrait.png'
-    : row.author_avatar || '/sabah_electricity_logo.png';
+    ? CEO_AVATAR_URL
+    : row.author_avatar || DEFAULT_AVATAR_URL;
 
   const defaultTimestamp = row.created_at
     ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -230,6 +232,7 @@ export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
       isVerified: true,
     },
     timestamp: options.timestamp ?? defaultTimestamp,
+    createdAt: row.created_at,
     location: row.location,
     imageUrl: row.image_url,
     mediaUrls: Array.isArray(row.media_urls)
@@ -244,13 +247,14 @@ export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
     sharesCount: 0,
     viewsCount: Number(row.views_count ?? options.viewsCountFloor ?? 0),
     resharesCount: Number(row.reshares_count || 0),
-    isLiked: isPostLiked(row.id),
+    isLiked: isPostLiked(row.id, options.userId),
     isBookmarked: false,
     departmentId: row.department_id || DEFAULT_DEPARTMENT_ID,
     departmentName: row.department || 'Operations',
     departmentColor: row.department_color || '#0055A4',
     officialNotice: Boolean(row.official_notice),
-    poll: parsePollData(row.poll_data || row.poll, row.id),
+    audienceScope: row.audience_scope || undefined,
+    poll: parsePollData(row.poll_data || row.poll, row.id, options.userId),
     pdfUrl: row.pdf_url || undefined,
     pdfName: row.pdf_name || undefined,
     pdfSize: row.pdf_size || undefined,
@@ -261,7 +265,7 @@ export function mapRowToPost(row: PostRow, options: MapPostOptions = {}): Post {
   };
 }
 
-export function mergeUpdatedPostRow(post: Post, row: Partial<PostRow>): Post {
+export function mergeUpdatedPostRow(post: Post, row: Partial<PostRow>, userId?: string): Post {
   return {
     ...post,
     title: row.title !== undefined ? row.title : post.title,
@@ -282,15 +286,17 @@ export function mergeUpdatedPostRow(post: Post, row: Partial<PostRow>): Post {
     commentsCount: Number(row.comments_count ?? post.commentsCount),
     viewsCount: Number(row.views_count ?? post.viewsCount),
     resharesCount: Number(row.reshares_count ?? post.resharesCount),
-    isLiked: isPostLiked(post.id) || post.isLiked,
+    isLiked: isPostLiked(post.id, userId) || post.isLiked,
     departmentName: row.department || post.departmentName,
     departmentId: row.department_id || post.departmentId,
     departmentColor: row.department_color || post.departmentColor,
     officialNotice:
       row.official_notice !== undefined ? Boolean(row.official_notice) : post.officialNotice,
+    audienceScope:
+      row.audience_scope !== undefined ? row.audience_scope || undefined : post.audienceScope,
     poll:
       row.poll_data !== undefined || row.poll !== undefined
-        ? parsePollData(row.poll_data || row.poll, post.id) || post.poll
+        ? parsePollData(row.poll_data || row.poll, post.id, userId) || post.poll
         : post.poll,
     reactions:
       row.reactions_breakdown !== undefined
@@ -324,7 +330,7 @@ export function mapRowToStory(row: StoryRow, options: MapStoryOptions = {}): Sto
     departmentId: row.department_id,
     departmentName: row.department_name,
     authorName: row.author_name,
-    authorAvatar: row.author_avatar || '/sabah_electricity_logo.png',
+    authorAvatar: row.author_avatar || DEFAULT_AVATAR_URL,
     hasUnread: options.hasUnread ?? true,
     imageUrl: (isVideo ? videoThumbnail || '/grid_horizon_hero.jpg' : row.image_url) || '/grid_horizon_hero.jpg',
     videoUrl: isVideo ? row.image_url : undefined,

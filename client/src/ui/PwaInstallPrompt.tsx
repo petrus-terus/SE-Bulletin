@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { DEFAULT_APP_ICON_URL, handleAppIconError } from '@/utils/imageFallbacks';
+import { DEFAULT_APP_ICON_URL } from '@/constants/bulletin';
+import { handleAppIconError } from '@/utils/imageFallbacks';
 import styles from './PwaInstallPrompt.module.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -20,8 +21,9 @@ export const PwaInstallPrompt: React.FC = () => {
 
   useEffect(() => {
     // 1. Check if already running in standalone PWA mode
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    const nav = window.navigator as Navigator & { standalone?: boolean };
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true;
     if (isStandalone) return;
 
     const ua = window.navigator.userAgent.toLowerCase();

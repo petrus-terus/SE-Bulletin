@@ -6,8 +6,7 @@
  * with aspect-ratio downscaling (max 1600px for bulletins, 512px for avatars, 1200px for covers).
  */
 
-import { formatFileSize, formatCompactNumber } from './format';
-export { formatFileSize, formatCompactNumber };
+import { formatFileSize } from './format';
 
 export interface CompressionOptions {
   maxWidth?: number;
@@ -204,57 +203,3 @@ export async function compressImageFile(
   });
 }
 
-/**
- * Compresses an existing base64 DataURL (for avatars, covers, or existing strings)
- * and returns an optimized base64 DataURL.
- */
-export async function compressDataUrl(
-  dataUrl: string,
-  options: CompressionOptions = {}
-): Promise<string> {
-  const {
-    maxWidth = 512,
-    maxHeight = 512,
-    quality = 0.82,
-    outputType = isWebpSupported() ? 'image/webp' : 'image/jpeg',
-  } = options;
-
-  if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-    return dataUrl;
-  }
-
-  return new Promise<string>((resolve) => {
-    const img = new Image();
-    img.onerror = () => resolve(dataUrl); // fallback safely to input
-    img.onload = () => {
-      try {
-        const { width, height } = calculateScaledDimensions(
-          img.naturalWidth || img.width,
-          img.naturalHeight || img.height,
-          maxWidth,
-          maxHeight
-        );
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(dataUrl);
-          return;
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressed = canvas.toDataURL(outputType, quality);
-        resolve(compressed);
-      } catch {
-        resolve(dataUrl);
-      }
-    };
-    img.src = dataUrl;
-  });
-}

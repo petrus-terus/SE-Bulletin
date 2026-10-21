@@ -3,6 +3,7 @@ import type { Post } from '@/types/bulletin';
 import { DEFAULT_AVATAR_URL } from '@/constants/bulletin';
 import { handleAvatarError } from '@/utils/imageFallbacks';
 import { getPostPermissions } from '@/utils/postPermissions';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import styles from './FeedCard.module.css';
 
 interface PostCardHeaderProps {
@@ -40,6 +41,8 @@ export const PostCardHeader: React.FC<PostCardHeaderProps> = ({
     currentUserRole,
   });
 
+  useEscapeKey(() => setIsMenuOpen(false), isMenuOpen);
+
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -47,18 +50,11 @@ export const PostCardHeader: React.FC<PostCardHeaderProps> = ({
         setIsMenuOpen(false);
       }
     };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsMenuOpen(false);
-      }
-    };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isMenuOpen]);
 

@@ -2,22 +2,10 @@ import type { SyntheticEvent } from 'react';
 import {
   DEFAULT_AVATAR_URL,
   DEFAULT_LOGO_URL,
-  SESB_LOGO_FALLBACK_URL,
-  DEFAULT_APP_ICON_URL,
   FAVICON_URL,
   DEFAULT_COVER_URL,
   FALLBACK_POST_IMAGE_URL,
 } from '@/constants/bulletin';
-
-export {
-  DEFAULT_AVATAR_URL,
-  DEFAULT_LOGO_URL,
-  SESB_LOGO_FALLBACK_URL,
-  DEFAULT_APP_ICON_URL,
-  FAVICON_URL,
-  DEFAULT_COVER_URL,
-  FALLBACK_POST_IMAGE_URL,
-};
 
 /**
  * Null-safe image error fallback helper preventing broken image icons
@@ -71,4 +59,10 @@ export function handleAppIconError(
   if (target.src !== fallback && !target.src.endsWith(fallback)) {
     target.src = fallback;
   }
+}
+
+export function handleHideImageOnError(
+  event: SyntheticEvent<HTMLImageElement, Event>
+): void {
+  event.currentTarget.style.display = 'none';
 }

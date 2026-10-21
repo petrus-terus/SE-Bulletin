@@ -1,5 +1,5 @@
-import { useState, lazy, Suspense } from 'react';
-import type { AppNotification, Employee } from '@/types/bulletin';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import type { AppNotification, Employee, ToastMessage } from '@/types/bulletin';
 import { getEmployeeByAuthor } from '@/services/mockData';
 import { bulletinService } from '@/services/bulletinService';
 import { saveStoredNotifications } from '@/services/notificationService';
@@ -16,20 +16,17 @@ import { useScrollChoreography } from '@/hooks/useScrollChoreography';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PilotGate } from '@/features/auth/PilotGate';
 import { Toast } from '@/ui/Toast';
+import { ViewFallback } from '@/ui/ViewFallback';
 import { TabRouter } from '@/layout/TabRouter';
 import { OverlayHost } from '@/layout/OverlayHost';
 import { OverlayProvider, useOverlay } from '@/context/OverlayContext';
 import { FeedProvider, useFeed } from '@/context/FeedContext';
 
+const VALID_TABS: readonly TabKey[] = ['home', 'explore', 'notifications', 'profile'];
+
 // Lazy-loaded heavy detail view
 const PostDetailView = lazy(() =>
   import('@/features/post/PostDetailView').then((m) => ({ default: m.PostDetailView }))
-);
-
-const ViewFallback = () => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
-    <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-primary-text)', animation: 'spin 0.8s linear infinite' }} />
-  </div>
 );
 
 function AppMain({
@@ -44,11 +41,62 @@ function AppMain({
   const overlay = useOverlay();
   const feed = useFeed();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#tab-')) {
+      const candidate = hash.slice('#tab-'.length) as TabKey;
+      if (VALID_TABS.includes(candidate)) return candidate;
+    }
+    return 'home';
+  });
   const [viewedProfileEmployee, setViewedProfileEmployee] = useState<Employee | null>(null);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
 
   useScrollChoreography({ activeTab, selectedPostId: feed.selectedPostId });
+
+  const { setSelectedPostId } = feed;
+
+  // Sync URL hash <-> selectedPostId and activeTab for shareable #post-{id} links and Back button
+  useEffect(() => {
+    const applyHashState = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#post-')) {
+        const postId = hash.slice('#post-'.length);
+        if (postId) {
+          setSelectedPostId(postId);
+          return;
+        }
+      }
+      setSelectedPostId(null);
+      if (hash.startsWith('#tab-')) {
+        const tabCandidate = hash.slice('#tab-'.length) as TabKey;
+        if (VALID_TABS.includes(tabCandidate)) {
+          setActiveTab(tabCandidate);
+        }
+      }
+    };
+
+    applyHashState();
+    window.addEventListener('hashchange', applyHashState);
+    return () => window.removeEventListener('hashchange', applyHashState);
+  }, [setSelectedPostId]);
+
+  useEffect(() => {
+    const desiredHash = feed.selectedPostId
+      ? `#post-${feed.selectedPostId}`
+      : activeTab !== 'home'
+      ? `#tab-${activeTab}`
+      : '';
+
+    const currentHash = window.location.hash;
+    if (desiredHash !== currentHash) {
+      if (desiredHash) {
+        window.history.pushState(null, '', desiredHash);
+      } else if (currentHash) {
+        window.history.pushState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, [feed.selectedPostId, activeTab]);
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
@@ -120,7 +168,7 @@ function AppMain({
   const handleNotificationClick = (notif: AppNotification) => {
     feed.setNotifications((prev) => {
       const updated = prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n));
-      saveStoredNotifications(updated);
+      saveStoredNotifications(updated, currentUser.id);
       return updated;
     });
 
@@ -206,7 +254,6 @@ function AppMain({
                   }
                 : undefined
             }
-            onNavigateExplore={() => setActiveTab('explore')}
             onViewAuthorProfile={handleViewAuthorProfile}
             onNotificationClick={handleNotificationClick}
             onMarkAllNotificationsAsRead={feed.markAllNotificationsAsRead}
@@ -256,7 +303,7 @@ export function App() {
   const [isPilotUnlocked, setIsPilotUnlocked] = useState<boolean>(() => {
     return localStorage.getItem('sesb_pilot_unlocked') === 'true';
   });
-  const [toast, setToast] = useState<{ message: string; icon?: string } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   if (!isPilotUnlocked) {
     return (

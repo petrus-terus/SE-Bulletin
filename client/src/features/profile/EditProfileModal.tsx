@@ -9,6 +9,8 @@ import {
   DEFAULT_EMPLOYEE_BIO,
 } from '@/constants/bulletin';
 import { handleAvatarError, handleCoverError } from '@/utils/imageFallbacks';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './EditProfileModal.module.css';
 
 export interface EditProfileFormState {
@@ -64,6 +66,9 @@ export const EditProfileModal: React.FC<Props> = ({
 
   const effectiveAvatarUrl = tempAvatarUrl || profileData.avatarUrl || DEFAULT_AVATAR_URL;
   const effectiveCoverUrl = tempCoverUrl || profileData.coverUrl || DEFAULT_COVER_URL;
+
+  useEscapeKey(onClose, isOpen);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 

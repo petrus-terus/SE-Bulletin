@@ -36,18 +36,23 @@ interface Props {
   currentUserId?: string;
   currentUserName?: string;
   currentUserRole?: string;
-  currentUserAvatar?: string;
   onLikeToggle: (id: string) => void;
   onOpenComments: (post: Post) => void;
   onDeletePost?: (postId: string) => void;
   onEditPost?: (post: Post) => void;
   onPostClick?: (post: Post) => void;
-  onViewProfile?: (employee: { id: string; name: string; avatarUrl: string; designation: string; department: string; email: string; extension?: string; staffId?: string }) => void;
+  onViewProfile?: (employee: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    designation: string;
+    department: string;
+    email: string;
+    extension?: string;
+    staffId?: string;
+  }) => void;
   onBookmarkToggle?: (postId: string) => void;
   onVotePoll?: (postId: string, optionId: string) => void;
-  onReactionSelect?: (postId: string, reaction: import('@/types/bulletin').EmojiReactionType) => void;
-  onReshareToggle?: (postId: string) => void;
-  onQuotePost?: (quotedPost: Post, commentText: string) => void;
   onSharePost?: (post: Post) => void;
   onReshareClick?: (post: Post) => void;
 }
@@ -58,7 +63,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
   currentUserId,
   currentUserName,
   currentUserRole,
-  currentUserAvatar,
   onLikeToggle,
   onOpenComments,
   onDeletePost,
@@ -67,9 +71,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
   onViewProfile,
   onBookmarkToggle,
   onVotePoll,
-  onReactionSelect,
-  onReshareToggle,
-  onQuotePost,
   onSharePost,
   onReshareClick,
 }) => {
@@ -398,7 +399,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                   currentUserId={currentUserId}
                   currentUserName={currentUserName}
                   currentUserRole={currentUserRole}
-                  currentUserAvatar={currentUserAvatar}
                   onLikeToggle={onLikeToggle}
                   onCommentClick={onOpenComments}
                   onBookmarkToggle={onBookmarkToggle || (() => {})}
@@ -406,9 +406,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
                   onEditPost={onEditPost}
                   onPostClick={onPostClick}
                   onVotePoll={onVotePoll}
-                  onReactionSelect={onReactionSelect}
-                  onReshareToggle={onReshareToggle}
-                  onQuotePost={onQuotePost}
                   onSharePost={onSharePost}
                   onReshareClick={onReshareClick}
                 />
@@ -432,7 +429,6 @@ export const SearchDirectoryPage: React.FC<Props> = ({
           </div>
         )}
       </div>
-
     </div>
   );
 };

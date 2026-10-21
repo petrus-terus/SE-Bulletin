@@ -32,8 +32,6 @@ export const SESB_LOCATIONS = [
   'Labuan Regional Office',
 ] as const;
 
-export type SesbLocation = typeof SESB_LOCATIONS[number];
-
 /**
  * Default mission statement / bio for Sabah Electricity staff profiles.
  */

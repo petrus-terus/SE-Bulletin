@@ -11,7 +11,7 @@ import styles from './CreateBulletinPage.module.css';
 
 interface Props {
   departments: Department[];
-  currentUser?: Employee;
+  currentUser: Employee;
   onClose: () => void;
   onSubmit: (newPostData: CreatePostPayload) => void;
   initialPost?: Post | null;
@@ -46,6 +46,8 @@ export const CreateBulletinPage: React.FC<Props> = ({
     setSelectedLocation,
     isPinned,
     setIsPinned,
+    isOfficialNotice,
+    setIsOfficialNotice,
     allowComments,
     setAllowComments,
     validationError,
@@ -333,6 +335,21 @@ export const CreateBulletinPage: React.FC<Props> = ({
                 className={styles.toggleCheckbox}
                 checked={isPinned}
                 onChange={(e) => setIsPinned(e.target.checked)}
+              />
+            </label>
+
+            <label className={styles.toggleRow}>
+              <div className={styles.toggleText}>
+                <span className={styles.toggleTitle}>Mark as Official Notice / Directive</span>
+                <span className={styles.toggleDesc}>
+                  Display an urgent directive badge and alert border for priority visibility.
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                className={styles.toggleCheckbox}
+                checked={isOfficialNotice}
+                onChange={(e) => setIsOfficialNotice(e.target.checked)}
               />
             </label>
 

@@ -1,6 +1,7 @@
 import type { Comment, Employee } from '@/types/bulletin';
 import { isSupabaseConfigured, supabase } from '../supabaseClient';
 import { mapRowToComment, getAvatarInitials } from '../rowMappers';
+import { postService } from './postService';
 
 export class CommentService {
   /**
@@ -35,8 +36,7 @@ export class CommentService {
   async addComment(
     postId: string,
     commentText: string,
-    currentUser: Employee,
-    currentCommentsCount: number
+    currentUser: Employee
   ): Promise<Comment> {
     const newComment: Comment = {
       id: `c-${Date.now()}`,
@@ -80,11 +80,8 @@ export class CommentService {
           });
         }
 
-        // Increment comment count on the post
-        await supabase
-          .from('posts')
-          .update({ comments_count: currentCommentsCount + 1 })
-          .eq('id', postId);
+        // Atomically increment comment count on the post
+        await postService.adjustPostCounter(postId, 'comments_count', 1);
       } catch (err) {
         console.error('[CommentService] addComment sync error:', err);
         throw err;

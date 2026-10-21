@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Employee } from '@/types/bulletin';
 import { supabase } from '@/services/supabaseClient';
 import { bulletinService } from '@/services/bulletinService';
+import { DEFAULT_AVATAR_URL, DEFAULT_COVER_URL } from '@/constants/bulletin';
 
 export function useAuthSession() {
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
@@ -25,8 +26,8 @@ export function useAuthSession() {
               designation: 'Sabah Electricity Staff',
               department: 'Operations',
               email: user.email || 'staff@sesb.com.my',
-              avatarUrl: '/sabah_electricity_logo.png',
-              coverUrl: '/grid_horizon_hero.jpg',
+              avatarUrl: DEFAULT_AVATAR_URL,
+              coverUrl: DEFAULT_COVER_URL,
               officeLocation: 'Wisma SE HQ, Kota Kinabalu',
               phoneExtension: 'Ext. 4102',
               bio: 'Sabah Electricity Staff Member',

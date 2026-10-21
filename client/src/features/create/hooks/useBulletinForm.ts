@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
-import { CURRENT_USER } from '@/services/mockData';
+import type { AudienceScope, Department, CreatePostPayload, Employee, Post } from '@/types/bulletin';
 import { bulletinService } from '@/services/bulletinService';
 import { compressImageFile } from '@/utils/imageCompressor';
 import { DEFAULT_DEPARTMENT_ID, SESB_LOCATIONS } from '@/constants/bulletin';
@@ -18,14 +17,14 @@ export function useBulletinForm({
   onClose,
 }: {
   departments: Department[];
-  currentUser?: Employee;
+  currentUser: Employee;
   initialPost?: Post | null;
   isEditMode?: boolean;
   onSubmit: (newPostData: CreatePostPayload) => void;
   onUpdate?: (postId: string, updatedData: Partial<Post>) => void;
   onClose: () => void;
 }) {
-  const activeUser = currentUser || CURRENT_USER;
+  const activeUser = currentUser;
 
   const [title, setTitle] = useState(initialPost?.title || '');
   const [content, setContent] = useState(initialPost?.content || '');
@@ -33,12 +32,15 @@ export function useBulletinForm({
     initialPost?.departmentId || activeUser.adminDepartments?.[0] || DEFAULT_DEPARTMENT_ID
   );
   const [isDeptOpen, setIsDeptOpen] = useState(false);
-  const [audienceScope, setAudienceScope] = useState('All Sabah Staff');
+  const [audienceScope, setAudienceScope] = useState<AudienceScope>(
+    initialPost?.audienceScope || 'All Sabah Staff'
+  );
   const [isAudienceOpen, setIsAudienceOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(
     initialPost?.location || activeUser.officeLocation || SESB_LOCATIONS[0]
   );
   const [isPinned, setIsPinned] = useState(Boolean(initialPost?.isPinned));
+  const [isOfficialNotice, setIsOfficialNotice] = useState(Boolean(initialPost?.officialNotice));
   const [allowComments, setAllowComments] = useState(initialPost ? initialPost.commentsEnabled : true);
   const [validationError, setValidationError] = useState('');
 
@@ -304,6 +306,8 @@ export function useBulletinForm({
           content: content.trim(),
           location: selectedLocation,
           isPinned: isPinned,
+          officialNotice: isOfficialNotice,
+          audienceScope,
           departmentId: currentDept.id,
           departmentName: currentDept.name,
           departmentColor: currentDept.color || '#0055A4',
@@ -333,7 +337,8 @@ export function useBulletinForm({
         isPinned: isPinned,
         mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         imageUrl: uploadedMediaUrls.length > 0 ? uploadedMediaUrls[0] : undefined,
-        officialNotice: true,
+        officialNotice: isOfficialNotice,
+        audienceScope,
         commentsEnabled: allowComments,
         pdfUrl: pdfFile?.url,
         pdfName: pdfFile?.name,
@@ -368,6 +373,8 @@ export function useBulletinForm({
     setSelectedLocation,
     isPinned,
     setIsPinned,
+    isOfficialNotice,
+    setIsOfficialNotice,
     allowComments,
     setAllowComments,
     validationError,

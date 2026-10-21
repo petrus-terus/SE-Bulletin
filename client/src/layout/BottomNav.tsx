@@ -14,7 +14,7 @@ export const BottomNav: React.FC<Props> = ({
   activeTab,
   onTabChange,
   onCreateClick,
-  unreadCount = 3,
+  unreadCount = 0,
 }) => {
   return (
     <nav className={styles.navContainer} aria-label="Bottom Navigation" data-chrome="bottomnav">

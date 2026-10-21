@@ -21,6 +21,7 @@ export interface TenagaMarketData {
   dayHigh: number;
   dayLow: number;
   lastUpdated: string;
+  isLive: boolean;
   intradayPoints: IntradayDataPoint[];
 }
 
@@ -35,7 +36,8 @@ const FALLBACK_MARKET_DATA: TenagaMarketData = {
   percentChange: 1.23,
   dayHigh: 13.28,
   dayLow: 13.10,
-  lastUpdated: '11:30 MYT',
+  lastUpdated: '17:00 MYT',
+  isLive: false,
   intradayPoints: [
     { timeStr: '09:00 AM', timestamp: 1790298000, price: 13.08 },
     { timeStr: '09:15 AM', timestamp: 1790298900, price: 13.12 },
@@ -136,6 +138,7 @@ export async function fetchTenagaMarketData(): Promise<TenagaMarketData> {
         ? meta.regularMarketDayLow
         : Math.min(...intradayPoints.map((p) => p.price), currentPrice),
       lastUpdated: formatMytShort(meta.regularMarketTime || Math.floor(now / 1000)),
+      isLive: true,
       intradayPoints: intradayPoints.length >= 3 ? intradayPoints : FALLBACK_MARKET_DATA.intradayPoints,
     };
 

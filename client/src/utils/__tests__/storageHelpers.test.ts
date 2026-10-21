@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  scopedKey,
   loadStoredSet,
   saveStoredSet,
   loadStoredRecord,
   saveStoredRecord,
+  loadStoredJson,
+  saveStoredJson,
 } from '../storageHelpers';
 
 describe('storageHelpers', () => {
@@ -62,6 +65,22 @@ describe('storageHelpers', () => {
     it('returns empty object when key not found', () => {
       const retrieved = loadStoredRecord<string>('missing_record_key');
       expect(retrieved).toEqual({});
+    });
+  });
+
+  describe('scopedKey and JSON storage', () => {
+    it('scopes keys by userId when provided and falls back to baseKey when omitted', () => {
+      expect(scopedKey('sesb_likes')).toBe('sesb_likes');
+      expect(scopedKey('sesb_likes', 'user-101')).toBe('sesb_likes_user-101');
+    });
+
+    it('persists and retrieves typed JSON values with fallback on error', () => {
+      saveStoredJson('json_key', { count: 5, active: true });
+      expect(loadStoredJson('json_key', { count: 0, active: false })).toEqual({
+        count: 5,
+        active: true,
+      });
+      expect(loadStoredJson('non_existent', 'default')).toBe('default');
     });
   });
 });

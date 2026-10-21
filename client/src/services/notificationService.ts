@@ -1,4 +1,5 @@
 import type { AppNotification } from '@/types/bulletin';
+import { scopedKey, loadStoredJson, saveStoredJson } from '@/utils/storageHelpers';
 
 const NOTIFICATIONS_STORAGE_KEY = 'sesb_notifications';
 
@@ -97,35 +98,29 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
   },
 ];
 
-export function getStoredNotifications(): AppNotification[] {
-  try {
-    const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
-      return INITIAL_NOTIFICATIONS;
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return INITIAL_NOTIFICATIONS;
+export function getStoredNotifications(userId?: string): AppNotification[] {
+  const key = scopedKey(NOTIFICATIONS_STORAGE_KEY, userId);
+  const defaultNotifications = import.meta.env.DEV ? INITIAL_NOTIFICATIONS : [];
+  const parsed = loadStoredJson<AppNotification[] | null>(key, null);
 
-    // Self-heal legacy orphaned IDs from past sessions
-    return parsed.map((n: AppNotification) => {
-      if (n.targetPostId === 'post-safety-1') {
-        return { ...n, targetPostId: 'post-career-day-warning' };
-      }
-      if (n.targetPostId === 'post-1') {
-        return { ...n, targetPostId: 'post-madani-link' };
-      }
-      return n;
-    });
-  } catch {
-    return INITIAL_NOTIFICATIONS;
+  if (!parsed || !Array.isArray(parsed)) {
+    if (defaultNotifications.length > 0) {
+      saveStoredJson(key, defaultNotifications);
+    }
+    return defaultNotifications;
   }
+
+  return parsed.map((n: AppNotification) => {
+    if (n.targetPostId === 'post-safety-1') {
+      return { ...n, targetPostId: 'post-career-day-warning' };
+    }
+    if (n.targetPostId === 'post-1') {
+      return { ...n, targetPostId: 'post-madani-link' };
+    }
+    return n;
+  });
 }
 
-export function saveStoredNotifications(notifications: AppNotification[]): void {
-  try {
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
-  } catch (e) {
-    console.warn('[NotificationService] Failed to save notifications:', e);
-  }
+export function saveStoredNotifications(notifications: AppNotification[], userId?: string): void {
+  saveStoredJson(scopedKey(NOTIFICATIONS_STORAGE_KEY, userId), notifications);
 }

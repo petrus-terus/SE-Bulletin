@@ -4,6 +4,8 @@
  * High-reliability fallback & 15-minute caching to eliminate unnecessary network churn.
  */
 
+import { loadStoredJson, saveStoredJson } from '@/utils/storageHelpers';
+
 export interface KotaKinabaluWeather {
   temperature: number;
   condition: string;
@@ -62,16 +64,12 @@ function mapWmoToCondition(code: number): { condition: string; icon: string } {
  */
 export async function fetchKotaKinabaluWeather(): Promise<KotaKinabaluWeather> {
   // 1. Check local storage cache
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < CACHE_DURATION_MS && parsed.data) {
-        return parsed.data;
-      }
-    }
-  } catch {
-    // Non-blocking storage error
+  const cachedEntry = loadStoredJson<{ timestamp: number; data: KotaKinabaluWeather } | null>(
+    CACHE_KEY,
+    null
+  );
+  if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION_MS && cachedEntry.data) {
+    return cachedEntry.data;
   }
 
   // 2. Fetch from Open-Meteo API for Kota Kinabalu (Lat: 5.9804, Lon: 116.0735)
@@ -103,12 +101,7 @@ export async function fetchKotaKinabaluWeather(): Promise<KotaKinabaluWeather> {
         lastUpdated: new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' }),
       };
 
-      try {
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({ timestamp: Date.now(), data: result })
-        );
-      } catch {}
+      saveStoredJson(CACHE_KEY, { timestamp: Date.now(), data: result });
 
       return result;
     }
@@ -117,13 +110,9 @@ export async function fetchKotaKinabaluWeather(): Promise<KotaKinabaluWeather> {
   }
 
   // Fallback to cache if available even if stale
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (parsed.data) return parsed.data;
-    }
-  } catch {}
+  if (cachedEntry?.data) {
+    return cachedEntry.data;
+  }
 
   return DEFAULT_WEATHER;
 }

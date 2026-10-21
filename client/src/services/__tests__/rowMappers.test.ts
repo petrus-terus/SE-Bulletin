@@ -51,6 +51,25 @@ describe('rowMappers', () => {
       const result = parsePollData(raw, 'post-99');
       expect(result?.userVotedOptionId).toBe('opt-1');
     });
+
+    it('isolates poll votes by userId on shared workstations', () => {
+      localStorage.setItem('sesb_poll_votes_user-a', JSON.stringify({ 'post-99': 'opt-1' }));
+      localStorage.setItem('sesb_poll_votes_user-b', JSON.stringify({ 'post-99': 'opt-2' }));
+
+      const raw = {
+        id: 'poll-1',
+        question: 'Safety drill date?',
+        options: [
+          { id: 'opt-1', text: 'Friday', votes: 4 },
+          { id: 'opt-2', text: 'Monday', votes: 2 },
+        ],
+        totalVotes: 6,
+      };
+
+      expect(parsePollData(raw, 'post-99', 'user-a')?.userVotedOptionId).toBe('opt-1');
+      expect(parsePollData(raw, 'post-99', 'user-b')?.userVotedOptionId).toBe('opt-2');
+      expect(parsePollData(raw, 'post-99', 'user-c')?.userVotedOptionId).toBeUndefined();
+    });
   });
 
   describe('parseStoryCaption', () => {

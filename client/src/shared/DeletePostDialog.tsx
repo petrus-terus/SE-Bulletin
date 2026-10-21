@@ -1,5 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import styles from './DeletePostDialog.module.css';
 
 interface DeletePostDialogProps {
@@ -13,6 +15,9 @@ export const DeletePostDialog: React.FC<DeletePostDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  useEscapeKey(onCancel, true);
+  useBodyScrollLock(true);
+
   return createPortal(
     <div
       className={styles.modalBackdrop}
