@@ -1,179 +1,72 @@
-# Project Context, Operating Rules & Craft Standards
+# Sabah Electricity (SESB) — Agent Operating Handbook
 
 > **Project**: Sabah Electricity Sdn. Bhd. (SESB) — Internal Bulletin App (PWA)  
 > **Repository Root**: `D:\SE Bulletin`  
-> **Brand & Target**: Wisma SESB HQ Staff (Phase 1) -> Statewide SESB (Phase 2)  
+> **Brand & Target**: Wisma SESB HQ Staff (Phase 1 Pilot) -> Statewide SESB (Phase 2 Enterprise)  
 > **Specifications Document**: [PROJECT_SPEC.md](./PROJECT_SPEC.md)
 
 ---
 
-## 1. Mandatory Impeccable Protocol for UI/UX, Generation & Animation
+## 1. Two-Tier Workflow Execution Protocol
 
-For **ANY** UI/UX changes, new UI component generation, styling modifications, visual redesigns, or animation work:
+To maximize token efficiency while preserving exceptional code and craft quality, all tasks must follow this two-tier model:
 
-1. **Activate & Inspect the Integrated Craft Pipeline (Mandatory `view_file` Pre-Check)**:
-   - **Explicit Pre-Code Inspection**: Before writing or proposing any frontend code, the agent MUST explicitly inspect (`view_file`) the relevant skill instruction files rather than relying on memory:
-     * Layout & Taste: `.agents/skills/design-taste-frontend/SKILL.md` and `.agents/skills/high-end-visual-design/SKILL.md`
-     * Polish & Review: `.agents/skills/emil-design-eng/SKILL.md` (mandatory `| Before | After | Why |` review tables)
-     * Motion & Timing: `.agents/skills/animate/SKILL.md` and `.agents/skills/find-animation-opportunities/SKILL.md`
-     * Mobile-Native: `.agents/skills/mobile-native/SKILL.md` (tap latency, sticky hover prevention, safe areas)
-     * Defect Detection: `.agents/skills/impeccable/SKILL.md`
+### Tier 1: Fast-Path (Atomic Fixes, Copy Changes, Small Tweaks < 30 lines)
+1. **Direct Edit**: Modify target files directly following the Core Non-Negotiables below. Do NOT load multiple external skill files or block for a pre-code approval proposal.
+2. **Local Verification**: Run the verification gate (`npm --prefix client run check-all` and `impeccable detect`).
+3. **Report**: Summarize changes concisely with verification results and the exact `git commit` command.
 
-2. **Formulate a Structured, Detailed Prompt**:
-   Before writing any code, craft a structured specification detailing:
-   - **Target Component / Screen**: What element is being built or modified.
-   - **Design & Layout Intent**: Chunking, 16–20px spacing, 12px corner radius (`rounded-xl`), elimination of visual clutter ("anti-slop").
-   - **Color & Contrast Token Mapping**: `#1A7A5A` (Forest Green), `#0055A4` (Deep Blue), `#10B981` (CTA Accent with `#0B0F17` dark ink text for 10.8:1 WCAG AAA contrast).
-   - **Animation & Motion Choreography (`emil-design-eng` + `animate`)**:
-     * **Strict Property Isolation**: Only animate `transform` and `opacity`. NEVER animate layout geometry (`height`, `width`, `top`, `margin`) to prevent layout thrashing and frame drops.
-     * **Zero Ease-In on Entry**: Never use `ease-in` on entering UI; always use exponential ease-out `cubic-bezier(0.16, 1, 0.3, 1)` or physical spring parameters.
-     * **Duration Budget**: 150–250ms for micro-interactions; 300–400ms for modal sheets/drawers.
-     * **Tactile Compression**: Active scale compression (`transform: scale(0.98)` / `active:scale-[0.98]`).
-   - **Mobile-Native Touch Ergonomics (`mobile-native`)**:
-     * `touch-action: manipulation;` on all interactive elements to eliminate the 300ms tap delay.
-     * `-webkit-tap-highlight-color: transparent;` to kill grey tap boxes.
-     * Minimum 44×44px touch targets.
-     * Safe area padding (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`).
-   - **Instrumentation Craft**: `font-mono tabular-nums` for counters, timers, and timestamps.
-   - **States**: Default, hover/active, loading shimmer skeleton, empty state, and error handling.
-
-3. **Mandatory User Review Gate (Ask Before Implementation)**:
-   - **DO NOT write code immediately.**
-   - Present the structured UI/UX & motion proposal clearly to the user.
-   - Ask for the user's review and approval before beginning implementation.
-
-4. **Mandatory Post-Implementation Verification & Audit Gate (Run Before Declaring Done)**:
-   - **Mechanical Defect Scanner**: Immediately upon completing code for any screen or component, run:
-     `cmd /c ".\.agents\skills\impeccable\scripts\impeccable.cmd detect --json <targets>"`
-   - **Motion Audit Pass (`review-animations`)**: Verify that no layout transitions were introduced, easings follow ease-out curves, and there is zero layout jitter.
-   - **Visual & Interaction Audit (`impeccable polish`)**: Verify 44px touch targets, tabular numerals, and responsive behavior.
-   - **Browser Subagent Viewport Check**: Verify visually via the browser subagent in 393×852 mobile viewport before considering the task finished.
+### Tier 2: Heavy-Path (New Features, New Screens, Major Redesigns, Motion Sequences)
+1. **Inspect Modular Rules**: Read the targeted domain rule from `docs/agent-rules/` using the Path-Based Trigger Table below.
+2. **Inspect Targeted Skill**: Read *only* the specific relevant skill (`animate`, `emil-design-eng`, or `mobile-native`) instead of all skills at once.
+3. **Pre-Code Proposal Gate**: Present a structured proposal to the user (Target Component, Design/Motion Intent, Token Mapping, `| Before | After | Why |` table). **Wait for user approval before coding.**
+4. **Implement**: Code modularly using component sandboxing (keep page components thin, isolate sub-components).
+5. **Verify**: Run full verification (`npm --prefix client run check-all` + `impeccable detect` + 393×852 mobile viewport check).
 
 ---
 
-## 2. User Style & Engineering Craft Preferences (From e-Bidding Benchmark)
+## 2. Path-Based Rule Trigger Table
 
-### 2.1 Zero "UI Slop" & Clean Design
-- Keep cards, headers, and navigation clean, modern, and uncluttered.
-- Eliminate visual noise: do not add redundant badges, jarring colored boxes, or messy metadata rows.
-- Maintain generous 16–20px spacing between feed posts and 12px rounded card corners (`rounded-xl`).
+Inspect (`view_file`) the specific rule file **only** when touching the matching directory or file type:
 
-### 2.2 Contrast Rules (Strict WCAG AAA)
-- **NEVER use white text on emerald / bright green (`#10B981`)** — contrast ratio is only 2.54:1 (fails accessibility).
-- **ALWAYS use dark ink text (`#0B0F17` / `text-slate-950`) on emerald/green buttons & pills** to achieve an authoritative **10.8:1 WCAG AAA** contrast ratio.
-- Primary buttons should use Deep Blue (`#0055A4`) with white text, or Forest Green (`#1A7A5A`) with white text. Reserved bright green (`#10B981`) for floating "+" CTAs and active indicators with dark text.
-
-### 2.3 Instrumentation & Tabular Numerals
-- **Always apply `font-mono tabular-nums`** to:
-  - Like counts, comment counts, and share counts
-  - 24-hour Story countdown timers
-  - Post timestamps (e.g. `2h ago`, `14:32`)
-  - Employee IDs (e.g. `SESB-1001`, `EMP123`)
-  - Phone extension numbers
-- This prevents horizontal layout jitter during real-time SignalR counter updates.
-
-### 2.4 Typography Minimum Floor
-- **Strict floor of 12px (`text-xs` / `text-[12px]`)**.
-- **NEVER use micro-text** (`text-[10px]` or `text-[11px]`) on any metadata, badges, or timestamps.
-
-### 2.5 Micro-Interactions, Animation & Mobile-Native Feel (`emil-design-eng` + `mobile-native`)
-- Add active compression (`transform: scale(0.98)` / `active:scale-[0.98]`) on all interactive buttons, filter pills, and bottom tabs.
-- Strictly animate `transform` and `opacity` only; never animate `height`, `width`, or layout shifts.
-- Entry easings must use exponential ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`).
-- Use smooth Apple HIG-style spring toasts (Sonner-style) for asynchronous actions.
-- Ensure `-webkit-tap-highlight-color: transparent;` and `touch-action: manipulation;` are applied to eliminate mobile tap latency and flash artifacts.
-- Respect 44×44px minimum touch targets and iOS safe areas (`env(safe-area-inset-bottom)`).
-
-### 2.6 Authentic Sabah Electricity Domain Realism
-- In all mock data, seed data, and previews, use authentic Sabah Electricity context:
-  - Locations: Wisma SESB (HQ Kota Kinabalu), Tenom Pangi Hydro Station, Sepanggar Power Station, Sandakan & Tawau regional stations.
-  - Departments: HR, Operations, Engineering, Safety & Health (HSE), Corporate Communications, Finance, IT.
-  - Staff IDs: `SESB-1001`, `EMP123`, `ENG-402`.
-  - Corporate emails: `@sesb.com.my`.
-
-### 2.7 Verification & Git Discipline
-- **Browser Subagent Verification**: Always verify interactive UI, modals, tab switching, and responsive mobile layouts (393x852) on the local dev server before declaring a task complete.
-- **Git Commit Protocol**: Commit with clean, semantic commit prefixes (e.g., `feat(ui): ...`, `feat(feed): ...`, `fix(contrast): ...`).
-- **Git Push Protocol**: Do **NOT** push to remote git repositories without explicit user permission. Always test locally first.
-
-### 2.8 Learned Rules & Execution Constraints
-- **Windows PowerShell Syntax**: Always use `;` (semicolon) as a command separator when chaining shell commands in Windows PowerShell (e.g. `git add .; git commit -m "..."`). Do NOT use `&&`.
-- **Git Commit Discipline**: Only perform local git commits when explicitly instructed by the user or pre-approved for the current task. Never auto-commit routine edits.
-- **Feed Card Image Fallbacks**: All dynamic or external `<img>` elements in feed cards and user avatars MUST implement `onError` fallback handlers and empty `alt=""` tags (or fallback containers) to prevent broken image icons, text overflow, and layout overlap.
-- **Mandatory Pre-Code Skill Verification**: Never generate frontend components or styles without first reading the corresponding `SKILL.md` files for that interaction type. Memory or loose adherence is strictly prohibited.
-- **1:1 Authentic Brand Asset Fidelity**: Never substitute generic placeholder icons (e.g., generic lightning bolts, stock symbols, or artificial logos) when authentic corporate parent/subsidiary branding exists (e.g., Tenaga Nasional Berhad / SESB). Always use 1:1 official vector/cropped brand assets inside designated high-contrast white badge surfaces with `onError` fallbacks.
-- **Mandatory Reduced Motion & Sticky Hover Gating**:
-  - Every CSS keyframe animation or continuous pulse MUST include `@media (prefers-reduced-motion: reduce) { animation: none; transform: none; }`.
-  - Every interactive hover transition on cards or buttons MUST be gated inside `@media (hover: hover) and (pointer: fine)` to prevent stuck hover states on mobile touchscreens.
-- **Cloudflare Workers SPA Routing (Do NOT add `_redirects`)**: The application is deployed via Cloudflare Workers Static Assets (`wrangler.jsonc`), which handles SPA fallback natively via `"not_found_handling": "single-page-application"`. NEVER add `client/public/_redirects` with `/* /index.html 200` — doing so triggers Cloudflare API error `100324` ("Infinite loop detected in this rule") and crashes the deployment.
-- **Supabase Storage over Base64 & Client Compression**: Do not persist large base64 image strings into PostgreSQL table columns or `localStorage`. Always run user uploads through `compressImage()` (`client/src/utils/imageCompressor.ts`) before uploading to the Supabase Storage bucket (`bulletin-media`) to prevent `QuotaExceededError` and protect storage quotas.
-- **Creation Flow Decoupling**: Keep 24-hour casual stories and formal corporate bulletins strictly separated. Casual status/dispatches belong in `CreateStoryModal.tsx` (fast 3-second WhatsApp/IG style), while formal department circulars belong in `CreateBulletinPage.tsx` with SESB quick templates.
-- **CSS Selector Class Parity & Avatar Dimensions**: Always ensure avatar image classes (e.g. `.authorAvatar`) have strict width, height (e.g. 40-44px), `flex-shrink: 0`, and `object-fit: cover` to prevent high-res corporate logos (up to 1200px) from blowing out mobile viewports.
-- **Supabase Row Level Security (RLS)**: Always verify that tables (`posts`, `comments`, `profiles`, `likes`) in Supabase have active RLS policies for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` so queries do not fail silently.
-- **Full-Lifecycle Cloud Sync & State Audit Protocol**:
-  Whenever creating, updating, or reviewing an interactive feature (bulletins, comments, stories, profiles, reactions, polls, bookmarks):
-  1. **Dual-Persistence Check**: Verify user actions invoke the remote database service (`bulletinService.*`) in addition to local React state so data survives page refresh and session switches.
-  2. **Detail / Sub-View State Parity**: Never isolate sub-view state (e.g. `PostDetailView`, `CommentDrawer`) with disconnected local arrays or preview-only slices. Bind sub-views to the reactive root thread (`commentsByPost`), and trigger cloud fetches (`bulletinService.getComments(...)`) whenever the sub-view opens.
-  3. **Realtime Payload Completeness**: In Supabase Realtime listeners (`INSERT`, `UPDATE`), verify that incoming payloads map all rich fields (`poll_data`, `pdf_url`, `pdf_name`, `reactions_breakdown`, `quote_post_id`, `views_count`, `reshares_count`), not just basic title/content.
-  4. **Initial Mount Fetch**: Verify every top-level feature state (`posts`, `stories`, `profiles`, `comments`) calls its corresponding `get*()` service in `useEffect(..., [])` on mount.
-  5. **Foreign Key Resolution**: In data mappers (e.g. `getPosts`), verify relational ID columns (e.g. `quote_post_id`) are resolved against cache/memory rather than expecting non-existent flat object columns.
-  6. **Counter Math Integrity**: Never add local state array lengths to server count fields (e.g. `localComments.length + post.commentsCount`) which causes double-counting. Always use the active collection length: `activeComments.length || post.commentsCount`.
-- **Canvas Tainting & CORS-Clean Cropping Protocol**:
-  Whenever loading images for canvas processing (`drawImage`, `toBlob`, `toDataURL` in `cropImage.ts` or `MediaCropModal.tsx`):
-  1. **Local File Priority**: Always prioritize local device `File` objects by converting them to in-memory `data:` URLs via `FileReader.readAsDataURL()`. Local data URLs never make network calls and cannot taint the canvas.
-  2. **Remote URL Blob Conversion**: For remote URLs (Supabase Storage, CDNs), fetch the image via `fetch(src, { mode: 'cors' })` and convert to a local `blob:` URL (`URL.createObjectURL(blob)`).
-  3. **Disk Cache Collision Defense**: Set `crossOrigin = 'anonymous'` on `new Image()` and `<Cropper>` `mediaProps`, and append a cache-buster query parameter (`_cors=${Date.now()}`) to prevent the browser from reusing a non-CORS cached entry from an earlier `<img>` tag. This eliminates `SecurityError: Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported.`
-- **Unified Media Crop Architecture (`MediaCropModal.tsx`)**:
-  - **Stories**: In-canvas "Crop & Frame" floating button, defaulted to `9:16` full-screen vertical portrait with freeform/ratio presets (`Original`, `1:1`, `4:5`, `16:9`).
-  - **Bulletins**: Sequential staging queue (`cropQueue`) on file selection with "Skip (Keep Original)" and on-demand thumbnail edit buttons.
-  - **Avatars**: Dedicated circular 1:1 modal in `AvatarCropSheet.tsx`. Both share the underlying `cropImageToBlob()` engine with 90° rotation support.
+| When Touching Files In | Inspect Rule File | Focus Area |
+|---|---|---|
+| `client/src/ui/`, `client/src/shared/`, `client/src/features/`, `*.module.css` | `docs/agent-rules/ui-craft.md` | WCAG AAA 10.8:1 contrast, `tabular-nums`, `active:scale-[0.98]`, motion curves, touch targets |
+| `client/src/services/`, `client/src/context/`, `client/src/hooks/` | `docs/agent-rules/cloud-sync-state.md` | Dual-persistence, Realtime payloads, foreign key resolution, counter math integrity |
+| `client/src/utils/cropImage*`, `MediaCropModal*`, `AvatarCrop*` | `docs/agent-rules/media-canvas.md` | Local file priority, CORS-clean canvas export, client-side compression before storage upload |
+| `server/**`, `*.cs`, `*.csproj`, `*.sln`, SignalR hubs | `docs/agent-rules/backend-dotnet.md` | Clean Architecture, MediatR CQRS, EF Core migrations, SQL Server RBAC, SignalR contracts |
 
 ---
 
-## 3. Brand Identity & Design System Tokens
+## 3. Core Brand & Design Non-Negotiables
 
-| Token | Hex Value | Usage Context |
+| Token | Hex Value | Rule / Usage |
 |---|---|---|
 | **Forest Green** | `#1A7A5A` | Kinabalu green peak, active story rings, primary CTAs |
 | **Deep Blue** | `#0055A4` | Kinabalu blue peak, active tab icons, department pills |
-| **Accent Green** | `#10B981` | Floating "+" create button, online presence dot (with `#0B0F17` text) |
-| **Canvas Background** | `#F5F7FA` | App shell, viewport background |
-| **Card Surface** | `#FFFFFF` | Feed cards, story cards, modals, sheets |
-| **Borders / Dividers** | `#E8EDF2` | Subtle card borders, input outlines, dividers |
-| **Dark Text** | `#1E293B` | Headings, post titles, high contrast copy |
-| **Muted Text** | `#64748B` | Timestamps, designations, secondary counters |
-| **HSE Orange** | `#F59E0B` | Safety alerts, priority notices |
-| **Alert Red** | `#EF4444` | Grid emergency alerts, unread notification badges |
+| **Accent Green** | `#10B981` | Floating "+" create button, online presence dot. **MUST use `#0B0F17` dark ink text (10.8:1 WCAG AAA). NEVER use white text.** |
+| **Canvas Background**| `#F5F7FA` | App shell, viewport background |
+| **Card Surface** | `#FFFFFF` | Feed cards, story cards, modals, sheets (`rounded-xl` / 12px) |
+| **Borders** | `#E8EDF2` | Subtle card borders, input outlines, dividers |
+
+- **Typography Floor**: Strict minimum of **12px (`text-xs`)**. No micro-text.
+- **Tabular Numerals**: Always apply `font-mono tabular-nums` to all counters (likes, comments, countdown timers, employee IDs).
+- **Motion Safety**: Animate `transform` and `opacity` only. Never animate layout geometry (`height`, `width`, `margin`).
+- **Mobile Touch**: Ensure `touch-action: manipulation;` and `-webkit-tap-highlight-color: transparent;` on all interactive buttons. Minimum 44×44px touch targets.
+- **Domain Realism**: Use authentic SESB locations (Wisma SESB HQ, Tenom Pangi Hydro, Sepanggar Power), departments (HR, Operations, HSE, Comms, IT), and `@sesb.com.my` emails.
 
 ---
 
-## 4. Tech Stack & Architecture
+## 4. Mandatory Verification & Git Protocol
 
-### 4.1 Phase 1 Pilot Architecture (Active Deployment)
-- **Frontend Hosting**: **Cloudflare Pages** (Vite React PWA, static `dist` bundle, global CDN, automated SSL/HTTPS).
-- **Backend & Database**: **Supabase** (Managed PostgreSQL, PostgREST REST API, WebSocket Realtime Engine for live reactions and comment sync).
-- **Media Storage**: **Supabase Storage** (Public bucket `bulletin-media` for field photos, announcement flyers, and avatars).
-- **PWA Capabilities**: Service Worker with Cache API, Web Manifest, iOS 3-step illustrated install sheet, and Android 1-click install banner.
-- **Pilot Authentication**: Enterprise corporate login supporting `@sesb.com.my` accounts with instant session persistence (`localStorage`).
+### Automated Verification Gate
+Before declaring any task complete, run:
+```powershell
+npm --prefix client run check-all; cmd /c ".\.agents\skills\impeccable\scripts\impeccable.cmd detect --json client/src"
+```
+*Guarantees zero TypeScript errors, passing unit tests, zero linter violations, and zero mechanical design anti-patterns.*
 
-### 4.2 Phase 2 Enterprise On-Prem Architecture (Internal SESB Intranet)
-- **Frontend**: React + Vite PWA behind corporate reverse proxy.
-- **Backend**: ASP.NET Core 8 Web API (C#) aligned with internal SESB enterprise standards.
-- **Real-Time**: SignalR Hub (`/hubs/bulletin`) for live reactions, online presence dots, and emergency safety broadcasts.
-- **Database**: SQL Server / PostgreSQL on-premise.
-- **Storage**: On-premise internal SESB network storage mount (`/app_data/media`) behind Wisma SESB firewall.
-- **Authentication**: Corporate `@sesb.com.my` email with 6-digit OTP verification via internal SESB SMTP.
-
----
-
-## 5. Governance & Role-Based Access Control (RBAC)
-
-1. **General Staff**: Status Updates, Photo/Video galleries, threaded comments, likes, drafts, employee directory search.
-2. **Department Admin**: Official department-tagged **Announcements**, 24h Department Stories, toggle comments ON/OFF, pin up to 2 announcements, moderate comments.
-3. **Super Admin / Corporate Comms**: Emergency HSE/grid broadcasts, department management, global audit logs.
-
----
-
-## 6. Specification Reference
-For the full functional requirements, database ERD, API endpoints, and screen flows, refer to [PROJECT_SPEC.md](./PROJECT_SPEC.md).
-For the step-by-step pilot deployment guide, SQL schemas, and Cloudflare configuration, refer to [docs/PILOT_DEPLOYMENT_GUIDE.md](./docs/PILOT_DEPLOYMENT_GUIDE.md).
+### Git Commit & Push Discipline
+- **NO Auto-Commits**: Never run `git commit` or `git push` automatically without explicit user confirmation.
+- **Semantic Formatting**: Always recommend semantic commit commands to the user (e.g. `git add .; git commit -m "feat(feed): add interactive poll card"`).
+- **Windows Syntax**: In PowerShell, always chain commands with `;` (semicolon). Never use `&&`.
